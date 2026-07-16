@@ -1,0 +1,376 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens iOS + Pinterest.
+ * Semua warna solid = channel RGB agar util Tailwind (mis. bg-primary/50) tetap jalan.
+ * Menu Setting meng-override sebagian variable ini (lihat lib/theme.ts THEME_KEYS)
+ * -> seluruh web ikut berubah tanpa menyentuh kode (pola "sarang laba-laba").
+ * JANGAN ganti nama variable solid di bawah ini — fitur Setting bergantung padanya.
+ */
+:root {
+  color-scheme: light;
+  /* Font di-inject next/font (lihat layout.tsx); ini fallback bila gagal load. */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  /* Display = keluarga yang sama dengan body (pola SF Pro Apple: satu keluarga,
+     judul dibedakan lewat berat + tracking rapat, bukan ganti font). */
+  --font-display: var(--font-sans);
+
+  /* Palet iOS 26 (systemGrouped) + aksen Pinterest.
+     Hierarki ala iOS Settings: BACKGROUND abu lembut, KARTU putih terangkat. */
+  --bg: 242 242 247;             /* iOS systemGroupedBackground #F2F2F7 */
+  --surface: 255 255 255;        /* kartu konten putih murni — "mengambang" di atas bg */
+  --surface-2: 233 233 238;      /* iOS fill — chip, input, track segmented */
+  --surface-elevated: 255 255 255; /* permukaan "terangkat": sheet, modal, popover */
+  --border: 232 232 237;         /* separator sangat halus (kartu putih nyaris tanpa garis) */
+  --foreground: 28 28 30;        /* iOS label #1C1C1E */
+  --muted: 108 108 114;          /* dikalibrasi ulang agar kontras >= AA (4.5:1) di atas bg terang */
+  --primary: 230 0 35;           /* Merah #E60023 — HANYA untuk aksi utama (plus/upload/link/aktif) */
+  --primary-readable: 220 0 31;  /* varian teks AA di atas bg/surface terang */
+  --primary-strong: 184 0 28;    /* merah lebih gelap: gradient FAB, state tekan */
+  --primary-foreground: 255 255 255;
+  --accent: 230 0 35;
+  --role: 176 137 84;            /* tan tag "jabatan" (chip Ketua) */
+  --danger: 230 0 35;
+  --success: 52 199 89;
+  --warning: 255 149 0;
+
+  /* Material glass (lapisan navigasi/kontrol mengambang) — TIDAK di-override Setting. */
+  --glass-bg: 255 255 255 / 0.72;
+  --glass-bg-strong: 255 255 255 / 0.86; /* modal/sheet: lebih legible, tidak terlalu tembus */
+  --glass-border: 255 255 255 / 0.7;
+  --glass-highlight: 255 255 255 / 0.65; /* garis highlight tipis di tepi atas */
+  --shadow-glass: 0 1px 1px rgb(20 20 30 / 0.05), 0 18px 44px -6px rgb(20 20 30 / 0.16),
+    inset 0 1px 0 rgb(var(--glass-highlight));
+  --shadow-glass-strong: 0 2px 2px rgb(20 20 30 / 0.06), 0 24px 56px -8px rgb(20 20 30 / 0.20),
+    inset 0 1px 0 rgb(var(--glass-highlight));
+
+  /* Safe-area iPhone (notch/home-indicator) — dipakai tab bar & sheet mengambang. */
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+.dark {
+  color-scheme: dark;
+  /* iOS dark asli: netral tanpa tint ungu (systemGroupedBackground dark). */
+  --bg: 10 10 12;                /* nyaris hitam, netral */
+  --surface: 28 28 30;           /* iOS secondarySystemGroupedBackground #1C1C1E */
+  --surface-2: 44 44 46;         /* iOS tertiary fill #2C2C2E */
+  --surface-elevated: 50 50 54;  /* sedikit LEBIH TERANG dari surface = "terangkat" ala iOS dark */
+  --border: 56 56 60;            /* iOS separator dark #38383A */
+  --foreground: 245 245 247;
+  --muted: 174 174 178;          /* iOS secondaryLabel dark — kontras nyaman (~7:1) */
+  --primary: 240 43 76;          /* merah sedikit lebih terang di gelap */
+  --primary-readable: 255 69 99; /* varian teks AA di atas surface dark */
+  --primary-strong: 199 25 58;
+  --primary-foreground: 255 255 255;
+  --accent: 240 43 76;
+  --role: 199 164 111;
+  --danger: 240 43 76;
+  --success: 48 209 88;
+  --warning: 255 159 10;
+
+  --glass-bg: 24 24 27 / 0.66;
+  --glass-bg-strong: 24 24 27 / 0.86;
+  --glass-border: 255 255 255 / 0.12;
+  --glass-highlight: 255 255 255 / 0.09;
+  --shadow-glass: 0 1px 1px rgb(0 0 0 / 0.3), 0 22px 54px -6px rgb(0 0 0 / 0.5),
+    inset 0 1px 0 rgb(var(--glass-highlight));
+  --shadow-glass-strong: 0 2px 2px rgb(0 0 0 / 0.35), 0 28px 64px -8px rgb(0 0 0 / 0.55),
+    inset 0 1px 0 rgb(var(--glass-highlight));
+}
+
+@layer base {
+  * {
+    border-color: rgb(var(--border));
+  }
+  body {
+    background-color: rgb(var(--bg));
+    color: rgb(var(--foreground));
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    min-height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  a,
+  button {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  /* Judul ala SF Pro: keluarga sama dengan body, berat tinggi, tracking rapat. */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    letter-spacing: -0.022em;
+  }
+
+  /* Fokus keyboard konsisten & jelas di seluruh app (tak satupun elemen boleh diam-diam
+     kehilangan indikator fokus). Mouse/tap tidak memicu ini (:focus-visible). */
+  :focus-visible {
+    outline: 2px solid rgb(var(--primary-readable));
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  /* Hormati preferensi aksesibilitas OS: kurangi gerak. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Kolom masonry ala Pinterest — dependency-free, dipakai ulang di feed & galeri. */
+  .masonry > * {
+    break-inside: avoid;
+    margin-bottom: 0.75rem;
+  }
+
+  /* ============================================================
+   * Material "Liquid Glass" — HANYA untuk lapisan navigasi/kontrol
+   * (Dynamic Island, tab bar, tombol glass, modal/sheet, search). Konten
+   * biasa memakai primitive Card, bukan material kaca.
+   * ============================================================ */
+
+  /* Dasar solid dulu (fallback tanpa backdrop-filter / reduced-transparency),
+     lalu di-progressive-enhance jadi kaca bila browser & preferensi mendukung. */
+  .glass,
+  .glass-panel,
+  .glass-button,
+  .floating-tabbar {
+    background-color: rgb(var(--surface));
+    border: 1px solid rgb(var(--border));
+  }
+
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass,
+    .glass-panel,
+    .glass-button,
+    .floating-tabbar {
+      background-color: rgb(var(--glass-bg));
+      border-color: rgb(var(--glass-border));
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .glass,
+    .glass-panel,
+    .glass-button,
+    .floating-tabbar {
+      background-color: rgb(var(--surface-elevated));
+      border-color: rgb(var(--border));
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+  }
+
+  /* Retained for existing call sites; alias of .glass-panel look-and-feel. */
+  .glass {
+    box-shadow: var(--shadow-glass);
+  }
+
+  /* Kartu/panel kaca umum (dipakai badge "Video", chip glass di atas foto, dll). */
+  .glass-panel {
+    box-shadow: var(--shadow-glass);
+  }
+
+  /* Tombol bulat kaca (ikon Cari/Lonceng/Kembali/Tutup di top bar). */
+  .glass-button {
+    box-shadow: 0 1px 1px rgb(20 20 30 / 0.04), 0 6px 16px -4px rgb(20 20 30 / 0.12);
+    transition:
+      transform var(--motion-press) ease,
+      box-shadow var(--motion-fast) ease,
+      background-color var(--motion-fast) ease;
+  }
+  .glass-button:active {
+    transform: scale(0.94);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .glass-button:hover {
+      background-color: rgb(var(--surface-2));
+    }
+    .dark .glass-button:hover {
+      background-color: rgb(var(--surface-elevated));
+    }
+  }
+
+  /* Tab bar mengambang di bawah: kaca lebih "bermassa" + safe-area iPhone. */
+  .floating-tabbar {
+    isolation: isolate;
+    border-radius: 1.75rem;
+    box-shadow: var(--shadow-glass-strong);
+  }
+  .floating-tabbar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    box-shadow:
+      inset 0 1px 0 rgb(var(--glass-highlight)),
+      inset 0 -1px 0 rgb(0 0 0 / 0.04);
+    pointer-events: none;
+  }
+
+  /*
+   * Tombol aksi utama: aksesori bulat yang menyatu dengan material tab bar,
+   * memakai aksen utama tanpa glow besar ala FAB Android.
+   * JANGAN tambahkan util Tailwind "ring" atau "shadow" di element yang
+   * sama, karena utilities Tailwind akan menimpa box-shadow custom ini
+   * (layer utilities lebih tinggi dari components). Ukuran/posisi cukup
+   * lewat util layout biasa.
+   */
+  .floating-action-button {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    background-image:
+      radial-gradient(110% 75% at 50% -10%, rgb(255 255 255 / 0.42), transparent 58%),
+      linear-gradient(160deg, rgb(var(--primary)), rgb(var(--primary-strong)));
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.3),
+      inset 0 1px 0 rgb(255 255 255 / 0.42),
+      0 5px 14px -5px rgb(0 0 0 / 0.32);
+    transition:
+      transform var(--motion-control) var(--motion-spring-bouncy),
+      box-shadow var(--motion-control) ease;
+  }
+  .floating-action-button:active {
+    transform: scale(0.9);
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.24),
+      inset 0 1px 0 rgb(255 255 255 / 0.28),
+      0 3px 9px -4px rgb(0 0 0 / 0.26);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .floating-action-button:hover {
+      transform: scale(1.035);
+      box-shadow:
+        0 0 0 1px rgb(255 255 255 / 0.38),
+        inset 0 1px 0 rgb(255 255 255 / 0.5),
+        0 6px 16px -5px rgb(0 0 0 / 0.34);
+    }
+  }
+
+  /* Sheet/modal: sedikit lebih opaque & terang dari surface biasa agar terasa "di atas". */
+  .sheet-panel {
+    background-color: rgb(var(--surface-elevated));
+    border: 1px solid rgb(var(--border));
+    box-shadow: var(--shadow-glass-strong);
+  }
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .sheet-panel {
+      background-color: rgb(var(--surface-elevated) / 0.92);
+      backdrop-filter: blur(28px) saturate(160%);
+      -webkit-backdrop-filter: blur(28px) saturate(160%);
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .sheet-panel {
+      background-color: rgb(var(--surface-elevated));
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+  }
+
+  /* Padding bawah yang menghormati home-indicator iPhone. */
+  .safe-bottom {
+    padding-bottom: calc(1rem + var(--safe-bottom));
+  }
+
+  /* Jaga chrome mengambang dari sensor housing saat iPhone diputar landscape. */
+  .safe-inline {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    padding-left: max(0.5rem, var(--safe-left));
+    padding-right: max(0.5rem, var(--safe-right));
+  }
+
+  @media (min-width: 640px) {
+    .safe-inline {
+      padding-left: max(1rem, var(--safe-left));
+      padding-right: max(1rem, var(--safe-right));
+    }
+  }
+
+  /* Gradient "Liquid Glass" untuk fallback hero / material bila belum ada foto. */
+  .liquid-gradient {
+    background-image: linear-gradient(
+      135deg,
+      #a6b1e1 0%,
+      #b8a4d4 45%,
+      #e7a5c4 100%
+    );
+  }
+  /* Sembunyikan scrollbar pada baris konten horizontal. */
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Konten hasil paste tidak boleh memperlebar viewport artikel. */
+  .article-content {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .article-content :where(p, li, h1, h2, h3, h4, h5, h6, blockquote, a, span) {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .article-content :where(img, video, iframe, svg) {
+    max-width: 100% !important;
+    height: auto;
+  }
+
+  .article-content :where(pre, table) {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .article-content pre {
+    white-space: pre-wrap;
+  }
+
+}
+
+/* Windows High Contrast: pertahankan struktur kontrol tanpa bergantung pada efek kaca. */
+@media (forced-colors: active) {
+  .glass,
+  .sheet-panel {
+    border-color: CanvasText;
+    background: Canvas;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .floating-action-button,
+  .tab-active-pill,
+  .segmented-pill {
+    border-color: Highlight;
+    background: Highlight;
+    color: HighlightText;
+    box-shadow: none;
+  }
+}
