@@ -107,9 +107,6 @@ Untuk database yang sudah ada, jalankan file dalam
 `supabase/migrations/` sesuai urutan nama. Simpan backup database sebelum
 menerapkan migrasi produksi.
 
-Sebelum deploy versi ini ke database lama, wajib jalankan
-`20260715_security_hardening.sql`, `20260715_web_media_formats.sql`, lalu
-`20260716_member_slug_integrity.sql`.
 Migrasi pertama menambahkan rate limit
 atomik, tracking atomik, pembatasan kolom publik, owner tunggal, dan pencegahan
 replay finalisasi media. Bila ada owner atau URL media duplikat, migrasi berhenti
