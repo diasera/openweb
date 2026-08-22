@@ -31,8 +31,10 @@ export function Hero({
     imageHeight,
     UPLOAD_LIMITS.mediaMaxDimension,
   );
+  // Tier lebar mengikuti kolom PageShell: <lg padding 1rem/sisi, md tutup
+  // max-w-4xl, lg max-w-5xl + padding 1.5rem.
   const sizes =
-    "(max-width: 671px) calc(100vw - 2rem), (max-width: 1023px) 640px, 976px";
+    "(max-width: 1023px) min(calc(100vw - 2rem), 896px), 976px";
   const imageRatio = dimensions
     ? dimensions.width / dimensions.height
     : null;
