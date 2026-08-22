@@ -1,9 +1,10 @@
-import { Eye, Bell } from "lucide-react";
+import { Eye, Bell, Smartphone } from "lucide-react";
 import { requireFeature } from "@/lib/auth";
 import { buildAdminPageMetadata } from "@/lib/seo";
 import {
   getVisitors,
   getBellCount,
+  getPushDeviceCount,
   getSentNotifications,
 } from "@/lib/admin/visitors";
 import { deviceLabel } from "@/lib/utils/request";
@@ -27,9 +28,10 @@ export const metadata = buildAdminPageMetadata("Pengunjung");
 
 export default async function PengunjungPage() {
   await requireFeature("pengunjung");
-  const [visitors, bellCount, notifications] = await Promise.all([
+  const [visitors, bellCount, pushCount, notifications] = await Promise.all([
     getVisitors(),
     getBellCount(),
+    getPushDeviceCount(),
     getSentNotifications(),
   ]);
 
@@ -40,7 +42,7 @@ export default async function PengunjungPage() {
         description="Pantau audiens, kirim notifikasi, dan batasi interaksi IP. IP yang diblokir tetap dapat membuka website."
       />
 
-      <div className="mb-5 grid gap-3 sm:grid-cols-2">
+      <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
           label="Total pengunjung"
           value={visitors.length}
@@ -51,12 +53,20 @@ export default async function PengunjungPage() {
           value={bellCount}
           icon={<Bell className="h-5 w-5" />}
         />
+        <StatCard
+          label="Perangkat push"
+          value={pushCount}
+          icon={<Smartphone className="h-5 w-5" />}
+        />
       </div>
 
       <Card className="mb-6 p-5">
         <h2 className="font-display text-lg font-bold">Kirim Notifikasi</h2>
         <p className="text-muted mb-4 mt-0.5 text-sm">
-          Terlihat oleh {bellCount} pengunjung yang menyalakan lonceng.
+          Terlihat oleh {bellCount} pengunjung yang menyalakan lonceng
+          {pushCount > 0
+            ? ` dan terkirim langsung ke ${pushCount} perangkat.`
+            : "."}
         </p>
         <NotificationComposer />
       </Card>

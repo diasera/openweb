@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import type { VisitorRow, NotificationRow } from "@/lib/types/database";
 import { getBlockedIpSet } from "@/lib/admin/ip-bans";
+import { countPushSubscriptions } from "@/lib/push/subscriptions";
 
 export type AdminVisitorRow = VisitorRow & { is_banned: boolean };
 
@@ -43,4 +44,9 @@ export async function getBellCount(): Promise<number> {
     .select("id", { count: "exact", head: true })
     .eq("notifications_enabled", true);
   return count ?? 0;
+}
+
+/** Jumlah perangkat yang terhubung ke kanal Web Push. */
+export async function getPushDeviceCount(): Promise<number> {
+  return countPushSubscriptions();
 }

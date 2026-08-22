@@ -177,6 +177,22 @@ export type NotificationRow = {
   created_at: string;
 }
 
+export type PushSubscriptionRow = {
+  id: string;
+  visitor_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  user_agent: string | null;
+  created_at: string;
+}
+
+export type MessageLikeRow = {
+  message_id: string;
+  visitor_id: string;
+  created_at: string;
+}
+
 export type BlogPostRow = {
   id: string;
   title: string;
@@ -269,6 +285,8 @@ export interface Database {
       messages: TableShape<MessageRow>;
       visitors: TableShape<VisitorRow>;
       notifications: TableShape<NotificationRow>;
+      push_subscriptions: TableShape<PushSubscriptionRow>;
+      message_likes: TableShape<MessageLikeRow>;
       blog_posts: TableShape<BlogPostRow>;
       banned_ips: TableShape<BannedIpRow>;
       comments: TableShape<CommentRow>;

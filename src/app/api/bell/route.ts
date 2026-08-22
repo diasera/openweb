@@ -11,8 +11,10 @@ import {
   RATE_LIMITS,
   requestRateLimitIdentity,
 } from "@/lib/security/rate-limit";
+import { removePushSubscriptionsByVisitor } from "@/lib/push/subscriptions";
 
-/** POST /api/bell — nyalakan/matikan langganan notifikasi (lonceng). */
+/** POST /api/bell — nyalakan/matikan langganan notifikasi (lonceng).
+ *  Mematikan lonceng sekaligus melepas semua perangkat push pengunjung. */
 export async function POST(req: Request) {
   const prerequisite = mutationPrerequisiteResponse(req);
   if (prerequisite) return prerequisite;
@@ -35,6 +37,9 @@ export async function POST(req: Request) {
   const result = await setBell(vid, enabled, req.headers);
   if (result.error) {
     return NextResponse.json({ error: result.error }, { status: 500 });
+  }
+  if (!enabled) {
+    await removePushSubscriptionsByVisitor(vid);
   }
   return NextResponse.json({ ok: true, enabled });
 }

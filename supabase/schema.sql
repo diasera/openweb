@@ -438,6 +438,16 @@ create table if not exists public.messages (
 );
 create index if not exists messages_created_idx on public.messages (created_at desc);
 
+-- ---- message_likes (dedup like per pengunjung, sisi server) ----------------
+-- Penegak "1 like per pengunjung per pesan" di database; kolom messages.likes
+-- tetap menjadi hitungan tampilan yang diinkremen setelah insert berhasil.
+create table if not exists public.message_likes (
+  message_id uuid not null references public.messages(id) on delete cascade,
+  visitor_id text not null,
+  created_at timestamptz not null default now(),
+  primary key (message_id, visitor_id)
+);
+
 -- ---- visitors (pengunjung) -------------------------------------------------
 create table if not exists public.visitors (
   id uuid primary key default gen_random_uuid(),
@@ -464,6 +474,21 @@ create table if not exists public.notifications (
   created_at timestamptz not null default now()
 );
 create index if not exists notifications_created_idx on public.notifications (created_at desc);
+
+-- ---- push_subscriptions (kanal Web Push per perangkat) ---------------------
+-- Satu pengunjung bisa punya banyak perangkat; endpoint unik agar upsert
+-- aman saat langganan diperbarui browser (pushsubscriptionchange).
+create table if not exists public.push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  visitor_id text not null,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  user_agent text,
+  created_at timestamptz not null default now()
+);
+create index if not exists push_subscriptions_visitor_idx
+  on public.push_subscriptions (visitor_id);
 
 -- ---- blog_posts ------------------------------------------------------------
 create table if not exists public.blog_posts (
@@ -701,6 +726,8 @@ alter table public.media         enable row level security;
 alter table public.messages      enable row level security;
 alter table public.visitors      enable row level security;
 alter table public.notifications enable row level security;
+alter table public.push_subscriptions enable row level security;
+alter table public.message_likes enable row level security;
 alter table public.blog_posts    enable row level security;
 alter table public.banned_ips    enable row level security;
 alter table public.comments      enable row level security;

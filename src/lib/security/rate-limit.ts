@@ -25,6 +25,12 @@ export const RATE_LIMITS = {
     windowSeconds: 60 * 60,
   },
   bell: { scope: "public:bell", limit: 30, windowSeconds: 60 * 60 },
+  pushSubscribe: {
+    scope: "public:push-subscribe",
+    limit: 20,
+    windowSeconds: 60 * 60,
+  },
+  search: { scope: "public:search", limit: 90, windowSeconds: 5 * 60 },
   trackVisitor: {
     scope: "public:track-visitor",
     limit: 60,

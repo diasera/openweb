@@ -11,6 +11,7 @@ import {
   type ActionResult,
 } from "@/lib/action-result";
 import { normalizeNotificationHref } from "@/lib/utils/url";
+import { dispatchPushNotification } from "@/lib/push/send";
 
 const notifSchema = z.object({
   title: z.string().trim().min(1, "Judul wajib diisi").max(120),
@@ -53,6 +54,21 @@ export async function sendNotification(
       .maybeSingle(),
   );
   if (!sent.ok) return { error: sent.error };
+
+  // Notifikasi tersimpan — kirim push ke semua perangkat (best-effort;
+  // kegagalan kirim tidak membatalkan notifikasi yang sudah terekam).
+  try {
+    await dispatchPushNotification({
+      title: parsed.data.title,
+      body: parsed.data.body || null,
+      url: normalizeNotificationHref(parsed.data.url),
+    });
+  } catch (error) {
+    console.error("[push:dispatch] gagal mengirim push", {
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+
   revalidatePath("/profil/pengunjung");
   revalidatePath("/notifikasi");
   return {};
