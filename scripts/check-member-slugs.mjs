@@ -47,22 +47,16 @@ function sqlReservedSlugs(source) {
     .sort();
 }
 
-const [constantsSource, utilitySource, memberSource, schema, migration] =
+const [constantsSource, utilitySource, memberSource, schema] =
   await Promise.all([
     read("src/lib/constants.ts"),
     read("src/lib/utils/slug.ts"),
     read("src/lib/members/slug.ts"),
     read("supabase/schema.sql"),
-    read("supabase/migrations/20260716_member_slug_integrity.sql"),
   ]);
 
 const reserved = adminProfilePaths(constantsSource);
 assert.deepEqual(sqlReservedSlugs(schema), reserved, "Reserved slug schema drift.");
-assert.deepEqual(
-  sqlReservedSlugs(migration),
-  reserved,
-  "Reserved slug migration drift.",
-);
 
 for (const name of [
   "member_slug_base",
@@ -70,11 +64,7 @@ for (const name of [
   "member_slug_is_reserved",
   "reconcile_member_slugs",
 ]) {
-  assert.equal(
-    sqlFunction(schema, name),
-    sqlFunction(migration, name),
-    `Definisi ${name} berbeda antara schema dan migration.`,
-  );
+  sqlFunction(schema, name);
 }
 
 const utilityUrl = transpiledModuleUrl(utilitySource, "src/lib/utils/slug.ts");

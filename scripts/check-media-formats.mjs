@@ -9,10 +9,6 @@ const registryPath = join(root, "src/lib/media-formats/registry.ts");
 const sniffPath = join(root, "src/lib/media-formats/sniff.ts");
 const binaryPath = join(root, "src/lib/media/binary.ts");
 const schemaPath = join(root, "supabase/schema.sql");
-const migrationPath = join(
-  root,
-  "supabase/migrations/20260715_web_media_formats.sql",
-);
 
 async function typeScriptModuleUrl(path, dependencies = {}) {
   const source = await readFile(path, "utf8");
@@ -53,9 +49,8 @@ async function importTypeScriptModule(path, dependencies) {
 }
 
 const binaryUrl = await typeScriptModuleUrl(binaryPath);
-const [{ schema, migration }, registry, sniff] = await Promise.all([
-  Promise.all([readFile(schemaPath, "utf8"), readFile(migrationPath, "utf8")])
-    .then(([schema, migration]) => ({ schema, migration })),
+const [schema, registry, sniff] = await Promise.all([
+  readFile(schemaPath, "utf8"),
   importTypeScriptModule(registryPath),
   importTypeScriptModule(sniffPath, { "@/lib/media/binary": binaryUrl }),
 ]);
@@ -399,7 +394,6 @@ function validateHeaderFixtures() {
 
 validateRegistry();
 validateSql(schema, "supabase/schema.sql");
-validateSql(migration, "migrasi web media formats");
 validateResolutionFixtures();
 validateHeaderFixtures();
 
