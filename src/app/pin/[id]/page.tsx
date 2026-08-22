@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { getMediaById, getComments, getSettings } from "@/lib/data";
+import { getApprovedMedia, getComments, getMediaById, getSettings } from "@/lib/data";
 import { PageShell } from "@/components/public/page-shell";
 import { ShareButton, SaveButton } from "@/components/public/share-save";
-import { CommentComposer } from "@/components/public/comment-composer";
+import { PinComments } from "@/components/public/pin-comments";
+import { MediaCard } from "@/components/public/media-card";
 import { Avatar } from "@/components/ui/avatar";
 import { Chip } from "@/components/ui/chip";
+import { staggerDelay } from "@/components/motion";
 import {
   MEDIA_ASPECT_LIMITS,
   mediaDisplayAspectRatio,
@@ -21,6 +23,8 @@ import {
 } from "@/lib/seo/structured-data";
 
 export const revalidate = 30;
+
+const RELATED_LIMIT = 6;
 
 export async function generateMetadata({
   params,
@@ -44,6 +48,18 @@ export async function generateMetadata({
   });
 }
 
+/** Pin lain: utamakan kategori sama, sisanya diisi yang terbaru. */
+function pickRelatedMedia(
+  pool: Awaited<ReturnType<typeof getApprovedMedia>>,
+  currentId: string,
+  category: string | null,
+) {
+  const others = pool.filter((item) => item.id !== currentId);
+  const sameCategory = others.filter((item) => item.category === category);
+  const fallback = others.filter((item) => item.category !== category);
+  return [...sameCategory, ...fallback].slice(0, RELATED_LIMIT);
+}
+
 export default async function PinPage({
   params,
 }: {
@@ -55,8 +71,12 @@ export default async function PinPage({
     getSettings(),
   ]);
   if (!media) notFound();
-  const comments = await getComments(media.id);
+  const [comments, recentMedia] = await Promise.all([
+    getComments(media.id),
+    getApprovedMedia({ limit: 30 }),
+  ]);
   const mediaSchema = mediaStructuredData(settings, media);
+  const related = pickRelatedMedia(recentMedia, media.id, media.category);
 
   const ratio = mediaDisplayAspectRatio(
     media.width,
@@ -95,7 +115,7 @@ export default async function PinPage({
       <div className="mx-auto max-w-lg">
         <div
           className="rounded-ios-lg bg-surface-2 relative w-full overflow-hidden"
-          style={{ aspectRatio: ratio }}
+          style={{ aspectRatio: ratio, viewTransitionName: `pin-${media.id}` }}
         >
           {media.type === "video" && media.url ? (
             <video
@@ -145,35 +165,31 @@ export default async function PinPage({
           <p className="text-muted mt-2 text-sm leading-relaxed">{media.caption}</p>
         )}
 
-        <div className="mt-6">
-          <h2 className="font-display mb-3 font-bold">
-            Komentar <span className="text-muted font-normal">{comments.length}</span>
+        <PinComments
+          mediaId={media.id}
+          allowComments={media.allow_comments}
+          initialComments={comments}
+        />
+      </div>
+
+      {related.length > 0 && (
+        <section aria-label="Pin lainnya" className="mx-auto mt-8 w-full max-w-5xl">
+          <h2 className="font-display mb-3 text-lg font-bold">
+            Pin Lainnya
           </h2>
-          <div className="space-y-3">
-            {comments.map((c) => (
-              <div key={c.id} className="flex gap-2.5">
-                <Avatar name={c.author_name || "Anonim"} size={32} />
-                <div className="min-w-0">
-                  <p className="text-sm">
-                    <span className="font-semibold">{c.author_name || "Anonim"}</span>{" "}
-                    <span className="text-muted text-xs">{timeAgo(c.created_at)}</span>
-                  </p>
-                  <p className="text-sm">{c.content}</p>
-                </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {related.map((item, index) => (
+              <div
+                key={item.id}
+                className="animate-rise"
+                style={{ animationDelay: staggerDelay(index) }}
+              >
+                <MediaCard media={item} />
               </div>
             ))}
-            {comments.length === 0 && (
-              <p className="text-muted text-sm">Belum ada komentar. Jadilah yang pertama!</p>
-            )}
           </div>
-
-          {media.allow_comments && (
-            <div className="mt-4">
-              <CommentComposer mediaId={media.id} />
-            </div>
-          )}
-        </div>
-      </div>
+        </section>
+      )}
     </PageShell>
   );
 }
