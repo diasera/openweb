@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { cn } from "@/lib/utils/cn";
 import { Bell, ChevronLeft, Search, X } from "lucide-react";
 import { ThemeToggle } from "@/components/public/theme-toggle";
 import { MusicQuickButton } from "@/components/public/music";
@@ -10,37 +11,71 @@ import {
   iconButtonClass,
 } from "@/components/ui/icon-button";
 import type { IslandRouteConfig } from "../dynamic-island.types";
+import styles from "../dynamic-island.module.css";
 
-export function RouteView({ config }: { config: IslandRouteConfig }) {
+function ExpandTrigger({
+  onExpand,
+  children,
+  className,
+  label,
+}: {
+  onExpand: () => void;
+  children: React.ReactNode;
+  className?: string;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onExpand}
+      aria-haspopup="dialog"
+      aria-label={label}
+      title={label}
+      className={cn(styles.expandTrigger, className)}
+    >
+      {children}
+    </button>
+  );
+}
+
+export function RouteView({
+  config,
+  onExpand,
+}: {
+  config: IslandRouteConfig;
+  onExpand: () => void;
+}) {
   const { goBack } = useAppMotion();
 
   if (config.variant === "main") {
     return (
-      <div className="flex h-full items-center justify-between pl-2.5 pr-2">
-        <MotionLink
-          href="/"
-          prefetch={false}
-          className="motion-pressable flex min-w-0 items-center gap-2.5"
+      <div className="flex h-full items-center justify-between pl-1.5 pr-1.5">
+        <ExpandTrigger
+          onExpand={onExpand}
+          label="Buka panel cepat"
+          className="motion-pressable flex min-w-0 items-center gap-2"
         >
           {config.logoUrl ? (
             <Image
               src={config.logoUrl}
               alt={config.siteName}
-              width={36}
-              height={36}
-              className="h-9 w-9 shrink-0 rounded-full object-cover"
+              width={32}
+              height={32}
+              className="h-8 w-8 shrink-0 rounded-full object-cover"
             />
           ) : (
-            <span className="bg-primary grid h-9 w-9 shrink-0 place-items-center rounded-full text-base font-bold text-white">
+            <span className="bg-foreground/10 grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold">
               {config.siteName.charAt(0).toUpperCase()}
             </span>
           )}
-          <span className="font-display truncate text-lg font-bold">
+          <span className="font-display truncate text-[15px] font-bold tracking-tight">
             {config.siteName}
           </span>
-        </MotionLink>
+        </ExpandTrigger>
 
-        <nav className="flex shrink-0 items-center gap-1">
+        <span className={styles.lens} aria-hidden="true" />
+
+        <nav className="flex shrink-0 items-center gap-0.5">
           <MusicQuickButton />
           <MotionLink
             href="/galeri"
@@ -65,7 +100,7 @@ export function RouteView({ config }: { config: IslandRouteConfig }) {
 
   if (config.variant === "sub") {
     return (
-      <div className="flex h-full items-center gap-2 pl-2 pr-2.5 lg:px-3">
+      <div className="flex h-full items-center gap-2 pl-1.5 pr-2">
         <IconButton
           onClick={() => goBack(config.backHref ?? "/")}
           aria-label={config.close ? "Tutup" : "Kembali"}
@@ -77,9 +112,13 @@ export function RouteView({ config }: { config: IslandRouteConfig }) {
             <ChevronLeft className="h-5 w-5" />
           )}
         </IconButton>
-        <h1 className="font-display flex-1 truncate text-center text-base font-bold">
+        <ExpandTrigger
+          onExpand={onExpand}
+          label="Buka panel cepat"
+          className="font-display block min-w-0 flex-1 truncate text-center text-[15px] font-bold tracking-tight"
+        >
           {config.title}
-        </h1>
+        </ExpandTrigger>
         <div className="flex min-w-9 shrink-0 items-center justify-end gap-1">
           {config.right}
           <MusicQuickButton />
@@ -89,9 +128,15 @@ export function RouteView({ config }: { config: IslandRouteConfig }) {
   }
 
   return (
-    <div className="flex h-full items-center justify-between px-4 lg:px-6">
-      <h1 className="font-display truncate text-lg font-bold">{config.title}</h1>
-      <div className="flex shrink-0 items-center gap-1">
+    <div className="flex h-full items-center justify-between pl-3 pr-1.5">
+      <ExpandTrigger
+        onExpand={onExpand}
+        label="Buka panel cepat"
+        className="font-display truncate text-[15px] font-bold tracking-tight"
+      >
+        {config.title}
+      </ExpandTrigger>
+      <div className="flex shrink-0 items-center gap-0.5">
         {config.right}
         <MusicQuickButton />
         <ThemeToggle />

@@ -6,6 +6,9 @@ import { initials, mutedAvatarColors } from "@/lib/utils/color";
  * Avatar bulat: latar warna muted solid + inisial putih (fallback), atau foto.
  * `ring` = cincin aksen untuk menandai anggota inti.
  * Dipakai ulang di direktori, Tentang, Profil, pesan/komentar, dan admin.
+ *
+ * `sizeClassName`/`initialsClassName` menggantikan dimensi inline ketika avatar
+ * perlu responsif (mis. lebih kecil di ponsel): kelas menang atas `size`.
  */
 export function Avatar({
   src,
@@ -13,20 +16,26 @@ export function Avatar({
   size = 54,
   ring = false,
   className,
+  sizeClassName,
+  initialsClassName,
 }: {
   src?: string | null;
   name: string;
   size?: number;
   ring?: boolean;
   className?: string;
+  sizeClassName?: string;
+  initialsClassName?: string;
 }) {
   const colors = mutedAvatarColors(name);
   const inner = (
     <div
-      className="relative overflow-hidden rounded-full"
+      className={cn(
+        "relative overflow-hidden rounded-full",
+        sizeClassName ?? "h-auto w-auto",
+      )}
       style={{
-        width: size,
-        height: size,
+        ...(sizeClassName ? undefined : { width: size, height: size }),
         backgroundColor: colors.background,
         color: colors.foreground,
       }}
@@ -35,8 +44,11 @@ export function Avatar({
         <Image src={src} alt={name} fill sizes={`${size}px`} className="object-cover" />
       ) : (
         <div
-          className="flex h-full w-full items-center justify-center font-semibold"
-          style={{ fontSize: Math.round(size * 0.4) }}
+          className={cn(
+            "flex h-full w-full items-center justify-center font-semibold",
+            initialsClassName,
+          )}
+          style={initialsClassName ? undefined : { fontSize: Math.round(size * 0.4) }}
         >
           {initials(name)}
         </div>

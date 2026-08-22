@@ -16,24 +16,24 @@
 }
 
 html {
-  scroll-padding-top: calc(4.25rem + var(--safe-top));
+  scroll-padding-top: calc(3.75rem + var(--safe-top));
 }
 
 .page-shell {
-  min-height: calc(100vh - 4.25rem - var(--safe-top));
-  min-height: calc(100dvh - 4.25rem - var(--safe-top));
-  scroll-margin-top: calc(4.25rem + var(--safe-top));
+  min-height: calc(100vh - 3.75rem - var(--safe-top));
+  min-height: calc(100dvh - 3.75rem - var(--safe-top));
+  scroll-margin-top: calc(3.75rem + var(--safe-top));
 }
 
 @media (min-width: 1024px) {
   html {
-    scroll-padding-top: calc(5rem + var(--safe-top));
+    scroll-padding-top: calc(4.25rem + var(--safe-top));
   }
 
   .page-shell {
-    min-height: calc(100vh - 5rem - var(--safe-top));
-    min-height: calc(100dvh - 5rem - var(--safe-top));
-    scroll-margin-top: calc(5rem + var(--safe-top));
+    min-height: calc(100vh - 4.25rem - var(--safe-top));
+    min-height: calc(100dvh - 4.25rem - var(--safe-top));
+    scroll-margin-top: calc(4.25rem + var(--safe-top));
   }
 }
 

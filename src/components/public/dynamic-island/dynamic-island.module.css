@@ -16,14 +16,15 @@
   --island-morph-curve: cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   width: 100%;
-  height: 3.5rem;
+  height: 2.75rem;
   overflow: hidden;
   isolation: isolate;
   contain: paint;
-  border: 1px solid rgb(var(--border));
+  color: rgb(var(--foreground));
+  border: 1px solid rgb(var(--glass-border));
   border-radius: 1.75rem;
-  background-color: rgb(var(--surface));
-  box-shadow: var(--shadow-glass);
+  background: rgb(var(--surface-elevated));
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.18);
   transform: translateZ(0);
   transform-origin: top center;
   pointer-events: auto;
@@ -31,9 +32,31 @@
     max-width var(--island-morph-duration) var(--island-morph-curve),
     height var(--island-morph-duration) var(--island-morph-curve),
     border-radius 440ms var(--island-morph-curve),
-    border-color var(--motion-fast) ease-out,
     background-color var(--motion-fast) ease-out,
     box-shadow 360ms ease-out;
+}
+
+/* Material kaca mengikuti tema: pekat di gelap, bening-terang di terang. */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .shell {
+    background: rgb(var(--glass-bg));
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .shell {
+    background: rgb(var(--surface-elevated));
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* Ekspansi pakai spring overshoot agar terasa "live" seperti island iOS. */
+.shell[data-island-view="expandedRoute"] {
+  --island-morph-duration: 520ms;
+  --island-morph-curve: var(--motion-spring-bouncy);
 }
 
 .shell[data-island-phase="out"],
@@ -42,16 +65,12 @@
 }
 
 .route {
-  max-width: 42rem;
+  max-width: 34rem;
 }
 
 .activity {
   max-width: 25.5rem;
-  color: white;
-  border-color: transparent;
-  border-radius: 2.75rem;
-  background: #000;
-  box-shadow: 0 12px 32px rgb(0 0 0 / 0.22);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.16);
 }
 
 .noticeActivity {
@@ -59,7 +78,68 @@
 }
 
 .musicActivity {
-  height: 10rem;
+  height: 11rem;
+}
+
+/* Kartu quick panel hasil tap island — proporsi Live Activity iOS. */
+.expandedRoute {
+  max-width: min(92vw, 23rem);
+  height: 21.5rem;
+  border-radius: 2.25rem;
+}
+
+/* Penangkap klik luar untuk menutup panel; murni fungsional. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: transparent;
+}
+
+/* Titik lensa dekoratif di rongga tengah island, khas iPhone. */
+.lens {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  border: 1px solid rgb(var(--border));
+  border-radius: 999px;
+  background: rgb(var(--bg));
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* Pemicu tap pada island: seluruh area brand/judul membuka quick panel. */
+.expandTrigger {
+  border: 0;
+  border-radius: 999px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color var(--motion-fast) ease-out;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.expandTrigger:active {
+  background-color: rgb(var(--foreground) / 0.1);
+}
+
+/* Kontrol ikon di dalam island: mengikuti token tema, tanpa glass ganda. */
+.route :global(.glass-button),
+.expandedRoute :global(.glass-button) {
+  border: 0;
+  color: rgb(var(--foreground));
+  background-color: rgb(var(--surface-2));
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .route :global(.glass-button):hover,
+  .expandedRoute :global(.glass-button):hover {
+    background-color: rgb(var(--border));
+  }
 }
 
 .content {
@@ -69,7 +149,7 @@
 }
 
 .activity :global(.text-muted) {
-  color: rgb(174 174 178);
+  color: rgb(var(--muted));
 }
 
 .contentOut {
@@ -116,34 +196,49 @@
   height: 100%;
   flex-direction: column;
   padding: 0.75rem 1rem 0.5rem;
-  color: white;
+  color: rgb(var(--foreground));
 }
 
 .musicHeader {
+  position: relative;
   display: flex;
   min-width: 0;
-  height: 3.125rem;
+  height: 4.25rem;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.875rem;
 }
 
 .musicArtwork {
   position: relative;
   display: grid;
-  width: 3.125rem;
-  height: 3.125rem;
+  width: 4.25rem;
+  height: 4.25rem;
   flex: 0 0 auto;
   place-items: center;
   overflow: hidden;
-  border-radius: 0.875rem;
-  color: white;
+  border-radius: 1.125rem;
+  color: #fff;
   background:
     radial-gradient(circle at 74% 22%, rgb(255 159 10 / 0.96), transparent 34%),
     radial-gradient(circle at 20% 78%, rgb(10 132 255 / 0.92), transparent 46%),
     linear-gradient(145deg, #ff2d55, #af52de 56%, #5e5ce6);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.24),
-    0 5px 14px rgb(0 0 0 / 0.42);
+    0 8px 26px rgb(0 0 0 / 0.55);
+}
+
+.musicArtwork::before {
+  position: absolute;
+  inset: -40%;
+  content: "";
+  pointer-events: none;
+  background: radial-gradient(
+    closest-side,
+    rgb(175 82 222 / 0.4),
+    transparent 70%
+  );
+  filter: blur(18px);
+  z-index: -1;
 }
 
 .musicArtwork::after {
@@ -184,7 +279,7 @@
 
 .musicArtist {
   margin-top: 0.0625rem;
-  color: rgb(174 174 178);
+  color: rgb(var(--muted));
   font-size: 0.75rem;
   font-weight: 500;
   line-height: 1rem;
@@ -194,6 +289,28 @@
   flex: 0 0 auto;
   color: #ff375f;
   filter: drop-shadow(0 0 6px rgb(255 55 95 / 0.32));
+}
+
+.musicClose {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  color: rgb(var(--muted));
+  background: transparent;
+  cursor: pointer;
+  transition:
+    color var(--motion-fast) ease-out,
+    background-color var(--motion-fast) ease-out;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.musicClose:hover {
+  color: rgb(var(--foreground));
+  background-color: rgb(var(--surface-2));
 }
 
 .musicTimeline {
@@ -207,7 +324,7 @@
 }
 
 .musicTime {
-  color: rgb(142 142 147);
+  color: rgb(var(--muted));
   font-size: 0.625rem;
   font-variant-numeric: tabular-nums;
   line-height: 1;
@@ -241,8 +358,8 @@
   border-radius: 999px;
   background: linear-gradient(
     to right,
-    white 0 var(--music-progress),
-    rgb(99 99 102) var(--music-progress) 100%
+    rgb(var(--foreground)) 0 var(--music-progress),
+    rgb(var(--border)) var(--music-progress) 100%
   );
 }
 
@@ -254,8 +371,8 @@
   -webkit-appearance: none;
   border: 0;
   border-radius: 999px;
-  background: white;
-  box-shadow: 0 1px 4px rgb(0 0 0 / 0.48);
+  background: rgb(var(--foreground));
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.28);
   transition: transform var(--motion-press) ease-out;
 }
 
@@ -267,13 +384,13 @@
   height: 0.1875rem;
   border: 0;
   border-radius: 999px;
-  background: rgb(99 99 102);
+  background: rgb(var(--border));
 }
 
 .musicProgress::-moz-range-progress {
   height: 0.1875rem;
   border-radius: 999px;
-  background: white;
+  background: rgb(var(--foreground));
 }
 
 .musicProgress::-moz-range-thumb {
@@ -281,8 +398,8 @@
   height: 0.625rem;
   border: 0;
   border-radius: 999px;
-  background: white;
-  box-shadow: 0 1px 4px rgb(0 0 0 / 0.48);
+  background: rgb(var(--foreground));
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.28);
 }
 
 .musicTransport {
@@ -301,7 +418,7 @@
   place-items: center;
   border: 0;
   border-radius: 999px;
-  color: white;
+  color: rgb(var(--foreground));
   background: transparent;
   cursor: pointer;
   transition:
@@ -318,7 +435,7 @@
 
 .musicControl:active {
   transform: scale(0.84);
-  background: rgb(255 255 255 / 0.12);
+  background: rgb(var(--foreground) / 0.1);
 }
 
 .musicControl:disabled {
@@ -334,33 +451,78 @@
 
 @media (hover: hover) and (pointer: fine) {
   .musicControl:not(:disabled):hover {
-    background: rgb(255 255 255 / 0.1);
+    background: rgb(var(--foreground) / 0.08);
   }
 }
 
-@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .shell {
-    border-color: rgb(var(--glass-border));
-    background-color: rgb(var(--glass-bg));
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
-  }
+/* ---- Quick panel (expandedRoute) -------------------------------------- */
 
-  .activity {
-    border-color: transparent;
-    background: #000;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
+.panel {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  padding: 1rem;
+  color: rgb(var(--foreground));
 }
 
-@media (prefers-reduced-transparency: reduce) {
-  .route {
-    border-color: rgb(var(--border));
-    background-color: rgb(var(--surface-elevated));
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
+.panelHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.375rem 0.375rem 0.875rem;
+}
+
+.panelBrand {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.panelTagline {
+  margin-top: 0.125rem;
+  max-width: 14rem;
+  overflow: hidden;
+  color: rgb(var(--muted));
+  font-size: 0.75rem;
+  line-height: 1.1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panelGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  padding: 0 0.125rem;
+}
+
+.panelLink {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  border-radius: 1.25rem;
+  padding: 0.7rem 0.95rem;
+  color: rgb(var(--foreground));
+  font-size: 0.9rem;
+  font-weight: 600;
+  background-color: rgb(var(--surface-2));
+  transition: background-color var(--motion-fast) ease-out;
+}
+
+.panelLink:hover {
+  background-color: rgb(var(--border));
+}
+
+.panelLinkActive {
+  background-color: rgb(var(--foreground) / 0.14);
+}
+
+.panelControls {
+  display: flex;
+  justify-content: space-around;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgb(var(--border));
 }
 
 @media (min-width: 1024px) {
@@ -371,11 +533,11 @@
   }
 
   .shell {
-    height: 4rem;
+    height: 3rem;
   }
 
   .route {
-    max-width: 64rem;
+    max-width: 36rem;
   }
 
   .activity {
@@ -387,7 +549,11 @@
   }
 
   .musicActivity {
-    height: 10rem;
+    height: 11rem;
+  }
+
+  .lens {
+    display: none;
   }
 }
 

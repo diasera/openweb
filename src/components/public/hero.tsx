@@ -14,11 +14,9 @@ export interface HeroProps {
 }
 
 /**
- * Hero intrinsik tanpa crop.
- *
- * Desktop mempertahankan komposisi overlay. Pada layar kecil, informasi
- * mengalir setelah media agar judul, subjudul, dan badge tidak menutupi wajah
- * pada foto portrait, panorama, maupun rasio ekstrem.
+ * Hero intrinsik tanpa crop. Judul, subjudul, dan badge selalu menumpuk di
+ * atas gambar (bermanding gradasi gelap) di semua ukuran layar; tier panorama
+ * mengecilkan teks agar tidak memenuhi foto yang sangat lonjong.
  */
 export function Hero({
   title,
@@ -83,25 +81,23 @@ export function Hero({
           <div className="liquid-gradient absolute inset-0" />
         )}
 
-        <div className="pointer-events-none absolute inset-0 hidden bg-gradient-to-t from-black/70 via-black/15 to-black/5 sm:block" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-black/5" />
       </div>
 
       {badge && (
         <div
           className={cn(
-            "relative mx-4 mt-4 w-fit max-w-[calc(100%_-_2rem)] sm:absolute sm:left-4 sm:top-4 sm:m-0",
-            compactPanorama && "mt-3 sm:left-4 sm:top-4 sm:mt-0",
-            ultraWidePanorama && "mt-2.5 sm:left-4 sm:top-4 sm:mt-0",
-            extremePanorama && "mt-2 sm:left-3 sm:top-3 sm:mt-0",
+            "absolute left-4 top-4 w-fit max-w-[calc(100%_-_2rem)]",
+            extremePanorama && "left-3 top-3",
           )}
         >
           <Chip
             variant="glass"
             className={cn(
               "max-w-full truncate",
-              compactPanorama && "sm:px-3 sm:py-1 sm:text-xs",
-              ultraWidePanorama && "sm:text-[10px]",
-              extremePanorama && "sm:px-2 sm:py-0.5 sm:text-[11px]",
+              compactPanorama && "px-3 py-1 text-xs",
+              ultraWidePanorama && "text-[10px]",
+              extremePanorama && "px-2 py-0.5 text-[11px]",
             )}
           >
             {badge}
@@ -112,19 +108,16 @@ export function Hero({
       <div
         data-hero-copy
         className={cn(
-          "relative px-4 pb-4 pt-3 text-foreground sm:absolute sm:inset-x-4 sm:bottom-4 sm:p-0 sm:text-white",
-          !badge && "pt-4",
-          compactPanorama && "sm:inset-x-4 sm:bottom-4",
-          ultraWidePanorama && "sm:inset-x-4 sm:bottom-4",
-          extremePanorama && "sm:inset-x-3 sm:bottom-3",
+          "absolute inset-x-4 bottom-4 text-white",
+          extremePanorama && "inset-x-3 bottom-3",
         )}
       >
         <h1
           className={cn(
-            "font-display text-2xl font-bold leading-tight [overflow-wrap:anywhere] sm:text-3xl sm:drop-shadow-sm",
-            compactPanorama && "sm:line-clamp-1 sm:text-2xl",
-            ultraWidePanorama && "sm:text-2xl",
-            extremePanorama && "sm:text-lg",
+            "font-display text-2xl font-bold leading-tight drop-shadow-sm [overflow-wrap:anywhere] sm:text-3xl",
+            compactPanorama && "line-clamp-1",
+            ultraWidePanorama && "line-clamp-1 sm:text-2xl",
+            extremePanorama && "text-xl line-clamp-1 sm:text-lg",
           )}
         >
           {title}
@@ -132,11 +125,10 @@ export function Hero({
         {subtitle && (
           <p
             className={cn(
-              "mt-1 max-w-md text-sm text-muted [overflow-wrap:anywhere] sm:text-white/85 sm:drop-shadow-sm",
-              compactPanorama && "sm:mt-1 sm:line-clamp-1 sm:text-sm sm:leading-tight",
-              ultraWidePanorama && "sm:text-sm",
-              extremePanorama &&
-                "sm:mt-0.5 sm:line-clamp-1 sm:text-[10px] sm:leading-tight",
+              "mt-1 max-w-md text-sm text-white/85 drop-shadow-sm [overflow-wrap:anywhere]",
+              compactPanorama && "line-clamp-1 leading-tight",
+              ultraWidePanorama && "line-clamp-1 text-xs",
+              extremePanorama && "mt-0.5 line-clamp-1 text-[10px] leading-tight",
             )}
           >
             {subtitle}

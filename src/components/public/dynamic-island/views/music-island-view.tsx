@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { LoaderCircle, Pause, Play, SkipBack, SkipForward } from "lucide-react";
+import { ChevronDown, LoaderCircle, Pause, Play, SkipBack, SkipForward } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { MusicBars } from "@/components/public/music/music-bars";
 import { useMusic } from "@/components/public/music";
@@ -58,6 +58,14 @@ export function MusicIslandView() {
           playing={music.isPlaying}
           className={styles.musicSignal}
         />
+        <button
+          type="button"
+          aria-label="Tutup pemutar musik"
+          onClick={music.closePlayer}
+          className={styles.musicClose}
+        >
+          <ChevronDown className="h-4 w-4" />
+        </button>
       </div>
 
       <div className={styles.musicTimeline}>

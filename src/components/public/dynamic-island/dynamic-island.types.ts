@@ -13,6 +13,13 @@ export type IslandRouteConfig =
     }
   | { variant: "title"; title: string; right?: ReactNode };
 
+/** Identitas situs untuk quick panel hasil tap island. */
+export interface IslandBrand {
+  siteName: string;
+  logoUrl?: string | null;
+  tagline?: string | null;
+}
+
 /** Seluruh chrome aplikasi didaftarkan sekaligus agar hanya ada satu pemilik. */
 export interface PageChromeConfig {
   island: IslandRouteConfig;

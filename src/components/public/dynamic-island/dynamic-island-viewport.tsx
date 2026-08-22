@@ -7,10 +7,16 @@ import {
   useState,
   type AnimationEvent,
 } from "react";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
-import type { IslandNotice, IslandRouteConfig } from "./dynamic-island.types";
+import type {
+  IslandBrand,
+  IslandNotice,
+  IslandRouteConfig,
+} from "./dynamic-island.types";
 import { NoticeView } from "./views/notice-view";
 import { RouteView } from "./views/route-view";
+import { ExpandedRouteView } from "./views/expanded-route-view";
 import { MusicIslandView } from "./views/music-island-view";
 import { useMusic } from "@/components/public/music";
 import styles from "./dynamic-island.module.css";
@@ -18,7 +24,8 @@ import styles from "./dynamic-island.module.css";
 type IslandView =
   | { key: string; kind: "route"; config: IslandRouteConfig }
   | { key: string; kind: "notice"; notice: IslandNotice }
-  | { key: string; kind: "music" };
+  | { key: string; kind: "music" }
+  | { key: string; kind: "expandedRoute" };
 
 type Phase = "idle" | "out" | "in";
 
@@ -32,24 +39,50 @@ function routeKey(config: IslandRouteConfig) {
   return `route:title:${config.title}`;
 }
 
-function renderView(view: IslandView) {
+function renderView(
+  view: IslandView,
+  brand: IslandBrand,
+  onExpand: () => void,
+  onCollapse: () => void,
+) {
   if (view.kind === "notice") return <NoticeView notice={view.notice} />;
   if (view.kind === "music") return <MusicIslandView />;
-  return <RouteView config={view.config} />;
+  if (view.kind === "expandedRoute") {
+    return <ExpandedRouteView brand={brand} onNavigate={onCollapse} />;
+  }
+  return <RouteView config={view.config} onExpand={onExpand} />;
 }
 
 /**
  * Satu-satunya renderer Dynamic Island. Konten lama dianimasikan keluar dulu,
  * baru konten baru masuk; tidak pernah ada overlay semitransparan bertumpuk.
+ * Island hitam pekat dapat di-tap untuk membuka quick panel ala Live Activity.
  */
 export function DynamicIslandViewport({
   route,
   notice,
+  brand,
 }: {
   route: IslandRouteConfig;
   notice: IslandNotice | null;
+  brand: IslandBrand;
 }) {
   const music = useMusic();
+  const pathname = usePathname();
+  // Pathname saat panel dibuka: navigasi apa pun otomatis menutup panel karena
+  // routeExpanded menjadi derived state, tanpa setState di effect.
+  const [expandedOn, setExpandedOn] = useState<string | null>(null);
+  const routeExpanded = expandedOn !== null && expandedOn === pathname;
+
+  useEffect(() => {
+    if (!routeExpanded) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setExpandedOn(null);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [routeExpanded]);
+
   const target = useMemo<IslandView>(() => {
     if (notice) {
       return {
@@ -66,8 +99,11 @@ export function DynamicIslandViewport({
         kind: "music",
       };
     }
+    if (routeExpanded) {
+      return { key: `expandedRoute:${pathname}`, kind: "expandedRoute" };
+    }
     return { key: routeKey(route), kind: "route", config: route };
-  }, [music.expanded, notice, route]);
+  }, [music.expanded, notice, route, routeExpanded, pathname]);
 
   const [shown, setShown] = useState<IslandView>(target);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -104,37 +140,52 @@ export function DynamicIslandViewport({
   const activity = shellView.kind !== "route";
 
   return (
-    <div className={styles.slot}>
-      <header
-        data-dynamic-island
-        data-island-phase={phase}
-        data-island-view={shellView.kind}
-        className={cn(
-          styles.shell,
-          activity ? styles.activity : styles.route,
-          shellView.kind === "notice" && styles.noticeActivity,
-          shellView.kind === "music" && styles.musicActivity,
-        )}
-      >
+    <>
+      {routeExpanded && (
         <div
+          className={styles.backdrop}
+          onClick={() => setExpandedOn(null)}
+          aria-hidden="true"
+        />
+      )}
+      <div className={styles.slot}>
+        <header
+          data-dynamic-island
+          data-island-phase={phase}
+          data-island-view={shellView.kind}
           className={cn(
-            styles.content,
-            phase === "out" && styles.contentOut,
-            phase === "in" && styles.contentIn,
+            styles.shell,
+            activity ? styles.activity : styles.route,
+            shellView.kind === "notice" && styles.noticeActivity,
+            shellView.kind === "music" && styles.musicActivity,
+            shellView.kind === "expandedRoute" && styles.expandedRoute,
           )}
-          aria-live={
-            shown.kind === "notice"
-              ? shown.notice.status === "error"
-                ? "assertive"
-                : "polite"
-              : "off"
-          }
-          aria-atomic={shown.kind === "notice" ? "true" : undefined}
-          onAnimationEnd={onAnimationEnd}
         >
-          {renderView(shown)}
-        </div>
-      </header>
-    </div>
+          <div
+            className={cn(
+              styles.content,
+              phase === "out" && styles.contentOut,
+              phase === "in" && styles.contentIn,
+            )}
+            aria-live={
+              shown.kind === "notice"
+                ? shown.notice.status === "error"
+                  ? "assertive"
+                  : "polite"
+                : "off"
+            }
+            aria-atomic={shown.kind === "notice" ? "true" : undefined}
+            onAnimationEnd={onAnimationEnd}
+          >
+            {renderView(
+              shown,
+              brand,
+              () => setExpandedOn(pathname),
+              () => setExpandedOn(null),
+            )}
+          </div>
+        </header>
+      </div>
+    </>
   );
 }

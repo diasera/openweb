@@ -42,6 +42,7 @@ interface MusicContextValue {
   error: string | null;
   setEnabled: (value: boolean) => Promise<void>;
   openPlayer: () => Promise<void>;
+  closePlayer: () => void;
   togglePlayback: () => Promise<void>;
   next: () => Promise<void>;
   previous: () => Promise<void>;
@@ -267,6 +268,8 @@ export function MusicProvider({
     }
   }, [currentTrack?.id, enable, enabled, isPlaying, loadTracks, pathname, selectTrack]);
 
+  const closePlayer = useCallback(() => setExpandedPath(null), []);
+
   useEffect(() => {
     if (!expanded) return;
 
@@ -423,6 +426,7 @@ export function MusicProvider({
       error,
       setEnabled,
       openPlayer,
+      closePlayer,
       togglePlayback,
       next,
       previous,
@@ -441,6 +445,7 @@ export function MusicProvider({
       error,
       setEnabled,
       openPlayer,
+      closePlayer,
       togglePlayback,
       next,
       previous,

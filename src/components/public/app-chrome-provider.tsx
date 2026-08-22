@@ -177,9 +177,13 @@ export function AppChromeProvider({
   return (
     <DynamicIslandContext.Provider value={context}>
       <ToastProvider showNotice={showNotice} dismissNotice={dismissNotice}>
-        {visible && (
-          <DynamicIslandViewport route={page.island} notice={notice} />
-        )}
+      {visible && (
+        <DynamicIslandViewport
+          route={page.island}
+          notice={notice}
+          brand={{ siteName, logoUrl }}
+        />
+      )}
         {children}
         {visible && page.tabBarVisible && (
           <TabBar profileLabel={page.profileTabLabel} />
