@@ -70,6 +70,9 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: "15mb",
     },
+    // Morph antar halaman (React <ViewTransition>) — browser tanpa dukungan
+    // otomatis crossfade, jadi aman sebagai progressive enhancement.
+    viewTransition: true,
   },
 };
 

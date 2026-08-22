@@ -40,7 +40,7 @@ export function MediaCard({
     >
       <div
         className="motion-card bg-surface-2 shadow-soft relative overflow-hidden rounded-card"
-        style={{ aspectRatio: ratio }}
+        style={{ aspectRatio: ratio, viewTransitionName: `pin-${media.id}` }}
       >
         {previewUrl ? (
           <Image

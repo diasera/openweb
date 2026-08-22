@@ -12,6 +12,7 @@ import { MotionLink } from "@/components/motion";
 import { PageShell } from "@/components/public/page-shell";
 import { Avatar } from "@/components/ui/avatar";
 import { cardClass } from "@/components/ui/card";
+import { CountUp } from "@/components/ui/count-up";
 import { ADMIN_FEATURE_PRESENTATION } from "./navigation";
 import styles from "./admin-home.module.css";
 
@@ -226,21 +227,22 @@ export function AdminHome({
                   src={admin.avatar_url}
                   name={admin.name}
                   size={54}
-                  className="shrink-0 rounded-full ring-2 ring-white/20 ring-offset-2 ring-offset-transparent"
+                  ring
+                  className="shrink-0"
                 />
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/55">
+                  <p className="text-muted text-xs font-semibold uppercase tracking-[0.16em]">
                     Pusat website
                   </p>
                   <h1 className="font-display mt-0.5 truncate text-2xl font-bold sm:text-3xl">
                     Halo, {firstName}
                   </h1>
-                  <p className="mt-0.5 truncate text-sm text-white/60">
+                  <p className="text-muted mt-0.5 truncate text-sm">
                     {siteName}
                   </p>
                 </div>
               </div>
-              <span className="shrink-0 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-semibold capitalize text-white/80">
+              <span className="bg-surface-2 text-muted shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-semibold capitalize">
                 {admin.role}
               </span>
             </div>
@@ -248,9 +250,9 @@ export function AdminHome({
             <div className="mt-6 flex items-center justify-between gap-3">
               <div>
                 <h2 className="font-display text-lg font-bold">Ringkasan</h2>
-                <p className="text-xs text-white/50">Data website saat ini</p>
+                <p className="text-muted text-xs">Data website saat ini</p>
               </div>
-              <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-[11px] font-semibold text-white/60">
+              <span className="bg-surface-2 text-muted rounded-full border border-border px-3 py-1.5 text-[11px] font-semibold">
                 Live
               </span>
             </div>
@@ -268,14 +270,14 @@ export function AdminHome({
                   key={metric.label}
                   className={cn(styles.metric, "rounded-2xl px-3 py-3.5 sm:px-4")}
                 >
-                  <p className="font-display text-xl font-bold tabular-nums sm:text-2xl">
-                    {metric.value}
+                  <p className="font-display text-xl font-bold sm:text-2xl">
+                    <CountUp value={metric.value} />
                   </p>
-                  <p className="mt-0.5 text-[10px] font-medium leading-tight text-white/55 sm:text-xs">
+                  <p className="text-muted mt-0.5 text-xs font-medium leading-tight">
                     {metric.label}
                   </p>
                   {metric.hint && (
-                    <p className="mt-1 truncate text-[9px] text-white/35 sm:text-[11px]">
+                    <p className="text-muted mt-1 truncate text-[11px] opacity-70">
                       {metric.hint}
                     </p>
                   )}
@@ -288,12 +290,12 @@ export function AdminHome({
                 {details.map((metric) => (
                   <div
                     key={metric.label}
-                    className="rounded-2xl border border-white/[0.08] bg-black/10 px-3 py-3"
+                    className="bg-surface-2 rounded-2xl border border-border px-3 py-3"
                   >
-                    <p className="font-display text-lg font-bold tabular-nums">
-                      {metric.value}
+                    <p className="font-display text-lg font-bold">
+                      <CountUp value={metric.value} />
                     </p>
-                    <p className="mt-0.5 text-[10px] font-medium text-white/45 sm:text-[11px]">
+                    <p className="text-muted mt-0.5 text-[11px] font-medium">
                       {metric.label}
                     </p>
                   </div>

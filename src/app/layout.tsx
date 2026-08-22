@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { ViewTransition } from "react";
 import Script from "next/script";
 import { getSettings } from "@/lib/data";
 import { getPublicMusicTracks } from "@/lib/data/music";
@@ -142,7 +143,9 @@ export default async function RootLayout({
               logoUrl={settings.logo_url}
               memberLabel={toDisplayLabel(labels.memberPlural, settings.locale)}
             >
-              {children}
+              {/* Island & tab bar milik AppChromeProvider tetap di luar
+                  transisi; hanya konten halaman yang bermorph antar rute. */}
+              <ViewTransition>{children}</ViewTransition>
             </AppChromeProvider>
           </MusicProvider>
         </MotionProvider>

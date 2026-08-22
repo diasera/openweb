@@ -18,14 +18,16 @@ export function MemberRail({ members }: { members: MemberRow[] }) {
           className="animate-rise motion-pressable flex w-14 shrink-0 flex-col items-center gap-1.5 sm:w-[68px]"
           style={{ animationDelay: staggerDelay(index) }}
         >
-          <Avatar
-            name={m.name}
-            src={m.photo_url}
-            size={54}
-            ring={m.is_pengurus}
-            sizeClassName="h-11 w-11 sm:h-[54px] sm:w-[54px]"
-            initialsClassName="text-[18px] sm:text-[22px]"
-          />
+          <span style={{ viewTransitionName: `member-${m.slug}` }}>
+            <Avatar
+              name={m.name}
+              src={m.photo_url}
+              size={54}
+              ring={m.is_pengurus}
+              sizeClassName="h-11 w-11 sm:h-[54px] sm:w-[54px]"
+              initialsClassName="text-[18px] sm:text-[22px]"
+            />
+          </span>
           <span className="w-full truncate text-center text-xs font-semibold">
             {m.name}
           </span>
