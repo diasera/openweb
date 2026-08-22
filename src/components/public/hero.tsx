@@ -114,15 +114,20 @@ export function Hero({
           extremePanorama && "inset-x-3 bottom-3",
         )}
       >
-        <h1
-          className={cn(
-            "font-display text-2xl font-bold leading-tight drop-shadow-sm [overflow-wrap:anywhere] sm:text-3xl",
-            compactPanorama && "line-clamp-1",
-            ultraWidePanorama && "line-clamp-1 sm:text-2xl",
-            extremePanorama && "text-xl line-clamp-1 sm:text-lg",
-          )}
-        >
-          {title}
+        {/* Judul hero = chip identitas yang dipindahkan ke overlay bawah;
+            tetap H1 demi SEO, material kacanya dari Chip (dipakai ulang). */}
+        <h1 className="w-fit max-w-full drop-shadow-sm">
+          <Chip
+            variant="glass"
+            className={cn(
+              "max-w-full truncate font-display text-sm font-bold leading-tight sm:text-base",
+              compactPanorama && "text-xs",
+              ultraWidePanorama && "text-[11px]",
+              extremePanorama && "px-2.5 py-0.5 text-[10px]",
+            )}
+          >
+            {title}
+          </Chip>
         </h1>
         {subtitle && (
           <p
