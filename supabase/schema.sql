@@ -91,6 +91,36 @@ drop trigger if exists trg_site_settings_updated on public.site_settings;
 create trigger trg_site_settings_updated before update on public.site_settings
   for each row execute function public.set_updated_at();
 
+-- Migrasi data SEO lama SEBELUM kolomnya dihapus, sehingga deploy lama terima
+-- bersih tanpa langkah manual: judul/deskripsi kustom lama otomatis pindah ke
+-- tagline/description. Judul lama biasa berpola "Nama — Tagline", jadi bagian
+-- setelah nama situs diambil sebagai tagline; tanpa pola itu, nilai utuhnya
+-- yang dipakai. Idempoten: hanya berjalan bila kolom lama masih ada.
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'site_settings'
+      and column_name = 'seo_home_title'
+  ) then
+    update public.site_settings
+    set
+      tagline = coalesce(
+        nullif(btrim(split_part(seo_home_title, site_name || ' — ', 2)), ''),
+        nullif(btrim(seo_home_title), ''),
+        tagline
+      ),
+      description = coalesce(
+        nullif(btrim(seo_home_description), ''),
+        description
+      )
+    where id = 1;
+  end if;
+end
+$$;
+
 -- Kolom legacy yang sudah dilebur ke site_name/tagline/description (dedup
 -- panel Setting); di-drop secara idempoten agar deploy lama ikut bersih.
 alter table public.site_settings drop column if exists timezone;
