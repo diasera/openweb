@@ -1,0 +1,633 @@
+/* ==========================================================================
+ * Gerbang Auth — panggung sinematik untuk login & setup admin.
+ * Teknik: aurora mesh (gradien berlapis), starfield, film grain, kinetic
+ * wordmark, kartu kaca 3D-tilt dengan glare, border field yang "menggambar"
+ * dirinya, tombol magnetik + sheen. Semua token tema dari globals.css;
+ * semua animasi punya versi diam di prefers-reduced-motion.
+ * ========================================================================== */
+
+/* ---- Panggung ----------------------------------------------------------- */
+
+.stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: rgb(var(--bg));
+}
+
+.aurora {
+  position: absolute;
+  inset: -25%;
+  pointer-events: none;
+}
+
+.auroraA,
+.auroraB,
+.auroraC {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
+.auroraA {
+  background:
+    radial-gradient(42% 38% at 18% 22%, rgb(var(--primary) / 0.34), transparent 68%),
+    radial-gradient(50% 42% at 82% 30%, rgb(var(--accent) / 0.26), transparent 70%);
+  filter: blur(52px);
+  animation: auth-aurora-a 24s var(--motion-ease-in-out) infinite alternate;
+}
+
+.auroraB {
+  background:
+    radial-gradient(46% 40% at 70% 78%, rgb(var(--primary) / 0.22), transparent 72%),
+    radial-gradient(36% 34% at 24% 84%, rgb(var(--accent) / 0.2), transparent 70%);
+  filter: blur(64px);
+  animation: auth-aurora-b 30s var(--motion-ease-in-out) infinite alternate;
+}
+
+.auroraC {
+  background: radial-gradient(
+    60% 46% at 50% 12%,
+    rgb(var(--foreground) / 0.07),
+    transparent 70%
+  );
+  filter: blur(48px);
+  animation: auth-aurora-a 36s var(--motion-ease-in-out) infinite alternate-reverse;
+}
+
+@keyframes auth-aurora-a {
+  from {
+    transform: translate3d(-4%, -3%, 0) scale(1) rotate(0deg);
+  }
+  to {
+    transform: translate3d(5%, 4%, 0) scale(1.16) rotate(6deg);
+  }
+}
+
+@keyframes auth-aurora-b {
+  from {
+    transform: translate3d(4%, 3%, 0) scale(1.08) rotate(0deg);
+  }
+  to {
+    transform: translate3d(-5%, -4%, 0) scale(1) rotate(-8deg);
+  }
+}
+
+/* Bintang deterministik (posisi tetap agar aman hidrasi). */
+.starsSm,
+.starsLg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: transparent;
+  pointer-events: none;
+}
+
+.starsSm {
+  box-shadow:
+    8vw 12vh 0 0 rgb(var(--foreground) / 0.5),
+    16vw 68vh 0 0 rgb(var(--foreground) / 0.35),
+    24vw 34vh 0 0 rgb(var(--foreground) / 0.5),
+    33vw 82vh 0 0 rgb(var(--foreground) / 0.3),
+    41vw 18vh 0 0 rgb(var(--foreground) / 0.5),
+    52vw 55vh 0 0 rgb(var(--foreground) / 0.4),
+    60vw 10vh 0 0 rgb(var(--foreground) / 0.35),
+    68vw 74vh 0 0 rgb(var(--foreground) / 0.5),
+    76vw 40vh 0 0 rgb(var(--foreground) / 0.3),
+    85vw 22vh 0 0 rgb(var(--foreground) / 0.5),
+    92vw 66vh 0 0 rgb(var(--foreground) / 0.35),
+    12vw 46vh 0 0 rgb(var(--foreground) / 0.4),
+    29vw 6vh 0 0 rgb(var(--foreground) / 0.3),
+    47vw 88vh 0 0 rgb(var(--foreground) / 0.45),
+    57vw 28vh 0 0 rgb(var(--foreground) / 0.35),
+    64vw 58vh 0 0 rgb(var(--foreground) / 0.5),
+    73vw 8vh 0 0 rgb(var(--foreground) / 0.3),
+    88vw 50vh 0 0 rgb(var(--foreground) / 0.45),
+    96vw 14vh 0 0 rgb(var(--foreground) / 0.35),
+    5vw 88vh 0 0 rgb(var(--foreground) / 0.4);
+  animation: auth-twinkle 4.2s ease-in-out infinite;
+}
+
+.starsLg {
+  box-shadow:
+    14vw 24vh 0 1px rgb(var(--primary) / 0.6),
+    36vw 76vh 0 1px rgb(var(--accent) / 0.55),
+    58vw 20vh 0 1px rgb(var(--primary) / 0.5),
+    80vw 62vh 0 1px rgb(var(--accent) / 0.6),
+    90vw 34vh 0 1px rgb(var(--primary) / 0.45),
+    22vw 56vh 0 1px rgb(var(--accent) / 0.5),
+    66vw 86vh 0 1px rgb(var(--primary) / 0.55),
+    44vw 12vh 0 1px rgb(var(--accent) / 0.45);
+  animation: auth-twinkle 5.6s ease-in-out 1.4s infinite;
+}
+
+@keyframes auth-twinkle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Butiran film halus + vignette supaya panggung terasa sinematik. */
+.grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    125% 125% at 50% 42%,
+    transparent 52%,
+    rgb(var(--bg) / 0.6)
+  );
+}
+
+/* ---- Wordmark kinetik --------------------------------------------------- */
+
+.wordmark {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 0.35em;
+  font-family: var(--font-display), var(--font-sans), sans-serif;
+  font-size: clamp(2.1rem, 7vw, 3.4rem);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  color: rgb(var(--foreground));
+  text-shadow: 0 10px 40px rgb(var(--primary) / 0.25);
+}
+
+.wordmarkInner {
+  position: relative;
+  display: flex;
+}
+
+.letter {
+  display: inline-block;
+  transform-origin: 50% 100%;
+  animation: auth-letter-in 620ms var(--motion-spring-bouncy) both;
+}
+
+.letterSpace {
+  width: 0.4em;
+}
+
+.wordmarkUnderline {
+  position: absolute;
+  right: 0;
+  bottom: -0.18em;
+  left: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(var(--primary)),
+    rgb(var(--accent)),
+    transparent
+  );
+  transform: scaleX(0);
+  animation: auth-underline-sweep 720ms var(--motion-ease-out) both;
+}
+
+@keyframes auth-letter-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.9em) rotate(9deg) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+}
+
+@keyframes auth-underline-sweep {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* ---- Kartu gerbang kaca ------------------------------------------------- */
+
+.perspective {
+  perspective: 1400px;
+}
+
+/* Pembuka kartu dipisah dari elemen tilt agar keduanya tidak saling
+ * menimpa properti transform (keyframe vs --tilt-x/--tilt-y). */
+.gateEnter {
+  animation: auth-gate-in 640ms var(--motion-spring) both;
+}
+
+.gate {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgb(var(--glass-border));
+  border-radius: 1.75rem;
+  background: rgb(var(--glass-bg));
+  box-shadow:
+    0 30px 90px -28px rgb(0 0 0 / 0.4),
+    inset 0 1px 0 rgb(var(--glass-highlight));
+  transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transition: transform 260ms var(--motion-ease-out);
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .gate {
+    backdrop-filter: blur(26px) saturate(160%);
+    -webkit-backdrop-filter: blur(26px) saturate(160%);
+  }
+}
+
+/* Sorotan kaca yang mengikuti pointer (--mx/--my diisi JS tilt). */
+.gate::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    260px circle at var(--mx, 50%) var(--my, -30%),
+    rgb(255 255 255 / 0.13),
+    transparent 65%
+  );
+}
+
+@keyframes auth-gate-in {
+  from {
+    opacity: 0;
+    transform: translateY(26px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.gateBody {
+  position: relative;
+  padding: 1.75rem 1.5rem 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .gateBody {
+    padding: 2rem 2.25rem 1.75rem;
+  }
+}
+
+/* Cincin orbit logo: menggambar dirinya saat masuk. */
+.crest {
+  position: relative;
+  display: grid;
+  width: 4.5rem;
+  height: 4.5rem;
+  place-items: center;
+  margin: 0 auto 0.875rem;
+}
+
+.crestRing {
+  position: absolute;
+  inset: 0;
+  fill: none;
+  stroke: rgb(var(--primary));
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  animation: auth-draw 760ms var(--motion-ease-out) both;
+}
+
+.crestRing2 {
+  position: absolute;
+  inset: -6px;
+  fill: none;
+  stroke: rgb(var(--accent) / 0.45);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  animation: auth-draw 900ms var(--motion-ease-out) 160ms both;
+}
+
+@keyframes auth-draw {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.itemIn {
+  animation: auth-item-in 460ms var(--motion-ease-out) both;
+}
+
+@keyframes auth-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---- Field dengan bingkai yang menggambar dirinya ----------------------- */
+
+.field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: rgb(var(--foreground) / 0.82);
+}
+
+.traceBox {
+  position: relative;
+}
+
+/* Empat sisi bingkai menyala bergiliran mengelilingi field saat fokus. */
+.traceTop,
+.traceBottom,
+.traceLeft,
+.traceRight {
+  position: absolute;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgb(var(--primary)),
+    rgb(var(--accent))
+  );
+  opacity: 0;
+  pointer-events: none;
+}
+
+.traceTop,
+.traceBottom {
+  right: 8px;
+  left: 8px;
+  height: 2px;
+}
+
+.traceLeft,
+.traceRight {
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+}
+
+.traceTop {
+  top: -1px;
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.traceBottom {
+  bottom: -1px;
+  transform: scaleX(0);
+  transform-origin: right center;
+}
+
+.traceLeft {
+  left: -1px;
+  transform: scaleY(0);
+  transform-origin: center bottom;
+}
+
+.traceRight {
+  right: -1px;
+  transform: scaleY(0);
+  transform-origin: center top;
+}
+
+.traceBox:focus-within .traceTop {
+  opacity: 1;
+  transform: scaleX(1);
+  transition:
+    transform 180ms var(--motion-ease-out),
+    opacity 120ms ease-out;
+}
+
+.traceBox:focus-within .traceRight {
+  opacity: 1;
+  transform: scaleY(1);
+  transition:
+    transform 160ms var(--motion-ease-out) 140ms,
+    opacity 120ms ease-out 140ms;
+}
+
+.traceBox:focus-within .traceBottom {
+  opacity: 1;
+  transform: scaleX(1);
+  transition:
+    transform 180ms var(--motion-ease-out) 260ms,
+    opacity 120ms ease-out 260ms;
+}
+
+.traceBox:focus-within .traceLeft {
+  opacity: 1;
+  transform: scaleY(1);
+  transition:
+    transform 160ms var(--motion-ease-out) 420ms,
+    opacity 120ms ease-out 420ms;
+}
+
+/* Input di dalam gerbang: menyatu dengan kaca (transparan lembut). */
+.traceBox :global(input) {
+  border-color: rgb(var(--foreground) / 0.14);
+  background: rgb(var(--foreground) / 0.05);
+}
+
+.traceBox :global(input)::placeholder {
+  color: rgb(var(--muted) / 0.8);
+}
+
+/* ---- Dramaturgi form ----------------------------------------------------- */
+
+.formBody {
+  display: grid;
+  gap: 1rem;
+}
+
+.shake {
+  animation: auth-shake 380ms var(--motion-ease-out);
+}
+
+@keyframes auth-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  18% {
+    transform: translateX(-7px);
+  }
+  38% {
+    transform: translateX(6px);
+  }
+  58% {
+    transform: translateX(-4px);
+  }
+  78% {
+    transform: translateX(2px);
+  }
+}
+
+.errorText {
+  color: rgb(var(--danger));
+  font-size: 0.85rem;
+  font-weight: 500;
+  animation: auth-item-in 240ms var(--motion-ease-out) both;
+}
+
+/* Tombol magnetik: pembungkus yang tertarik ke kursor. */
+.magnetic {
+  transition: transform 200ms var(--motion-ease-out);
+  will-change: transform;
+}
+
+/* Tombol saat memproses: kilau menyapu terus-menerus. */
+.busy {
+  position: relative;
+  overflow: hidden;
+}
+
+.busy::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 32%,
+    rgb(255 255 255 / 0.4) 50%,
+    transparent 68%
+  );
+  transform: translateX(-120%);
+  animation: auth-sheen 1.3s var(--motion-ease-in-out) infinite;
+  pointer-events: none;
+}
+
+@keyframes auth-sheen {
+  to {
+    transform: translateX(120%);
+  }
+}
+
+/* Tapak halaman: identitas + jalan pulang. */
+.footnote {
+  margin-top: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+  color: rgb(var(--muted));
+}
+
+.footnoteLink {
+  color: rgb(var(--muted));
+  text-decoration: none;
+  transition: color var(--motion-fast) ease-out;
+}
+
+.footnoteLink:hover {
+  color: rgb(var(--foreground));
+}
+
+/* ---- Mobilitas & aksesibilitas ------------------------------------------ */
+
+/* Mobiler: panggung lebih ringan (blur kecil, satu lapis aurora). */
+@media (max-width: 767px) {
+  .auroraB {
+    display: none;
+  }
+
+  .auroraA,
+  .auroraC {
+    filter: blur(36px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auroraA,
+  .auroraB,
+  .auroraC,
+  .starsSm,
+  .starsLg {
+    animation: none !important;
+  }
+
+  .letter {
+    animation: none !important;
+  }
+
+  .wordmarkUnderline {
+    animation: none !important;
+    transform: scaleX(1);
+  }
+
+  .gate,
+  .gateEnter {
+    animation: none !important;
+  }
+
+  .gate {
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .crestRing,
+  .crestRing2 {
+    animation: none !important;
+    stroke-dashoffset: 0;
+  }
+
+  .itemIn,
+  .errorText {
+    animation: none !important;
+  }
+
+  .traceTop,
+  .traceBottom,
+  .traceLeft,
+  .traceRight {
+    transition: none !important;
+  }
+
+  .traceBox:focus-within .traceTop,
+  .traceBox:focus-within .traceRight,
+  .traceBox:focus-within .traceBottom,
+  .traceBox:focus-within .traceLeft {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .shake {
+    animation: none !important;
+  }
+
+  .busy::after {
+    animation: none !important;
+    content: none;
+  }
+
+  .magnetic {
+    transition: none !important;
+  }
+}
