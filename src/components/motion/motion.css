@@ -161,6 +161,24 @@ html {
   animation: motion-fade-in var(--motion-fast) ease-out;
 }
 
+/* Masuk konten daftar: fade + naik tipis. Murni transform+opacity
+ * (compositor-friendly di mobile); delay per-item diatur komponen,
+ * batasi jumlah item ber-stagger agar layar panjang tidak sibuk. */
+.animate-rise {
+  animation: motion-rise 420ms var(--motion-ease-out) both;
+}
+
+@keyframes motion-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .motion-tabbar-shell {
   transition:
     opacity var(--motion-control) ease-out,
@@ -357,7 +375,8 @@ html {
 
   .animate-tab-pop,
   .animate-control-pop,
-  .animate-symbol-bounce {
+  .animate-symbol-bounce,
+  .animate-rise {
     animation: none !important;
   }
 

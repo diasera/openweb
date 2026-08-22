@@ -2,6 +2,7 @@ import { MessageSquare } from "lucide-react";
 import { Masonry } from "@/components/ui/masonry";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionHeader } from "@/components/ui/section-header";
+import { staggerDelay } from "@/components/motion";
 import { MessageComposer } from "./message-composer";
 import { MessageCard } from "./message-card";
 import type { PublicMessage } from "@/lib/data";
@@ -32,8 +33,14 @@ export function MessageBoard({
       )}
       {messages.length > 0 ? (
         <Masonry>
-          {messages.map((m) => (
-            <MessageCard key={m.id} message={m} />
+          {messages.map((m, index) => (
+            <div
+              key={m.id}
+              className="animate-rise"
+              style={{ animationDelay: staggerDelay(index) }}
+            >
+              <MessageCard message={m} />
+            </div>
           ))}
         </Masonry>
       ) : (

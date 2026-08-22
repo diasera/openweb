@@ -1,33 +1,66 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { notFound } from "next/navigation";
 import { Newspaper } from "lucide-react";
-import { getSettings, getPublishedPosts } from "@/lib/data";
+import {
+  getPublishedPostCount,
+  getPublishedPosts,
+  getSettings,
+} from "@/lib/data";
 import { PageShell } from "@/components/public/page-shell";
 import { PostRow } from "@/components/public/post-row";
+import { Pagination } from "@/components/public/pagination";
 import { Chip } from "@/components/ui/chip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { readingTime } from "@/lib/utils/reading-time";
 import { timeAgo } from "@/lib/utils/time";
-import { MotionLink } from "@/components/motion";
+import { MotionLink, staggerDelay } from "@/components/motion";
 import { JsonLd } from "@/components/seo/json-ld";
 import { buildPageMetadata, PUBLIC_PAGE_SEO } from "@/lib/seo";
 import { breadcrumbStructuredData } from "@/lib/seo/structured-data";
 import { getPhotoDestinationFrame } from "@/lib/media-editor/profiles";
 
 const BLOG_COVER_FRAME = getPhotoDestinationFrame("blog-cover");
+const PAGE_SIZE = 10;
 
 export const revalidate = 60;
 export async function generateMetadata(): Promise<Metadata> {
-  return buildPageMetadata(await getSettings(), PUBLIC_PAGE_SEO.blog);
+  const settings = await getSettings();
+  return {
+    ...buildPageMetadata(settings, PUBLIC_PAGE_SEO.blog),
+    // Autodiscovery feed: pembaca RSS menemukan /feed.xml otomatis.
+    alternates: {
+      types: {
+        "application/rss+xml": [{ url: "/feed.xml", title: `Blog ${settings.site_name}` }],
+      },
+    },
+  };
 }
 
-export default async function BlogListPage() {
-  const [settings, posts] = await Promise.all([
+function parsePage(value: string | undefined): number {
+  const page = Number.parseInt(value ?? "1", 10);
+  return Number.isInteger(page) && page >= 1 ? page : 1;
+}
+
+export default async function BlogListPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const [{ page: pageParam }, settings] = await Promise.all([
+    searchParams,
     getSettings(),
-    getPublishedPosts(),
   ]);
-  const featured = posts[0];
-  const rest = posts.slice(1);
+  const page = parsePage(pageParam);
+  const [posts, total] = await Promise.all([
+    getPublishedPosts(PAGE_SIZE, (page - 1) * PAGE_SIZE),
+    getPublishedPostCount(),
+  ]);
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (page > totalPages && totalPages > 0) notFound();
+
+  const featured = page === 1 ? posts[0] : undefined;
+  const rest = featured ? posts.slice(1) : posts;
 
   return (
     <PageShell>
@@ -55,7 +88,7 @@ export default async function BlogListPage() {
           {featured && (
             <MotionLink
               href={`/blog/${featured.slug}`}
-              className="block"
+              className="animate-rise block"
             >
               <div
                 className="motion-card rounded-ios-lg bg-surface-2 relative block overflow-hidden"
@@ -95,12 +128,20 @@ export default async function BlogListPage() {
           )}
 
           <div className="space-y-3">
-            {rest.map((p) => (
-              <PostRow key={p.id} post={p} />
+            {rest.map((p, index) => (
+              <div
+                key={p.id}
+                className="animate-rise"
+                style={{ animationDelay: staggerDelay(index + 1) }}
+              >
+                <PostRow post={p} />
+              </div>
             ))}
           </div>
         </div>
       )}
+
+      <Pagination basePath="/blog" current={page} total={totalPages} />
     </PageShell>
   );
 }

@@ -1,6 +1,6 @@
 import { Avatar } from "@/components/ui/avatar";
 import type { MemberRow } from "@/lib/types/database";
-import { MotionLink } from "@/components/motion";
+import { MotionLink, staggerDelay } from "@/components/motion";
 import { memberProfilePath } from "@/lib/members/slug";
 
 /**
@@ -10,12 +10,13 @@ import { memberProfilePath } from "@/lib/members/slug";
 export function MemberRail({ members }: { members: MemberRow[] }) {
   return (
     <div className="motion-horizontal-scroll no-scrollbar -mx-4 flex gap-2.5 overflow-x-auto px-4 pb-1 sm:gap-3">
-      {members.map((m) => (
+      {members.map((m, index) => (
         <MotionLink
           key={m.id}
           href={memberProfilePath(m)}
           prefetch={false}
-          className="motion-pressable flex w-14 shrink-0 flex-col items-center gap-1.5 sm:w-[68px]"
+          className="animate-rise motion-pressable flex w-14 shrink-0 flex-col items-center gap-1.5 sm:w-[68px]"
+          style={{ animationDelay: staggerDelay(index) }}
         >
           <Avatar
             name={m.name}

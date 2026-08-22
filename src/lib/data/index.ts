@@ -29,6 +29,7 @@ export type PublicMessage = Pick<
 
 type PublicListOptions = {
   limit?: number;
+  offset?: number;
   pinnedOnly?: boolean;
 };
 
@@ -216,13 +217,14 @@ export async function getPublishedPostCount(): Promise<number> {
 /** Media publik approved; homepage dapat meminta hanya item yang dipin. */
 export async function getApprovedMedia({
   limit = 60,
+  offset = 0,
   pinnedOnly = false,
 }: PublicListOptions = {}): Promise<MediaRow[]> {
   if (!isSupabaseConfigured()) {
     const media = pinnedOnly
       ? DEMO_MEDIA.filter((item) => item.is_pinned)
       : DEMO_MEDIA;
-    return media.slice(0, limit);
+    return media.slice(offset, offset + limit);
   }
   return safe(async () => {
     const sb = createPublicSupabase();
@@ -234,13 +236,18 @@ export async function getApprovedMedia({
     const { data } = await query
       .order("is_pinned", { ascending: false })
       .order("created_at", { ascending: false })
-      .limit(limit);
+      .range(offset, offset + limit - 1);
     return (data ?? []).map(publicMediaRow);
   }, []);
 }
 
-export async function getPublishedPosts(limit = 30): Promise<PublicPostCard[]> {
-  if (!isSupabaseConfigured()) return DEMO_POSTS.slice(0, limit);
+export async function getPublishedPosts(
+  limit = 30,
+  offset = 0,
+): Promise<PublicPostCard[]> {
+  if (!isSupabaseConfigured()) {
+    return DEMO_POSTS.slice(offset, offset + limit);
+  }
   return safe(async () => {
     const sb = createPublicSupabase();
     const { data } = await sb
@@ -250,7 +257,7 @@ export async function getPublishedPosts(limit = 30): Promise<PublicPostCard[]> {
       )
       .eq("status", "published")
       .order("published_at", { ascending: false })
-      .limit(limit);
+      .range(offset, offset + limit - 1);
     return data ?? [];
   }, []);
 }
@@ -331,4 +338,114 @@ export async function getPublicMessages({
       .limit(limit);
     return data ?? [];
   }, []);
+}
+
+/** Hasil pencarian situs (Spotlight island) lintas media, blog, dan anggota. */
+export type SiteSearchResult = {
+  kind: "media" | "blog" | "member";
+  id: string;
+  title: string;
+  subtitle: string | null;
+  href: string;
+};
+
+const SEARCH_LIMIT_PER_KIND = 5;
+
+function searchLikePattern(query: string): string {
+  // Escape wildcard LIKE lalu bungkus; koma/parenthesis dibuang agar aman.
+  const clean = query.replace(/[%_(),]/g, " ").trim();
+  return `%${clean}%`;
+}
+
+/**
+ * Pencarian publik satu kotak untuk panel cepat island. RLS memastikan hanya
+ * konten layak-publik (media approved, blog published) yang bisa ditemukan.
+ */
+export async function searchSiteContent(
+  query: string,
+): Promise<SiteSearchResult[]> {
+  const clean = query.trim();
+  if (clean.length < 2) return [];
+  const like = searchLikePattern(clean);
+
+  if (!isSupabaseConfigured()) {
+    const needle = clean.toLowerCase();
+    const media = DEMO_MEDIA.filter((m) => m.title?.toLowerCase().includes(needle))
+      .slice(0, SEARCH_LIMIT_PER_KIND)
+      .map((m) => ({
+        kind: "media" as const,
+        id: m.id,
+        title: m.title || "Media",
+        subtitle: m.category ?? null,
+        href: `/pin/${m.id}`,
+      }));
+    const posts = DEMO_POSTS.filter((p) => p.title.toLowerCase().includes(needle))
+      .slice(0, SEARCH_LIMIT_PER_KIND)
+      .map((p) => ({
+        kind: "blog" as const,
+        id: p.id,
+        title: p.title,
+        subtitle: p.category ?? null,
+        href: `/blog/${p.slug}`,
+      }));
+    const members = ensureMemberSlugs(DEMO_MEMBERS)
+      .filter((m) => m.name.toLowerCase().includes(needle))
+      .slice(0, SEARCH_LIMIT_PER_KIND)
+      .map((m) => ({
+        kind: "member" as const,
+        id: m.id,
+        title: m.name,
+        subtitle: m.position ?? null,
+        href: `/profil/${m.slug}`,
+      }));
+    return [...members, ...media, ...posts];
+  }
+
+  const sb = createPublicSupabase();
+  const [mediaRes, postRes, memberRes] = await Promise.all([
+    sb
+      .from("media")
+      .select("id, title, category")
+      .eq("status", "approved")
+      .ilike("title", like)
+      .order("created_at", { ascending: false })
+      .limit(SEARCH_LIMIT_PER_KIND),
+    sb
+      .from("blog_posts")
+      .select("id, title, slug, category")
+      .eq("status", "published")
+      .ilike("title", like)
+      .order("published_at", { ascending: false })
+      .limit(SEARCH_LIMIT_PER_KIND),
+    sb
+      .from("members")
+      .select("id, name, slug, position")
+      .ilike("name", like)
+      .order("name", { ascending: true })
+      .limit(SEARCH_LIMIT_PER_KIND),
+  ]);
+
+  return [
+    ...(memberRes.data ?? []).map((m) => ({
+      kind: "member" as const,
+      id: m.id,
+      title: m.name,
+      subtitle: m.position ?? null,
+      href: `/profil/${m.slug}`,
+    })),
+    ...(mediaRes.data ?? []).map((m) => ({
+      kind: "media" as const,
+      id: m.id,
+      title: m.title || "Media",
+      subtitle: m.category ?? null,
+      href: `/pin/${m.id}`,
+    })),
+    ...(postRes.data ?? []).map((p) => ({
+      kind: "blog" as const,
+      id: p.id,
+      title: p.title,
+      subtitle: p.category ?? null,
+      href: `/blog/${p.slug}`,
+    })),
+  ];
 }

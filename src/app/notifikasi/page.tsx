@@ -5,6 +5,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/public";
 import { getBellState } from "@/lib/visitors";
 import { PageShell } from "@/components/public/page-shell";
 import { BellToggle } from "@/components/public/bell-toggle";
+import { FreshBadge, FreshnessSync } from "@/components/public/notification-freshness";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { timeAgo } from "@/lib/utils/time";
@@ -42,7 +43,10 @@ export default async function NotifikasiPage() {
             {notifications.map((n) => {
               const href = normalizeNotificationHref(n.url);
               return <Card key={n.id} className="p-4">
-                <p className="font-semibold">{n.title}</p>
+                <p className="flex items-center gap-2 font-semibold">
+                  {n.title}
+                  <FreshBadge createdAt={n.created_at} />
+                </p>
                 {n.body && <p className="text-muted mt-1 text-sm">{n.body}</p>}
                 <p className="text-muted mt-2 text-xs">{timeAgo(n.created_at)}</p>
                 {href && (
@@ -57,6 +61,7 @@ export default async function NotifikasiPage() {
             })}
           </div>
         )}
+        <FreshnessSync latestAt={notifications[0]?.created_at ?? null} />
       </div>
     </PageShell>
   );

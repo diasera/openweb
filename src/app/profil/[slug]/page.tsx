@@ -41,7 +41,8 @@ export async function generateMetadata({
         ? `Profil dan riwayat karya ${member.name} di ${settings.site_name}.`
         : `Profil ${labels.memberSingular} tidak ditemukan.`),
     path: member ? memberProfilePath(member) : `/profil/${slug}`,
-    image: member?.photo_url,
+    // Tanpa foto pribadi, kartu sosial anggota dirender otomatis /api/og.
+    image: member?.photo_url ?? (member ? `/api/og/anggota/${member.slug}` : undefined),
     noIndex: !member,
   });
 }

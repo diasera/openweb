@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { getPostBySlug, getSettings } from "@/lib/data";
+import {
+  getPostBySlug,
+  getPublishedPosts,
+  getSettings,
+} from "@/lib/data";
 import { PageShell } from "@/components/public/page-shell";
+import { PostRow } from "@/components/public/post-row";
 import { ShareButton, SaveButton } from "@/components/public/share-save";
 import { Avatar } from "@/components/ui/avatar";
 import { Chip } from "@/components/ui/chip";
@@ -18,6 +23,18 @@ import {
 import { getPhotoDestinationFrame } from "@/lib/media-editor/profiles";
 
 const BLOG_COVER_FRAME = getPhotoDestinationFrame("blog-cover");
+
+/** Artikel terkait: utamakan kategori sama, sisa diisi terbaru (maks 3). */
+function pickRelatedPosts(
+  posts: Awaited<ReturnType<typeof getPublishedPosts>>,
+  currentSlug: string,
+  category: string | null,
+) {
+  const others = posts.filter((post) => post.slug !== currentSlug);
+  const sameCategory = others.filter((post) => post.category === category);
+  const fallback = others.filter((post) => post.category !== category);
+  return [...sameCategory, ...fallback].slice(0, 3);
+}
 
 export const revalidate = 60;
 
@@ -60,11 +77,13 @@ export default async function ArticlePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [post, settings] = await Promise.all([
+  const [post, settings, recentPosts] = await Promise.all([
     getPostBySlug(slug),
     getSettings(),
+    getPublishedPosts(30),
   ]);
   if (!post) notFound();
+  const related = pickRelatedPosts(recentPosts, post.slug, post.category);
 
   const dateStr = post.published_at
     ? new Date(post.published_at)
@@ -150,6 +169,17 @@ export default async function ArticlePage({
           </div>
         )}
       </article>
+
+      {related.length > 0 && (
+        <section aria-label="Artikel terkait" className="mx-auto mt-8 w-full max-w-2xl">
+          <h2 className="font-display mb-3 text-lg font-bold">Artikel Terkait</h2>
+          <div className="space-y-3">
+            {related.map((p) => (
+              <PostRow key={p.id} post={p} />
+            ))}
+          </div>
+        </section>
+      )}
     </PageShell>
   );
 }

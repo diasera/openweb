@@ -7,6 +7,7 @@ import { Segmented } from "@/components/ui/segmented";
 import { Masonry } from "@/components/ui/masonry";
 import { EmptyState } from "@/components/ui/empty-state";
 import { MediaCard } from "@/components/public/media-card";
+import { staggerDelay } from "@/components/motion";
 import type { MediaRow } from "@/lib/types/database";
 
 type Filter = "all" | "photo" | "video";
@@ -58,8 +59,14 @@ export function GaleriBrowser({ media }: { media: MediaRow[] }) {
         />
       ) : (
         <Masonry>
-          {filtered.map((m) => (
-            <MediaCard key={m.id} media={m} showMeta />
+          {filtered.map((m, index) => (
+            <div
+              key={m.id}
+              className="animate-rise"
+              style={{ animationDelay: staggerDelay(index) }}
+            >
+              <MediaCard media={m} showMeta />
+            </div>
           ))}
         </Masonry>
       )}
