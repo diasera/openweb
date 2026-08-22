@@ -168,6 +168,41 @@ html {
   animation: motion-rise 420ms var(--motion-ease-out) both;
 }
 
+/* Entri transisi modern (@starting-style, Baseline 2026): elemen baru
+ * bertransisi dari gaya awal saat pertama dirender — tanpa keyframes.
+ * Browser tanpa dukungan menampilkan elemen langsung (aman). */
+.motion-enter {
+  transition:
+    opacity var(--motion-route) var(--motion-ease-out),
+    transform var(--motion-route) var(--motion-ease-out);
+}
+
+@starting-style {
+  .motion-enter {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* Reveal seiring scroll — scroll-driven animation (konsisten lintas engine
+ * sejak pertengahan 2026). Browser lama mengabaikan animation-timeline
+ * sehingga animasi berjalan berbasis waktu sebagai fallback. */
+.motion-reveal {
+  animation: motion-rise 480ms var(--motion-ease-out) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 60%;
+}
+
+/* Morph View Transitions: elemen bernama (kartu pin, avatar anggota)
+ * bertransisi antar halaman dengan kurva spring ala iOS. Browser tanpa
+ * dukungan tidak pernah sampai sini (aturan tak berlaku). */
+::view-transition-group(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 360ms;
+  animation-timing-function: var(--motion-spring);
+}
+
 @keyframes motion-rise {
   from {
     opacity: 0;
@@ -376,7 +411,18 @@ html {
   .animate-tab-pop,
   .animate-control-pop,
   .animate-symbol-bounce,
-  .animate-rise {
+  .animate-rise,
+  .motion-reveal {
+    animation: none !important;
+  }
+
+  .motion-enter {
+    transition: none !important;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
     animation: none !important;
   }
 

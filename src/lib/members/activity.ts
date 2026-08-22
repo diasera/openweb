@@ -120,7 +120,8 @@ async function fallbackScan(member: MemberRow): Promise<MemberActivityItem[]> {
   return sortActivity([...media, ...posts]);
 }
 
-/** Feed profil membaca indeks kecil; pemindaian hanya fallback sebelum migrasi. */
+/** Feed profil membaca indeks kecil; pemindaian teks dipakai bila indeks
+ *  bermasalah ATAU belum terisi (konten lama sebelum indeks menyala). */
 export async function getMemberActivity(
   member: MemberRow,
 ): Promise<MemberActivityItem[]> {
@@ -131,7 +132,9 @@ export async function getMemberActivity(
     .select("media_id, blog_post_id")
     .eq("member_id", member.id)
     .limit(120);
-  if (error) return fallbackScan(member);
+  if (error || !mentions || mentions.length === 0) {
+    return fallbackScan(member);
+  }
 
   const mediaIds = [
     ...new Set((mentions ?? []).flatMap((item) => (item.media_id ? [item.media_id] : []))),
@@ -163,4 +166,67 @@ export async function getMemberActivity(
     ...(mediaResult.data ?? []).map(mediaItem),
     ...(blogResult.data ?? []).map(blogItem),
   ]);
+}
+
+/** Sel satu hari pada grafik aktivitas. */
+export interface ActivityHeatmapDay {
+  /** ISO date (yyyy-mm-dd) — kunci stabil untuk React. */
+  date: string;
+  /** 0 = kosong; 1..4 = intensitas naik. */
+  level: 0 | 1 | 2 | 3 | 4;
+  /** Jumlah momen pada hari itu. */
+  count: number;
+}
+
+export interface ActivityHeatmap {
+  days: ActivityHeatmapDay[];
+  total: number;
+  /** Senin di kolom pertama; minggu berjalan di kolom terakhir. */
+  weeks: number;
+}
+
+/** Ambil level dari jumlah: 0 lalu 1..4 dengan batas 3+. */
+function heatLevel(count: number): ActivityHeatmapDay["level"] {
+  if (count <= 0) return 0;
+  if (count === 1) return 1;
+  if (count === 2) return 2;
+  if (count <= 4) return 3;
+  return 4;
+}
+
+/**
+ * Bangun data grafik aktivitas (grid minggu × hari) dari item aktivitas yang
+ * sudah ada — fungsi pure tanpa query tambahan. Kolom pertama = Senin pada
+ * (hari ini - (weeks-1) minggu), dirotasi agar minggu berjalan paling kanan.
+ */
+export function buildActivityHeatmap(
+  items: MemberActivityItem[],
+  weeks = 26,
+): ActivityHeatmap {
+  const perDay = new Map<string, number>();
+  for (const item of items) {
+    const stamp = Date.parse(item.occurredAt);
+    if (Number.isNaN(stamp)) continue;
+    const day = new Date(stamp);
+    const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
+    perDay.set(key, (perDay.get(key) ?? 0) + 1);
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  // Mundur ke Senin minggu ini, lalu (weeks-1) minggu ke belakang.
+  const monday = new Date(today);
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7) - (weeks - 1) * 7);
+
+  const days: ActivityHeatmapDay[] = [];
+  let total = 0;
+  for (let offset = 0; offset < weeks * 7; offset += 1) {
+    const day = new Date(monday);
+    day.setDate(monday.getDate() + offset);
+    const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
+    const count = day > today ? 0 : (perDay.get(key) ?? 0);
+    total += count;
+    days.push({ date: key, level: heatLevel(count), count });
+  }
+  return { days, total, weeks };
 }

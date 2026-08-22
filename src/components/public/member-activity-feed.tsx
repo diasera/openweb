@@ -34,9 +34,11 @@ function ActivityVisual({ item }: { item: MemberActivityItem }) {
 
 export function MemberActivityFeed({
   memberName,
+  memberLabel = "anggota",
   items,
 }: {
   memberName: string;
+  memberLabel?: string;
   items: MemberActivityItem[];
 }) {
   return (
@@ -44,10 +46,10 @@ export function MemberActivityFeed({
       <div className="mb-3 flex items-end justify-between gap-3">
         <div>
           <p className="text-primary-readable text-xs font-bold uppercase tracking-wider">
-            History tag
+            Riwayat tag
           </p>
           <h2 id="member-history-title" className="font-display mt-0.5 text-xl font-bold">
-            Aktivitas anggota
+            Aktivitas {memberLabel.toLowerCase()}
           </h2>
         </div>
         <span className="text-muted flex items-center gap-1.5 text-xs">
@@ -68,7 +70,7 @@ export function MemberActivityFeed({
               prefetch={false}
               className={cardClass(
                 "interactive",
-                "motion-pressable flex min-w-0 items-center gap-3 overflow-hidden p-2.5",
+                "motion-pressable motion-reveal flex min-w-0 items-center gap-3 overflow-hidden p-2.5",
               )}
             >
               <span className="relative h-[76px] w-[76px] shrink-0 overflow-hidden rounded-xl">

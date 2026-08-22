@@ -7,6 +7,7 @@ import { Pagination } from "@/components/public/pagination";
 import { JsonLd } from "@/components/seo/json-ld";
 import { buildPageMetadata, PUBLIC_PAGE_SEO } from "@/lib/seo";
 import { breadcrumbStructuredData } from "@/lib/seo/structured-data";
+import { parsePageParam } from "@/lib/utils/url";
 
 export const revalidate = 30;
 
@@ -14,11 +15,6 @@ const PAGE_SIZE = 24;
 
 export async function generateMetadata(): Promise<Metadata> {
   return buildPageMetadata(await getSettings(), PUBLIC_PAGE_SEO.galeri);
-}
-
-function parsePage(value: string | undefined): number {
-  const page = Number.parseInt(value ?? "1", 10);
-  return Number.isInteger(page) && page >= 1 ? page : 1;
 }
 
 export default async function GaleriPage({
@@ -30,7 +26,7 @@ export default async function GaleriPage({
     searchParams,
     getSettings(),
   ]);
-  const page = parsePage(pageParam);
+  const page = parsePageParam(pageParam);
   const [media, total] = await Promise.all([
     getApprovedMedia({ limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE }),
     getApprovedMediaCount(),

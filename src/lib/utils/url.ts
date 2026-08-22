@@ -2,8 +2,7 @@
  * Normalisasi tujuan notifikasi publik. Hanya path internal absolut dan HTTPS
  * yang boleh menjadi tautan; skema aktif seperti javascript:/data: ditolak.
  */
-export function normalizeNotificationHref(value: string | null | undefined) {
-  const href = value?.trim() ?? "";
+export function normalizeNotificationHref(value: string | null | undefined) {  const href = value?.trim() ?? "";
   if (!href || /[\u0000-\u001f\u007f]/.test(href)) return null;
 
   if (
@@ -27,4 +26,10 @@ export function normalizeNotificationHref(value: string | null | undefined) {
   } catch {
     return null;
   }
+}
+
+/** Baca parameter ?page= dari searchParams menjadi nomor halaman >= 1. */
+export function parsePageParam(value: string | undefined): number {
+  const page = Number.parseInt(value ?? "1", 10);
+  return Number.isInteger(page) && page >= 1 ? page : 1;
 }

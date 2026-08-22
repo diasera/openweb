@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { getMemberByProfileKey, getSettings } from "@/lib/data";
 import { PageShell } from "@/components/public/page-shell";
-import { Avatar } from "@/components/ui/avatar";
-import { Chip } from "@/components/ui/chip";
+import { ShareButton } from "@/components/public/share-save";
+import { MemberProfileCard } from "@/components/public/member-profile-card";
+import { MemberHeatmap } from "@/components/public/member-heatmap";
 import { getMemberActivity } from "@/lib/members/activity";
 import { memberProfilePath } from "@/lib/members/slug";
 import { getContentLabels, toDisplayLabel } from "@/lib/site-config";
@@ -60,8 +61,12 @@ export default async function MemberProfilePage({
   const canonicalPath = memberProfilePath(member);
   if (slug !== member.slug) permanentRedirect(canonicalPath);
 
-  const activity = await getMemberActivity(member);
-  const labels = getContentLabels(settings);
+  const [activity, labels] = [
+    await getMemberActivity(member),
+    getContentLabels(settings),
+  ];
+  const mediaCount = activity.filter((item) => item.kind === "media").length;
+  const blogCount = activity.filter((item) => item.kind === "blog").length;
 
   return (
     <PageShell
@@ -69,6 +74,7 @@ export default async function MemberProfilePage({
         variant: "sub",
         title: member.name,
         backHref: "/anggota",
+        right: <ShareButton title={`Profil ${member.name}`} />,
       }}
     >
       <JsonLd
@@ -84,26 +90,25 @@ export default async function MemberProfilePage({
           ]),
         ]}
       />
-      <div className="mx-auto max-w-md text-center">
-        <div className="flex justify-center">
-          <Avatar name={member.name} src={member.photo_url} size={110} ring />
-        </div>
-        <h1 className="font-display mt-4 text-2xl font-bold">{member.name}</h1>
-        {member.position && (
-          <div className="mt-2 flex justify-center">
-            <Chip variant="role">{member.position}</Chip>
-          </div>
-        )}
-        {member.nim && (
-          <p className="text-muted mt-2 text-sm">
-            {labels.memberIdentifier}: {member.nim}
-          </p>
-        )}
-        {member.bio && (
-          <p className="mt-4 text-sm leading-relaxed">{member.bio}</p>
-        )}
+      <MemberProfileCard
+        member={member}
+        settings={settings}
+        mediaCount={mediaCount}
+        blogCount={blogCount}
+      />
+
+      <div className="mx-auto mt-3 w-full max-w-2xl">
+        <MemberHeatmap
+          items={activity}
+          memberLabel={toDisplayLabel(labels.memberSingular, settings.locale)}
+        />
       </div>
-      <MemberActivityFeed memberName={member.name} items={activity} />
+
+      <MemberActivityFeed
+        memberName={member.name}
+        memberLabel={toDisplayLabel(labels.memberSingular, settings.locale)}
+        items={activity}
+      />
     </PageShell>
   );
 }

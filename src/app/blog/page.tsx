@@ -18,6 +18,7 @@ import { MotionLink, staggerDelay } from "@/components/motion";
 import { JsonLd } from "@/components/seo/json-ld";
 import { buildPageMetadata, PUBLIC_PAGE_SEO } from "@/lib/seo";
 import { breadcrumbStructuredData } from "@/lib/seo/structured-data";
+import { parsePageParam } from "@/lib/utils/url";
 import { getPhotoDestinationFrame } from "@/lib/media-editor/profiles";
 
 const BLOG_COVER_FRAME = getPhotoDestinationFrame("blog-cover");
@@ -37,11 +38,6 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-function parsePage(value: string | undefined): number {
-  const page = Number.parseInt(value ?? "1", 10);
-  return Number.isInteger(page) && page >= 1 ? page : 1;
-}
-
 export default async function BlogListPage({
   searchParams,
 }: {
@@ -51,7 +47,7 @@ export default async function BlogListPage({
     searchParams,
     getSettings(),
   ]);
-  const page = parsePage(pageParam);
+  const page = parsePageParam(pageParam);
   const [posts, total] = await Promise.all([
     getPublishedPosts(PAGE_SIZE, (page - 1) * PAGE_SIZE),
     getPublishedPostCount(),
