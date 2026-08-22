@@ -8,7 +8,7 @@ export function SettingsSection({
   icon,
   children,
 }: {
-  id: string;
+  id?: string;
   title: string;
   description: string;
   icon: ReactNode;

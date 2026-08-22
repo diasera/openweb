@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getMembers, getSettings } from "@/lib/data";
 import { buildPageMetadata, PUBLIC_PAGE_SEO } from "@/lib/seo";
+import { breadcrumbStructuredData } from "@/lib/seo/structured-data";
+import { JsonLd } from "@/components/seo/json-ld";
 import { getContentLabels, toDisplayLabel } from "@/lib/site-config";
 import { PageShell } from "@/components/public/page-shell";
 import { MemberBrowser } from "@/components/public/member-browser";
@@ -18,6 +20,12 @@ export default async function MembersPage() {
 
   return (
     <PageShell>
+      <JsonLd
+        data={breadcrumbStructuredData(settings, [
+          { name: "Beranda", path: "/" },
+          { name: title, path: "/anggota" },
+        ])}
+      />
       <div className="mb-4">
         <h1 className="font-display text-2xl font-bold">{title}</h1>
         <p className="text-muted text-sm">

@@ -8,10 +8,11 @@ import {
 import { requireFeature } from "@/lib/auth";
 import { checkedMutation } from "@/lib/database/mutation";
 import {
-  parseSiteConfigFormData,
+  parseSiteSectionFormData,
   SITE_HERO_IMAGE_FIELD,
   SITE_IMAGE_FIELDS,
-  toSiteSettingsUpdate,
+  toSiteSectionUpdate,
+  type SiteSettingsSection,
 } from "@/lib/site-config";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import {
@@ -23,15 +24,37 @@ import { UPLOAD_LIMITS } from "@/lib/constants";
 import { readPhotoDimensions } from "@/lib/media-editor/image";
 import { normalizeMediaDimensions } from "@/lib/media/display";
 
+/** Gambar milik tiap tab; upload & GC hanya menyentuh field section aktif. */
+const SECTION_IMAGE_FIELDS: Record<
+  SiteSettingsSection,
+  typeof SITE_IMAGE_FIELDS[number][]
+> = {
+  identity: SITE_IMAGE_FIELDS.filter(
+    (field) => field.kind === "site-logo" || field.kind === "site-favicon",
+  ),
+  home: [SITE_HERO_IMAGE_FIELD],
+  seo: SITE_IMAGE_FIELDS.filter((field) => field.kind === "site-seo"),
+  contact: [],
+};
+
+const SITE_SETTINGS_IMAGE_COLUMNS = "hero_image_url, logo_url, favicon_url, seo_image_url";
+
 function hasDimensionInput(value: FormDataEntryValue | null): boolean {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-/** Server action tipis; parsing dan transformasi config hidup di satu pusat. */
-export async function saveSiteSettings(formData: FormData): Promise<ActionResult> {
+/**
+ * Pusat persistensi Setting: satu alur (validasi -> koncurrency -> upload ->
+ * GC) yang dipanggil tipis oleh action per-tab. Parsing & transformasi ada di
+ * site-config/schema.ts, bukan di sini.
+ */
+async function persistSiteSection(
+  section: SiteSettingsSection,
+  formData: FormData,
+): Promise<ActionResult> {
   await requireFeature("setting");
 
-  const parsed = parseSiteConfigFormData(formData);
+  const parsed = parseSiteSectionFormData(section, formData);
   if (!parsed.success) {
     return { error: validationErrorMessage(parsed, "Konfigurasi tidak valid.") };
   }
@@ -43,7 +66,7 @@ export async function saveSiteSettings(formData: FormData): Promise<ActionResult
     supabase
       .from("site_settings")
       .select(
-        "id, hero_image_url, hero_image_width, hero_image_height, logo_url, favicon_url, seo_image_url, updated_at",
+        `id, ${SITE_SETTINGS_IMAGE_COLUMNS}, hero_image_width, hero_image_height, updated_at`,
       )
       .eq("id", 1)
       .maybeSingle(),
@@ -54,7 +77,7 @@ export async function saveSiteSettings(formData: FormData): Promise<ActionResult
   const isSiteImageReferenced = async (url: string) => {
     const { data, error } = await supabase
       .from("site_settings")
-      .select("hero_image_url, logo_url, favicon_url, seo_image_url")
+      .select(SITE_SETTINGS_IMAGE_COLUMNS)
       .eq("id", 1)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -63,58 +86,77 @@ export async function saveSiteSettings(formData: FormData): Promise<ActionResult
     );
   };
 
-  const heroFile = formData.get(SITE_HERO_IMAGE_FIELD.formKey);
-  const hasNewHero = heroFile instanceof File && heroFile.size > 0;
-  const removesHero =
-    formData.get(`${SITE_HERO_IMAGE_FIELD.formKey}_remove`) === "1";
-  const rawHeroWidth = formData.get(SITE_HERO_IMAGE_FIELD.widthColumn);
-  const rawHeroHeight = formData.get(SITE_HERO_IMAGE_FIELD.heightColumn);
-  const hasHeroDimensionInput =
-    hasDimensionInput(rawHeroWidth) || hasDimensionInput(rawHeroHeight);
-  const currentHeroDimensions = normalizeMediaDimensions(
-    current.data.hero_image_width,
-    current.data.hero_image_height,
-    UPLOAD_LIMITS.mediaMaxDimension,
-  );
-  let heroDimensions = normalizeMediaDimensions(
-    rawHeroWidth,
-    rawHeroHeight,
-    UPLOAD_LIMITS.mediaMaxDimension,
-  );
-
-  if (hasNewHero) {
-    try {
-      const measured = await readPhotoDimensions(heroFile);
-      heroDimensions = normalizeMediaDimensions(
-        measured.width,
-        measured.height,
-        UPLOAD_LIMITS.mediaMaxDimension,
-      );
-    } catch {
-      return {
-        error:
-          "Dimensi file hero tidak dapat diverifikasi. Pilih atau edit ulang gambar lalu coba lagi.",
-      };
-    }
-  }
-
-  if (
-    (hasNewHero ||
-      (!removesHero &&
-        Boolean(current.data.hero_image_url) &&
-        (hasHeroDimensionInput || !currentHeroDimensions))) &&
-    !heroDimensions
-  ) {
-    return {
-      error:
-        "Dimensi hero belum tersedia. Tunggu pratinjau selesai dimuat, atau pilih/edit ulang gambar lalu simpan kembali.",
-    };
-  }
-
   const images: Record<string, string | null> = {};
   const imageDimensions: Record<string, number | null> = {};
   const uploadedAssets: ManagedImageAsset[] = [];
-  for (const field of SITE_IMAGE_FIELDS) {
+  const sectionFields = SECTION_IMAGE_FIELDS[section];
+  let heroDimensions: { width: number; height: number } | null = null;
+
+  // Upacara dimensi hero hanya relevan untuk tab Beranda (satu-satunya gambar
+  // dengan kolom width/height di database).
+  if (section === "home") {
+    const heroFile = formData.get(SITE_HERO_IMAGE_FIELD.formKey);
+    const hasNewHero = heroFile instanceof File && heroFile.size > 0;
+    const removesHero =
+      formData.get(`${SITE_HERO_IMAGE_FIELD.formKey}_remove`) === "1";
+    const rawHeroWidth = formData.get(SITE_HERO_IMAGE_FIELD.widthColumn);
+    const rawHeroHeight = formData.get(SITE_HERO_IMAGE_FIELD.heightColumn);
+    const hasHeroDimensionInput =
+      hasDimensionInput(rawHeroWidth) || hasDimensionInput(rawHeroHeight);
+    const currentHeroDimensions = normalizeMediaDimensions(
+      current.data.hero_image_width,
+      current.data.hero_image_height,
+      UPLOAD_LIMITS.mediaMaxDimension,
+    );
+    heroDimensions = normalizeMediaDimensions(
+      rawHeroWidth,
+      rawHeroHeight,
+      UPLOAD_LIMITS.mediaMaxDimension,
+    );
+
+    if (hasNewHero) {
+      try {
+        const measured = await readPhotoDimensions(heroFile);
+        heroDimensions = normalizeMediaDimensions(
+          measured.width,
+          measured.height,
+          UPLOAD_LIMITS.mediaMaxDimension,
+        );
+      } catch {
+        return {
+          error:
+            "Dimensi file hero tidak dapat diverifikasi. Pilih atau edit ulang gambar lalu coba lagi.",
+        };
+      }
+    }
+
+    if (
+      (hasNewHero ||
+        (!removesHero &&
+          Boolean(current.data.hero_image_url) &&
+          (hasHeroDimensionInput || !currentHeroDimensions))) &&
+      !heroDimensions
+    ) {
+      return {
+        error:
+          "Dimensi hero belum tersedia. Tunggu pratinjau selesai dimuat, atau pilih/edit ulang gambar lalu simpan kembali.",
+      };
+    }
+
+    // Backfill baris lama yang belum punya dimensi hero tersimpan.
+    if (
+      heroDimensions &&
+      !hasNewHero &&
+      !removesHero &&
+      !currentHeroDimensions &&
+      current.data.hero_image_url
+    ) {
+      imageDimensions[SITE_HERO_IMAGE_FIELD.widthColumn] = heroDimensions.width;
+      imageDimensions[SITE_HERO_IMAGE_FIELD.heightColumn] = heroDimensions.height;
+    }
+  }
+
+  for (const field of sectionFields) {
     const file = formData.get(field.formKey);
     if (file instanceof File && file.size > 0) {
       const uploaded = await uploadManagedImage(field.kind, file);
@@ -127,30 +169,21 @@ export async function saveSiteSettings(formData: FormData): Promise<ActionResult
       }
       uploadedAssets.push(uploaded.asset);
       images[field.column] = uploaded.asset.url;
-      if ("widthColumn" in field && "heightColumn" in field) {
+      if (field === SITE_HERO_IMAGE_FIELD) {
         imageDimensions[field.widthColumn] = heroDimensions?.width ?? null;
         imageDimensions[field.heightColumn] = heroDimensions?.height ?? null;
       }
     } else if (formData.get(`${field.formKey}_remove`) === "1") {
       images[field.column] = null;
-      if ("widthColumn" in field && "heightColumn" in field) {
+      if (field === SITE_HERO_IMAGE_FIELD) {
         imageDimensions[field.widthColumn] = null;
         imageDimensions[field.heightColumn] = null;
       }
-    } else if (
-      "widthColumn" in field &&
-      "heightColumn" in field &&
-      current.data[field.column] &&
-      heroDimensions &&
-      !currentHeroDimensions
-    ) {
-      imageDimensions[field.widthColumn] = heroDimensions.width;
-      imageDimensions[field.heightColumn] = heroDimensions.height;
     }
   }
 
   const update = {
-    ...toSiteSettingsUpdate(parsed.data),
+    ...toSiteSectionUpdate(section, parsed.data),
     ...images,
     ...imageDimensions,
   };
@@ -177,7 +210,7 @@ export async function saveSiteSettings(formData: FormData): Promise<ActionResult
     return { error: saved.error };
   }
 
-  const replacedAssets = SITE_IMAGE_FIELDS.flatMap((field) => {
+  const replacedAssets = sectionFields.flatMap((field) => {
     const previousUrl = current.data[field.column];
     const nextUrl = Object.hasOwn(images, field.column)
       ? images[field.column]
@@ -190,4 +223,21 @@ export async function saveSiteSettings(formData: FormData): Promise<ActionResult
 
   revalidatePath("/", "layout");
   return {};
+}
+
+/** Action tipis per-tab Setting; tiap tab memakai useAdminFormAction sendiri. */
+export async function saveIdentitySettings(formData: FormData): Promise<ActionResult> {
+  return persistSiteSection("identity", formData);
+}
+
+export async function saveHomeSettings(formData: FormData): Promise<ActionResult> {
+  return persistSiteSection("home", formData);
+}
+
+export async function saveSeoSettings(formData: FormData): Promise<ActionResult> {
+  return persistSiteSection("seo", formData);
+}
+
+export async function saveContactSettings(formData: FormData): Promise<ActionResult> {
+  return persistSiteSection("contact", formData);
 }

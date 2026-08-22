@@ -9,6 +9,8 @@ import {
   absoluteUrl,
   getSiteAlternateName,
   getSiteUrl,
+  getSocialImageUrl,
+  OG_CARD_PATH,
   plainText,
 } from "./index";
 
@@ -34,7 +36,9 @@ function organizationNode(settings: SiteSettingsRow): Schema {
       : undefined,
     email: settings.contact_email || undefined,
     telephone: settings.contact_phone || undefined,
-    address: settings.contact_address || undefined,
+    address: settings.contact_address
+      ? { "@type": "PostalAddress", streetAddress: settings.contact_address }
+      : undefined,
     sameAs: socialUrls.length ? socialUrls : undefined,
   };
 }
@@ -53,7 +57,6 @@ export function homeStructuredData(settings: SiteSettingsRow): Schema {
         description: settings.description || undefined,
         url: `${siteUrl}/`,
         inLanguage: settings.locale,
-        keywords: settings.keywords?.join(", ") || undefined,
         publisher: { "@id": `${siteUrl}/#organization` },
       },
       organization,
@@ -89,9 +92,13 @@ export function articleStructuredData(
     mainEntityOfPage: absoluteUrl(`/blog/${post.slug}`, settings),
     headline: post.title,
     description,
-    image: post.cover_image_url
-      ? [absoluteUrl(post.cover_image_url, settings)]
-      : undefined,
+    // Rich result artikel menuntut gambar; tanpa cover jatuh ke gambar situs.
+    image: [
+      absoluteUrl(
+        post.cover_image_url ?? getSocialImageUrl(settings) ?? OG_CARD_PATH,
+        settings,
+      ),
+    ],
     datePublished: post.published_at || undefined,
     dateModified: post.updated_at || post.published_at || undefined,
     inLanguage: settings.locale,

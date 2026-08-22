@@ -24,7 +24,6 @@ export const DEMO_SETTINGS: SiteSettingsRow = {
   site_alternate_name: "Template Komunitas Modern",
   site_url: null,
   tagline: "Tumbuh bersama melalui cerita, karya, dan kebersamaan.",
-  keywords: ["komunitas", "kegiatan anggota", "cerita bersama", "karya anggota"],
   hero_title: "Cerita yang tumbuh bersama",
   hero_subtitle: "Satu ruang untuk profil, kegiatan, karya, dan kenangan.",
   hero_image_url: null,
@@ -32,9 +31,6 @@ export const DEMO_SETTINGS: SiteSettingsRow = {
   hero_image_height: null,
   logo_url: null,
   favicon_url: null,
-  seo_home_title: "Ruang Bersama — Profil, Kegiatan, dan Karya Anggota",
-  seo_home_description:
-    "Temukan profil anggota, dokumentasi kegiatan, karya, artikel, dan informasi terbaru dari komunitas kami.",
   seo_image_url: null,
   seo_indexing_enabled: true,
   theme: null,

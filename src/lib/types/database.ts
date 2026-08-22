@@ -66,11 +66,9 @@ export type SiteSettingsRow = {
   site_url: string | null;
   site_type: SiteType;
   locale: string;
-  timezone: string;
   description: string | null;
   tagline: string | null;
   content_labels: ContentLabels | null;
-  keywords: string[] | null;
   hero_title: string | null;
   hero_subtitle: string | null;
   hero_image_url: string | null;
@@ -78,8 +76,6 @@ export type SiteSettingsRow = {
   hero_image_height: number | null;
   logo_url: string | null;
   favicon_url: string | null;
-  seo_home_title: string | null;
-  seo_home_description: string | null;
   seo_image_url: string | null;
   seo_indexing_enabled: boolean;
   theme: ThemeTokens | null;

@@ -50,11 +50,9 @@ create table if not exists public.site_settings (
   site_url text,
   site_type text not null default 'community',
   locale text not null default 'id-ID',
-  timezone text not null default 'Asia/Jakarta',
   description text,
   tagline text,
   content_labels jsonb not null default '{"memberSingular":"anggota","memberPlural":"anggota","memberIdentifier":"Nomor identitas","memberCoreGroup":"Pengurus"}'::jsonb,
-  keywords text[],
   hero_title text,
   hero_subtitle text,
   hero_image_url text,
@@ -62,8 +60,6 @@ create table if not exists public.site_settings (
   hero_image_height integer,
   logo_url text,
   favicon_url text,
-  seo_home_title text,
-  seo_home_description text,
   seo_image_url text,
   seo_indexing_enabled boolean not null default true,
   theme jsonb,
@@ -94,6 +90,13 @@ create table if not exists public.site_settings (
 drop trigger if exists trg_site_settings_updated on public.site_settings;
 create trigger trg_site_settings_updated before update on public.site_settings
   for each row execute function public.set_updated_at();
+
+-- Kolom legacy yang sudah dilebur ke site_name/tagline/description (dedup
+-- panel Setting); di-drop secara idempoten agar deploy lama ikut bersih.
+alter table public.site_settings drop column if exists timezone;
+alter table public.site_settings drop column if exists keywords;
+alter table public.site_settings drop column if exists seo_home_title;
+alter table public.site_settings drop column if exists seo_home_description;
 
 -- ---- admins (owner + admin) ------------------------------------------------
 create table if not exists public.admins (

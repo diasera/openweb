@@ -18,7 +18,6 @@ export const DEFAULT_SITE_CONFIG = {
   site_name: DEFAULT_SITE_NAME,
   site_type: "community",
   locale: "id-ID",
-  timezone: "Asia/Jakarta",
   description: DEFAULT_SITE_DESCRIPTION,
   seo_indexing_enabled: true,
   google_adsense_auto_ads: false,
@@ -28,7 +27,6 @@ export const DEFAULT_SITE_CONFIG = {
   | "site_name"
   | "site_type"
   | "locale"
-  | "timezone"
   | "description"
   | "seo_indexing_enabled"
   | "google_adsense_auto_ads"
@@ -69,7 +67,6 @@ export function normalizeSiteSettings(settings: SiteSettingsRow): SiteSettingsRo
     site_name: legacy.site_name?.trim() || DEFAULT_SITE_CONFIG.site_name,
     site_type: legacy.site_type || DEFAULT_SITE_CONFIG.site_type,
     locale: legacy.locale || DEFAULT_SITE_CONFIG.locale,
-    timezone: legacy.timezone || DEFAULT_SITE_CONFIG.timezone,
     description: legacy.description ?? DEFAULT_SITE_CONFIG.description,
     content_labels: getContentLabels(settings),
     seo_indexing_enabled: legacy.seo_indexing_enabled !== false,

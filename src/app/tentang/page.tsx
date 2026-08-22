@@ -6,6 +6,8 @@ import { SiteLogo } from "@/components/public/site-logo";
 import { Card } from "@/components/ui/card";
 import { MemberCard } from "@/components/public/member-card";
 import { buildPageMetadata, PUBLIC_PAGE_SEO } from "@/lib/seo";
+import { breadcrumbStructuredData } from "@/lib/seo/structured-data";
+import { JsonLd } from "@/components/seo/json-ld";
 import {
   getContentLabels,
   SOCIAL_NETWORKS,
@@ -40,6 +42,12 @@ export default async function TentangPage() {
         backHref: "/profil",
       }}
     >
+      <JsonLd
+        data={breadcrumbStructuredData(settings, [
+          { name: "Beranda", path: "/" },
+          { name: `Tentang ${settings.site_name}`, path: "/tentang" },
+        ])}
+      />
       <div className="space-y-4">
         <Card className="p-5 text-center">
           <div className="flex justify-center">

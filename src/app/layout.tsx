@@ -3,12 +3,14 @@ import Script from "next/script";
 import { getSettings } from "@/lib/data";
 import { getPublicMusicTracks } from "@/lib/data/music";
 import {
-  absoluteUrl,
   getHomeSeoDescription,
   getHomeSeoTitle,
   getSiteUrl,
+  getSocialHandle,
+  getSocialImageUrl,
   normalizeAdsenseClientId,
   normalizeAnalyticsId,
+  OG_CARD_PATH,
 } from "@/lib/seo";
 import { rgbChannelsToHex, themeCss } from "@/lib/theme";
 import { getContentLabels, toDisplayLabel } from "@/lib/site-config";
@@ -42,9 +44,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const title = getHomeSeoTitle(settings);
   const description = getHomeSeoDescription(settings);
   const siteUrl = getSiteUrl(settings);
-  const image =
-    settings.seo_image_url || settings.hero_image_url || settings.logo_url;
-  const images = image ? [absoluteUrl(image, settings)] : undefined;
+  const image = getSocialImageUrl(settings) ?? OG_CARD_PATH;
+  const images = [{ url: new URL(image, siteUrl).toString(), alt: `${siteName} — ${title}` }];
   const adsenseClientId = normalizeAdsenseClientId(
     settings.google_adsense_client_id,
   );
@@ -53,7 +54,6 @@ export async function generateMetadata(): Promise<Metadata> {
     applicationName: siteName,
     title: { default: title, template: `%s · ${siteName}` },
     description,
-    keywords: settings.keywords ?? undefined,
     authors: [{ name: siteName, url: siteUrl }],
     creator: siteName,
     publisher: siteName,
@@ -70,7 +70,8 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
     },
     twitter: {
-      card: images ? "summary_large_image" : "summary",
+      card: "summary_large_image",
+      site: getSocialHandle(settings.social),
       title,
       description,
       images,

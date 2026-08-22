@@ -5,7 +5,7 @@ import {
   getSiteOrigin,
   toAbsoluteSiteUrl,
 } from "@/lib/site-config";
-import type { SiteSettingsRow } from "@/lib/types/database";
+import type { SiteSettingsRow, SocialLinks } from "@/lib/types/database";
 
 export {
   normalizeAdsenseClientId,
@@ -55,6 +55,12 @@ export const PUBLIC_PAGE_SEO = {
   },
 } as const;
 
+/** Ukuran kartu sosial yang dirender /api/og (rasio OG 1.91:1). */
+export const OG_CARD_WIDTH = 1200;
+export const OG_CARD_HEIGHT = 630;
+export const OG_CARD_PATH = "/api/og";
+export const BLOG_OG_CARD_PATH = "/api/og/blog";
+
 /** Metadata judul admin terpusat agar suffix tidak tersebar di setiap page. */
 export function buildAdminPageMetadata(title: string): Metadata {
   return { title: `${title} · Profil Admin` };
@@ -69,17 +75,29 @@ export function getSiteAlternateName(settings: SiteSettingsRow) {
 }
 
 export function getHomeSeoTitle(settings: SiteSettingsRow) {
-  if (settings.seo_home_title?.trim()) return settings.seo_home_title.trim();
   const context = settings.tagline?.trim() || "Profil, kegiatan, karya, dan cerita";
   return `${settings.site_name} — ${context}`;
 }
 
 export function getHomeSeoDescription(settings: SiteSettingsRow) {
-  return (
-    settings.seo_home_description?.trim() ||
-    settings.description?.trim() ||
-    DEFAULT_SITE_DESCRIPTION
-  );
+  return settings.description?.trim() || DEFAULT_SITE_DESCRIPTION;
+}
+
+/** Gambar sosial default: seo_image -> hero -> logo. Bisa null (kartu /api/og). */
+export function getSocialImageUrl(settings: SiteSettingsRow) {
+  return settings.seo_image_url ?? settings.hero_image_url ?? settings.logo_url ?? null;
+}
+
+/** Handle X diturunkan dari tautan sosial, mis. https://x.com/nama -> @nama. */
+export function getSocialHandle(social: SocialLinks | null) {
+  const link = social?.x?.trim();
+  if (!link) return undefined;
+  try {
+    const handle = new URL(link).pathname.replace(/^\/+/, "").replace(/^@/, "");
+    return /^[\w]{1,15}$/.test(handle) ? `@${handle}` : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export function plainText(value: string | null | undefined, max = 170) {
@@ -121,6 +139,26 @@ function openGraphLocale(locale: string) {
   return locale.replace("-", "_");
 }
 
+/**
+ * Dimensi OG hanya dilampirkan saat benar-benar diketahui (kartu /api/og dan
+ * hero yang punya kolom dimensi); nilai ditebak lebih buruk daripada kosong.
+ */
+function socialImages(
+  image: string,
+  settings: SiteSettingsRow,
+  alt: string,
+): NonNullable<Metadata["openGraph"]>["images"] {
+  const known =
+    image === OG_CARD_PATH || image.startsWith(BLOG_OG_CARD_PATH)
+      ? { width: OG_CARD_WIDTH, height: OG_CARD_HEIGHT }
+      : image === settings.hero_image_url &&
+          settings.hero_image_width &&
+          settings.hero_image_height
+        ? { width: settings.hero_image_width, height: settings.hero_image_height }
+        : {};
+  return [{ url: absoluteUrl(image, settings), alt, ...known }];
+}
+
 /** Pembangun metadata tunggal agar canonical, robots, Open Graph, dan kartu sosial konsisten. */
 export function buildPageMetadata(
   settings: SiteSettingsRow,
@@ -129,12 +167,8 @@ export function buildPageMetadata(
   const canonical = absoluteUrl(input.path, settings);
   const titleText = localizeTemplate(input.title, settings);
   const description = localizeTemplate(input.description, settings);
-  const image =
-    input.image ??
-    settings.seo_image_url ??
-    settings.hero_image_url ??
-    settings.logo_url;
-  const images = image ? [absoluteUrl(image, settings)] : undefined;
+  const image = input.image ?? getSocialImageUrl(settings) ?? OG_CARD_PATH;
+  const images = socialImages(image, settings, `${settings.site_name} — ${titleText}`);
   const title = input.absoluteTitle
     ? ({ absolute: titleText } as const)
     : titleText;
@@ -151,11 +185,22 @@ export function buildPageMetadata(
   return {
     title,
     description,
-    keywords: settings.keywords ?? undefined,
     alternates: { canonical },
     robots: noIndex
       ? { index: false, follow: false, googleBot: { index: false, follow: false } }
-      : { index: true, follow: true },
+      : {
+          index: true,
+          follow: true,
+          // Direktif googleBot harus diulang di sini: metadata Next di-merge
+          // shallow, jadi robots milik halaman menimpa robots milik layout.
+          googleBot: {
+            index: true,
+            follow: true,
+            "max-image-preview": "large",
+            "max-snippet": -1,
+            "max-video-preview": -1,
+          },
+        },
     openGraph:
       input.type === "article"
         ? {
@@ -167,7 +212,8 @@ export function buildPageMetadata(
           }
         : { ...openGraphBase, type: "website" },
     twitter: {
-      card: images ? "summary_large_image" : "summary",
+      card: "summary_large_image",
+      site: getSocialHandle(settings.social),
       title: titleText,
       description,
       images,

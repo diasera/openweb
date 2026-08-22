@@ -45,7 +45,8 @@ export async function generateMetadata({
     title: post.title,
     description,
     path: `/blog/${post.slug}`,
-    image: post.cover_image_url,
+    // Tanpa cover, kartu sosial artikel dirender otomatis oleh /api/og.
+    image: post.cover_image_url ?? `/api/og/blog/${post.slug}`,
     type: "article",
     publishedTime: post.published_at,
     modifiedTime: post.updated_at,

@@ -9,7 +9,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { readingTime } from "@/lib/utils/reading-time";
 import { timeAgo } from "@/lib/utils/time";
 import { MotionLink } from "@/components/motion";
+import { JsonLd } from "@/components/seo/json-ld";
 import { buildPageMetadata, PUBLIC_PAGE_SEO } from "@/lib/seo";
+import { breadcrumbStructuredData } from "@/lib/seo/structured-data";
 import { getPhotoDestinationFrame } from "@/lib/media-editor/profiles";
 
 const BLOG_COVER_FRAME = getPhotoDestinationFrame("blog-cover");
@@ -29,6 +31,12 @@ export default async function BlogListPage() {
 
   return (
     <PageShell>
+      <JsonLd
+        data={breadcrumbStructuredData(settings, [
+          { name: "Beranda", path: "/" },
+          { name: "Blog", path: "/blog" },
+        ])}
+      />
       <div className="mb-4">
         <h1 className="font-display text-2xl font-bold">Blog</h1>
         <p className="text-muted text-sm">

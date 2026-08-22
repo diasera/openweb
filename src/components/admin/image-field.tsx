@@ -22,6 +22,12 @@ export interface ImageFieldProps {
   /** Profil aset wajib agar kebijakan editor tidak tersebar sebagai angka lokal. */
   profile: PhotoEditorProfileId;
   disabled?: boolean;
+  /**
+   * Render input tersembunyi {name}_width/{name}_height. Hanya aktif untuk
+   * field yang kolom dimensinya benar-benar tersimpan di database (saat ini
+   * hanya hero) agar form tidak mengirim data yang dibuang server.
+   */
+  withDimensions?: boolean;
 }
 
 /**
@@ -38,6 +44,7 @@ export function ImageField({
   removable = false,
   profile,
   disabled = false,
+  withDimensions = false,
 }: ImageFieldProps) {
   const {
     inputRef,
@@ -154,16 +161,20 @@ export function ImageField({
             name={`${name}_remove`}
             value={removed ? "1" : "0"}
           />
-          <input
-            type="hidden"
-            name={`${name}_width`}
-            value={dimensions?.width ?? ""}
-          />
-          <input
-            type="hidden"
-            name={`${name}_height`}
-            value={dimensions?.height ?? ""}
-          />
+          {withDimensions && (
+            <>
+              <input
+                type="hidden"
+                name={`${name}_width`}
+                value={dimensions?.width ?? ""}
+              />
+              <input
+                type="hidden"
+                name={`${name}_height`}
+                value={dimensions?.height ?? ""}
+              />
+            </>
+          )}
 
           <div className="flex flex-wrap gap-2">
             <Button

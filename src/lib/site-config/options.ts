@@ -25,13 +25,6 @@ export const LOCALE_OPTIONS = [
   { value: "en-GB", label: "English (United Kingdom)" },
 ] as const;
 
-export const TIMEZONE_OPTIONS = [
-  { value: "Asia/Jakarta", label: "WIB — Jakarta" },
-  { value: "Asia/Makassar", label: "WITA — Makassar" },
-  { value: "Asia/Jayapura", label: "WIT — Jayapura" },
-  { value: "UTC", label: "UTC" },
-] as const;
-
 export const SOCIAL_NETWORKS = [
   { key: "instagram", label: "Instagram", placeholder: "https://instagram.com/nama" },
   { key: "youtube", label: "YouTube", placeholder: "https://youtube.com/@nama" },
@@ -56,8 +49,40 @@ export const SITE_IMAGE_FIELDS = [
   { formKey: "seo_image", column: "seo_image_url", kind: "site-seo" },
 ] as const;
 
+/**
+ * Batas panjang satu-satunya sumber kebenaran: dipakai zod di schema.ts DAN
+ * atribut maxLength komponen field di panel Setting agar tidak dobel nilai.
+ */
 export const SITE_CONFIG_LIMITS = {
-  keywords: 100,
-  keywordLength: 80,
+  siteName: 80,
+  siteAlternateName: 100,
+  tagline: 140,
+  description: 320,
+  memberLabel: 40,
+  heroTitle: 120,
+  heroSubtitle: 220,
+  visi: 600,
+  misiItem: 300,
   missions: 20,
+  footerText: 220,
+  contactPhone: 50,
+  contactAddress: 300,
+  verification: 240,
+  analyticsId: 40,
+  adsenseClientId: 32,
+  socialUrl: 500,
 } as const;
+
+/** Tab panel Setting = section server action; id dipakai sebagai ?tab= di URL. */
+export const SITE_SETTINGS_TABS = [
+  { id: "identity", label: "Identitas" },
+  { id: "home", label: "Beranda" },
+  { id: "seo", label: "SEO" },
+  { id: "contact", label: "Kontak & Integrasi" },
+] as const;
+
+export type SiteSettingsTabId = (typeof SITE_SETTINGS_TABS)[number]["id"];
+
+export function isSiteSettingsTabId(value: string): value is SiteSettingsTabId {
+  return SITE_SETTINGS_TABS.some((tab) => tab.id === value);
+}
