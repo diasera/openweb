@@ -43,18 +43,25 @@ export default async function Home() {
     getPublicMessages({ limit: 8, pinnedOnly: true }),
   ]);
   const labels = getContentLabels(settings);
+  const heroTitle = settings.hero_title ?? settings.site_name;
 
   return (
     <PageShell>
       <JsonLd data={homeStructuredData(settings)} />
       <div className="space-y-7">
         <Hero
-          title={settings.hero_title ?? settings.site_name}
+          title={heroTitle}
           subtitle={settings.hero_subtitle}
           imageUrl={settings.hero_image_url}
           imageWidth={settings.hero_image_width}
           imageHeight={settings.hero_image_height}
-          badge={settings.site_alternate_name ?? settings.site_name}
+          // Badge chip identitas hanya bila beda dari judul — hindari merek
+          // tampil ganda (chip atas + judul) saat hero_title memuat nama situs.
+          badge={
+            [settings.site_alternate_name, settings.site_name].find(
+              (name) => name && name !== heroTitle,
+            ) ?? null
+          }
         />
 
         {members.length > 0 && (
