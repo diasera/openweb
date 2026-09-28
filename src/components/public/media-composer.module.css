@@ -1,0 +1,102 @@
+/* Composer Buat Pin: kartu pilih media, filmstrip yang bisa diurutkan,
+ * dan umpan balik unggah. Kurva mengikuti token spring motion.css. */
+
+.picker {
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgb(var(--primary) / 0.08), transparent 60%),
+    rgb(var(--surface));
+  transition:
+    border-color var(--motion-fast) ease-out,
+    transform var(--motion-control) var(--motion-spring-snappy),
+    box-shadow var(--motion-control) var(--motion-spring-snappy);
+}
+
+.picker[data-dragging="true"] {
+  border-color: rgb(var(--primary));
+  transform: scale(0.985);
+  box-shadow: 0 0 0 4px rgb(var(--primary) / 0.15);
+}
+
+/* Tumpukan kartu miring = "banyak media dalam satu pin". */
+.stack {
+  position: relative;
+  width: 6.5rem;
+  height: 6.5rem;
+}
+
+.stackCard {
+  position: absolute;
+  inset: 0.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: 1.125rem;
+  border: 1px solid rgb(var(--border));
+  background: rgb(var(--surface-elevated));
+  box-shadow: var(--shadow-elevated);
+  animation: composer-stack-in 700ms var(--motion-spring-bouncy) both;
+}
+
+.stackCard:nth-child(1) {
+  transform: rotate(-12deg) translate(-14px, 4px);
+  background: rgb(var(--surface-2));
+}
+
+.stackCard:nth-child(2) {
+  transform: rotate(9deg) translate(14px, 2px);
+  background: rgb(var(--surface-2));
+  animation-delay: 60ms;
+}
+
+.stackCard:nth-child(3) {
+  color: rgb(var(--primary-foreground));
+  background: linear-gradient(160deg, rgb(var(--primary)), rgb(var(--primary-strong)));
+  animation-delay: 120ms;
+}
+
+.thumb {
+  -webkit-touch-callout: none;
+  user-select: none;
+  touch-action: pan-x;
+  transition:
+    transform var(--motion-control) var(--motion-spring-snappy),
+    box-shadow var(--motion-control) var(--motion-spring-snappy);
+}
+
+@starting-style {
+  .thumb {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+
+.thumb[data-lifted="true"] {
+  z-index: 10;
+  transition: box-shadow var(--motion-fast) ease-out;
+  box-shadow: 0 10px 24px -6px rgb(0 0 0 / 0.35);
+}
+
+.ring {
+  transform: rotate(-90deg);
+}
+
+.ring circle:last-child {
+  transition: stroke-dashoffset var(--motion-fast) linear;
+}
+
+.submitFill {
+  transform-origin: left center;
+  transition: transform var(--motion-fast) linear;
+}
+
+@keyframes composer-stack-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stackCard {
+    animation: none;
+  }
+}

@@ -1,0 +1,612 @@
+:root {
+  --motion-press: 140ms;
+  --motion-fast: 180ms;
+  --motion-control: 280ms;
+  --motion-route: 380ms;
+  --motion-sheet: 420ms;
+  --motion-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --motion-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --motion-spring-snappy: cubic-bezier(0.25, 0.9, 0.3, 1.04);
+  --motion-spring-bouncy: cubic-bezier(0.34, 1.3, 0.64, 1);
+
+  /* Kedalaman 3D bersama: kartu, hero, reveal scroll, dan transisi rute. */
+  --depth-perspective: 1100px;
+  /* Kemiringan maksimum (derajat) tilt pointer; elemen boleh menimpanya. */
+  --depth-tilt-max: 6;
+  --depth-shadow:
+    0 2px 4px rgb(16 16 20 / 0.04), 0 22px 44px -18px rgb(16 16 20 / 0.28);
+  --depth-glare: rgb(255 255 255 / 0.3);
+}
+
+.dark {
+  --depth-shadow:
+    0 2px 4px rgb(0 0 0 / 0.3), 0 26px 50px -18px rgb(0 0 0 / 0.7);
+  --depth-glare: rgb(255 255 255 / 0.12);
+}
+
+/* Kurva pegas asli (respons pegas teredam yang disampel ke linear()), setara
+ * animasi SwiftUI .smooth (tanpa pantulan), .snappy (pantulan tipis), dan
+ * .bouncy. Semua komponen yang memakai token di atas otomatis ikut; browser
+ * tanpa linear() tetap memakai cubic-bezier. */
+@supports (transition-timing-function: linear(0, 1)) {
+  :root {
+    --motion-spring: linear(0, 0.0326, 0.1088, 0.2054, 0.308, 0.4078, 0.5001, 0.5827, 0.6547, 0.7164, 0.7686, 0.8122, 0.8483, 0.8779, 0.9022, 0.9218, 0.9377, 0.9505, 0.9608, 0.969, 0.9755, 0.9807, 0.9848, 0.9881, 0.9906, 0.9927, 0.9943, 0.9955, 0.9965, 0.9973, 0.9979, 0.9983, 0.9987, 1);
+    --motion-spring-snappy: linear(0, 0.0327, 0.1124, 0.217, 0.3312, 0.4446, 0.5505, 0.6452, 0.727, 0.7956, 0.8517, 0.8964, 0.9312, 0.9574, 0.9768, 0.9904, 0.9997, 1.0057, 1.0091, 1.0107, 1.0111, 1.0107, 1.0097, 1.0086, 1.0073, 1.006, 1.0049, 1.0038, 1.0029, 1.0022, 1.0016, 1.0011, 1.0007, 1);
+    --motion-spring-bouncy: linear(0, 0.0497, 0.1698, 0.3245, 0.4873, 0.6401, 0.7724, 0.8792, 0.9595, 1.0152, 1.0499, 1.0678, 1.073, 1.0697, 1.0611, 1.0498, 1.0379, 1.0267, 1.017, 1.0091, 1.0032, 0.999, 0.9964, 0.9951, 0.9947, 0.9949, 0.9955, 0.9963, 0.9972, 0.998, 0.9987, 0.9993, 0.9998, 1);
+  }
+}
+
+.app-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+html {
+  scroll-padding-top: calc(3.75rem + var(--safe-top));
+}
+
+.page-shell {
+  min-height: calc(100vh - 3.75rem - var(--safe-top));
+  min-height: calc(100dvh - 3.75rem - var(--safe-top));
+  scroll-margin-top: calc(3.75rem + var(--safe-top));
+}
+
+@media (min-width: 1024px) {
+  html {
+    scroll-padding-top: calc(4.25rem + var(--safe-top));
+  }
+
+  .page-shell {
+    min-height: calc(100vh - 4.25rem - var(--safe-top));
+    min-height: calc(100dvh - 4.25rem - var(--safe-top));
+    scroll-margin-top: calc(4.25rem + var(--safe-top));
+  }
+}
+
+.route-motion {
+  --route-x: 0px;
+  --route-y: 0px;
+  --route-z: 0px;
+  --route-rx: 0deg;
+  --route-ry: 0deg;
+  --route-scale: 1;
+  animation: motion-route-enter var(--motion-route) var(--motion-spring) backwards;
+  transform-origin: 50% 32%;
+}
+
+.route-motion[data-motion="initial"] {
+  animation: none;
+}
+
+.route-motion[data-current="false"] {
+  animation: none;
+}
+
+/* Halaman masuk dari kedalaman: push mengayun di sumbu Y seperti kartu
+ * navigasi, present naik dari bawah dengan kemiringan X. Sudut kecil agar
+ * terasa ruang tanpa memicu mual gerak. */
+.route-motion[data-motion="tab-forward"] { --route-x: 8px; --route-z: -24px; --route-ry: -2deg; }
+.route-motion[data-motion="tab-back"] { --route-x: -8px; --route-z: -24px; --route-ry: 2deg; }
+.route-motion[data-motion="forward"] { --route-x: 28px; --route-z: -48px; --route-ry: -5deg; }
+.route-motion[data-motion="back"] { --route-x: -28px; --route-z: -48px; --route-ry: 5deg; }
+.route-motion[data-motion="present"] {
+  --route-y: 32px;
+  --route-z: -60px;
+  --route-rx: 7deg;
+}
+.route-motion[data-motion="dismiss"] {
+  --route-y: -10px;
+  --route-z: -24px;
+}
+.route-motion[data-motion="utility"] { --route-y: 12px; --route-z: -20px; --route-rx: 3deg; }
+.route-motion[data-motion="fade"] { --route-z: -16px; }
+
+@keyframes motion-route-enter {
+  from {
+    opacity: 0;
+    transform: perspective(1400px)
+      translate3d(var(--route-x), var(--route-y), var(--route-z))
+      rotateX(var(--route-rx)) rotateY(var(--route-ry)) scale(var(--route-scale));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .route-motion[data-motion="forward"] { --route-x: 14px; --route-ry: -3deg; }
+  .route-motion[data-motion="back"] { --route-x: -14px; --route-ry: 3deg; }
+  .route-motion[data-motion="present"] { --route-y: 18px; --route-rx: 4deg; }
+  .route-motion[data-motion="utility"] { --route-y: 8px; }
+}
+
+/* Tekan cepat, lepas memantul dengan spring seperti tombol iOS. */
+.motion-pressable {
+  transition:
+    transform var(--motion-sheet) var(--motion-spring-snappy),
+    opacity var(--motion-fast) ease-out;
+}
+
+.motion-pressable:active {
+  transform: scale(0.96);
+  transition-duration: var(--motion-press), var(--motion-fast);
+  transition-timing-function: ease-out;
+}
+
+/* ---- Depth: tilt 3D -------------------------------------------------------
+ * Satu rumus transform untuk kartu interaktif (.motion-card) dan elemen
+ * [data-depth-tilt]. useDepthPointer (satu listener global) mengisi
+ * --depth-px/--depth-py (-1..1) untuk pointer halus; sentuh mendapat tekan-
+ * dalam. Diam = transform none agar kartu tidak dipromosikan jadi layer GPU. */
+.motion-card,
+[data-depth-tilt] {
+  --depth-lift: 0px;
+  --depth-scale: 1;
+  transition:
+    transform var(--motion-sheet) var(--motion-spring-snappy),
+    box-shadow var(--motion-control) var(--motion-ease-out);
+}
+
+:is(.motion-card, [data-depth-tilt]):is(:hover, :active) {
+  transform: perspective(var(--depth-perspective))
+    translate3d(0, var(--depth-lift), 0)
+    rotateX(calc(var(--depth-py, 0) * var(--depth-tilt-max) * -1deg))
+    rotateY(calc(var(--depth-px, 0) * var(--depth-tilt-max) * 1deg))
+    scale(var(--depth-scale));
+}
+
+.motion-card:active {
+  --depth-scale: 0.985;
+}
+
+[data-depth-tilt]:active {
+  --depth-scale: 0.96;
+}
+
+/* Saat mengikuti pointer, transform harus responsif; pegas dipakai saat lepas. */
+[data-depth-active] {
+  transition-duration: 140ms, var(--motion-control);
+  transition-timing-function: ease-out, var(--motion-ease-out);
+}
+
+.motion-media-image {
+  transition: transform var(--motion-route) var(--motion-ease-out);
+}
+
+.motion-fab-icon {
+  transition: transform var(--motion-fast) ease-out;
+}
+
+.group:active .motion-fab-icon {
+  transform: rotate(45deg) scale(0.9);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .motion-card:hover {
+    --depth-lift: -3px;
+    box-shadow: var(--depth-shadow);
+  }
+
+  /* Pantulan cahaya mengikuti kursor, seperti permukaan kaca yang dimiringkan. */
+  :is(.motion-card, [data-depth-tilt])::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(
+      circle at calc(50% + var(--depth-px, 0) * 50%) calc(50% + var(--depth-py, 0) * 50%),
+      var(--depth-glare),
+      transparent 60%
+    );
+    opacity: 0;
+    transition: opacity var(--motion-control) ease-out;
+  }
+
+  :is(.motion-card, [data-depth-tilt]):hover::after {
+    opacity: 1;
+  }
+
+  .group:hover .motion-media-image {
+    transform: scale(1.025);
+  }
+
+  .group:hover .motion-fab-icon {
+    transform: scale(1.05);
+  }
+}
+
+.motion-horizontal-scroll {
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: inline proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+.motion-horizontal-scroll > * {
+  scroll-snap-align: start;
+}
+
+@keyframes motion-sheet-intro {
+  from {
+    opacity: 0;
+    transform: perspective(800px) translate3d(0, 28px, -60px) rotateX(28deg);
+  }
+}
+
+@keyframes motion-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-sheet-in {
+  transform-origin: 50% 100%;
+  animation: motion-sheet-intro var(--motion-sheet) var(--motion-spring-snappy) backwards;
+}
+
+.animate-fade-in {
+  animation: motion-fade-in var(--motion-fast) ease-out;
+}
+
+/* Masuk konten daftar: bangkit dari kedalaman (fade + naik + rotateX).
+ * Murni transform+opacity (compositor). Fill `backwards` melepas transform
+ * setelah selesai sehingga efek tekan/tilt elemen yang sama tetap berjalan.
+ * Delay per-item diatur listReveal/staggerDelay. */
+.animate-rise {
+  animation: motion-rise 560ms var(--motion-spring) backwards;
+}
+
+/* Entri transisi modern (@starting-style, Baseline 2026): elemen baru
+ * bertransisi dari gaya awal saat pertama dirender — tanpa keyframes.
+ * Browser tanpa dukungan menampilkan elemen langsung (aman). */
+.motion-enter {
+  transition:
+    opacity var(--motion-route) var(--motion-ease-out),
+    transform var(--motion-route) var(--motion-ease-out);
+}
+
+@starting-style {
+  .motion-enter {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* "4D": reveal 3D yang digerakkan posisi scroll (scroll-driven animation,
+ * dijalankan compositor tanpa JS). Elemen berdiri dari posisi rebah saat
+ * memasuki layar; tanpa dukungan, jatuh ke animasi waktu biasa. */
+.motion-reveal {
+  animation: motion-depth-in var(--motion-route) var(--motion-ease-out) backwards;
+}
+
+@supports (animation-timeline: view()) {
+  .motion-reveal {
+    animation: motion-depth-in linear backwards;
+    animation-timeline: view();
+    animation-range: entry 5% entry 70%;
+  }
+
+  /* Parallax gambar di dalam bingkai overflow-hidden. Memakai properti
+   * translate/scale individual agar menyatu dengan transform hover. */
+  .motion-parallax {
+    animation: motion-parallax linear both;
+    animation-timeline: view();
+    animation-range: cover 0% cover 100%;
+  }
+}
+
+/* Opacity penuh lebih awal dari kemiringan: elemen yang baru setengah masuk
+ * layar sudah terbaca, sisa geraknya murni kedalaman. */
+@keyframes motion-depth-in {
+  from {
+    opacity: 0;
+    transform: perspective(var(--depth-perspective)) translate3d(0, 44px, -90px)
+      rotateX(16deg);
+  }
+  45% {
+    opacity: 1;
+  }
+}
+
+@keyframes motion-parallax {
+  from {
+    translate: 0 -5%;
+    scale: 1.12;
+  }
+  to {
+    translate: 0 5%;
+    scale: 1.12;
+  }
+}
+
+/* Ikon mengambang pelan dalam ruang (empty state). */
+.motion-float {
+  animation: motion-float 6s ease-in-out infinite;
+}
+
+@keyframes motion-float {
+  0%,
+  100% {
+    transform: perspective(600px) translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg);
+  }
+  50% {
+    transform: perspective(600px) translate3d(0, -6px, 14px) rotateX(10deg)
+      rotateY(-12deg);
+  }
+}
+
+/* Morph View Transitions: elemen bernama (kartu pin, avatar anggota)
+ * bertransisi antar halaman dengan kurva spring ala iOS. Browser tanpa
+ * dukungan tidak pernah sampai sini (aturan tak berlaku). */
+::view-transition-group(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 360ms;
+  animation-timing-function: var(--motion-spring);
+}
+
+@keyframes motion-rise {
+  from {
+    opacity: 0;
+    transform: perspective(900px) translate3d(0, 18px, -40px) rotateX(9deg);
+  }
+}
+
+.motion-tabbar-shell {
+  transition:
+    opacity var(--motion-control) ease-out,
+    transform var(--motion-control) ease-out;
+}
+
+.motion-tabbar-body {
+  transition:
+    padding var(--motion-control) ease-out,
+    transform var(--motion-control) ease-out;
+}
+
+.motion-tab-item {
+  transition: color var(--motion-control) ease-out;
+}
+
+.motion-tab-icon {
+  transition:
+    opacity var(--motion-control) ease-out,
+    transform var(--motion-control) ease-out;
+}
+
+.motion-tab-label {
+  transition:
+    max-height var(--motion-control) ease-out,
+    opacity var(--motion-control) ease-out,
+    transform var(--motion-control) ease-out;
+}
+
+.tab-active-pill {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  border: 1px solid rgb(var(--glass-border));
+  border-radius: 9999px;
+  background-color: rgb(var(--surface) / 0.72);
+  box-shadow:
+    var(--glass-rim),
+    0 3px 12px -6px rgb(0 0 0 / 0.22);
+  pointer-events: none;
+  transition:
+    transform var(--motion-sheet) var(--motion-spring),
+    opacity var(--motion-fast) ease;
+}
+
+.dark .tab-active-pill {
+  background-color: rgb(var(--surface-elevated) / 0.74);
+  box-shadow:
+    var(--glass-rim),
+    0 3px 14px -6px rgb(0 0 0 / 0.5);
+}
+
+.ios-switch {
+  transition:
+    background-color var(--motion-control) var(--motion-ease-out),
+    border-color var(--motion-control) var(--motion-ease-out),
+    box-shadow var(--motion-control) var(--motion-ease-out);
+}
+
+.ios-switch-thumb {
+  transform: translate3d(0, 0, 0);
+  transition: transform var(--motion-control) var(--motion-spring);
+}
+
+.ios-switch[data-checked="true"] .ios-switch-thumb {
+  transform: translate3d(18px, 0, 0);
+}
+
+.ios-switch:active .ios-switch-thumb {
+  transform: translate3d(2px, 0, 0) scaleX(1.08);
+}
+
+.ios-switch[data-checked="true"]:active .ios-switch-thumb {
+  transform: translate3d(16px, 0, 0) scaleX(1.08);
+}
+
+.segmented-control {
+  display: grid;
+  grid-template-columns: repeat(var(--segment-count), minmax(0, 1fr));
+  position: relative;
+}
+
+.segmented-pill {
+  position: absolute;
+  inset-block: 0.25rem;
+  inset-inline-start: 0.25rem;
+  width: calc(var(--segment-width) - var(--segment-adjust));
+  border: 1px solid rgb(var(--border));
+  border-radius: 9999px;
+  background: rgb(var(--surface));
+  box-shadow:
+    0 1px 3px rgb(0 0 0 / 0.1),
+    0 3px 8px -4px rgb(0 0 0 / 0.08);
+  transform: translate3d(var(--segment-offset), 0, 0);
+  transition: transform var(--motion-control) var(--motion-spring);
+  pointer-events: none;
+}
+
+/* iOS gelap: segmen terpilih lebih TERANG dari track (bukan lebih gelap). */
+.dark .segmented-pill {
+  border-color: rgb(255 255 255 / 0.06);
+  background: color-mix(in oklab, rgb(var(--tone-gray)) 34%, rgb(var(--surface-2)));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 1px 3px rgb(0 0 0 / 0.4);
+}
+
+.motion-modal-root {
+  opacity: 1;
+}
+
+.motion-modal-root[data-open="false"] {
+  pointer-events: none;
+}
+
+.motion-modal-backdrop {
+  opacity: 0;
+  transition: opacity var(--motion-fast) ease-out;
+}
+
+.motion-modal-root[data-open="true"] .motion-modal-backdrop {
+  opacity: 1;
+}
+
+.motion-sheet {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0) scale(0.99);
+  transition:
+    transform var(--motion-sheet) var(--motion-spring),
+    opacity var(--motion-fast) ease-out;
+}
+
+.motion-modal-root[data-open="true"] .motion-sheet {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+.motion-scroll-region {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 640px) {
+  .motion-sheet {
+    transform: translate3d(0, 12px, 0) scale(0.97);
+  }
+}
+
+@keyframes motion-tab-pop {
+  0% { transform: scale(0.86); }
+  58% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.animate-tab-pop {
+  animation: motion-tab-pop var(--motion-control) var(--motion-ease-out);
+}
+
+@keyframes motion-control-pop {
+  0% { transform: scale(0.76) rotate(-8deg); opacity: 0.45; }
+  65% { transform: scale(1.08) rotate(1deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+.animate-control-pop {
+  animation: motion-control-pop var(--motion-control) var(--motion-spring-bouncy);
+}
+
+@keyframes motion-symbol-bounce {
+  0% { transform: scale(0.78); }
+  55% { transform: scale(1.16); }
+  100% { transform: scale(1); }
+}
+
+.animate-symbol-bounce {
+  animation: motion-symbol-bounce var(--motion-control) var(--motion-ease-out);
+}
+
+@keyframes motion-spinner-turn {
+  to { transform: rotate(1turn); }
+}
+
+.motion-spinner {
+  border: 2px solid rgb(var(--surface-2));
+  border-top-color: rgb(var(--primary));
+  animation: motion-spinner-turn 720ms linear infinite;
+}
+
+/* Count-up murni CSS: angka final sudah ada di HTML, animasi hanya visual. */
+@property --motion-count {
+  syntax: "<integer>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@keyframes motion-count-up {
+  from { --motion-count: 0; }
+}
+
+.motion-count {
+  --motion-count: var(--count-to);
+  counter-reset: motion-count var(--motion-count);
+  animation: motion-count-up 900ms var(--motion-ease-out) both;
+}
+
+.motion-count::after {
+  content: counter(motion-count);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-motion:not([data-motion="initial"]) {
+    --route-x: 0px;
+    --route-y: 0px;
+    --route-scale: 1;
+    animation: motion-route-enter 140ms ease-out backwards !important;
+  }
+
+  .motion-sheet {
+    transform: none !important;
+    transition-duration: 120ms !important;
+  }
+
+  .motion-modal-backdrop {
+    transition-duration: 120ms !important;
+  }
+
+  .animate-tab-pop,
+  .animate-control-pop,
+  .animate-symbol-bounce,
+  .animate-rise,
+  .motion-reveal,
+  .motion-parallax,
+  .motion-float,
+  .motion-count {
+    animation: none !important;
+  }
+
+  :is(.motion-card, [data-depth-tilt]):is(:hover, :active) {
+    transform: scale(var(--depth-scale)) !important;
+  }
+
+  .motion-enter {
+    transition: none !important;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+
+  .motion-spinner {
+    animation: none !important;
+    border-color: rgb(var(--surface-2));
+    border-top-color: rgb(var(--primary));
+  }
+}

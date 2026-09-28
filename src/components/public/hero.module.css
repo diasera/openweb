@@ -1,0 +1,249 @@
+/* Hero berlapis: media, orb kaca, dan teks berada di kedalaman berbeda.
+ * Pointer (desktop) memiringkan kartu dan menggeser tiap lapisan dengan
+ * besaran berbeda; scroll membuat hero mundur ke belakang ("4D"). Semua
+ * transform/opacity — dijalankan compositor, tanpa JS per frame. */
+
+.stage {
+  view-timeline: --hero block;
+}
+
+.card {
+  /* Kemiringan kartu besar dibuat halus agar tidak terasa berat. */
+  --depth-tilt-max: 3;
+}
+
+.media,
+.orbs,
+.copy {
+  transition: transform var(--motion-sheet) var(--motion-spring-snappy);
+}
+
+.card[data-depth-active] :is(.media, .orbs, .copy) {
+  transition-duration: 160ms;
+  transition-timing-function: ease-out;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .media {
+    transform: translate3d(
+        calc(var(--depth-px, 0) * -10px),
+        calc(var(--depth-py, 0) * -8px),
+        0
+      )
+      scale(var(--hero-zoom, 1));
+  }
+
+  .card:hover .media {
+    --hero-zoom: 1.04;
+  }
+
+  .orbs {
+    transform: translate3d(
+      calc(var(--depth-px, 0) * 22px),
+      calc(var(--depth-py, 0) * 16px),
+      0
+    );
+  }
+
+  .copy {
+    transform: translate3d(
+      calc(var(--depth-px, 0) * 8px),
+      calc(var(--depth-py, 0) * 6px),
+      0
+    );
+  }
+}
+
+/* Mesh aurora bergerak pelan untuk hero tanpa foto. */
+.blob {
+  position: absolute;
+  width: 70%;
+  aspect-ratio: 1;
+  border-radius: 9999px;
+  opacity: 0.75;
+  animation: hero-blob 18s ease-in-out infinite alternate;
+}
+
+.blob:nth-child(1) {
+  top: -35%;
+  left: -12%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklab, rgb(var(--primary)) 55%, rgb(var(--tone-pink))),
+    transparent
+  );
+}
+
+.blob:nth-child(2) {
+  right: -18%;
+  bottom: -45%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklab, rgb(var(--primary)) 40%, rgb(var(--tone-indigo))),
+    transparent
+  );
+  animation-duration: 23s;
+  animation-direction: alternate-reverse;
+}
+
+/* Bentuk Liquid Glass di atas aurora: cincin tebal, kapsul, dan bola kecil.
+ * Tepi spekular dibentuk gradien + inset shadow, sengaja tanpa
+ * backdrop-filter karena lapisan ini bergerak (blur dihitung ulang tiap frame). */
+.orb {
+  position: absolute;
+  border-radius: 9999px;
+  animation: hero-orb 9s ease-in-out infinite alternate;
+}
+
+/* Cincin: tepi dalam & luar menyala, badan tabung bening, kilau kiri atas. */
+.orb:nth-child(1) {
+  top: 9%;
+  right: 7%;
+  width: 24%;
+  aspect-ratio: 1;
+  background:
+    radial-gradient(14% 9% at 28% 20%, rgb(255 255 255 / 0.7), transparent),
+    radial-gradient(
+      closest-side,
+      transparent 57%,
+      rgb(255 255 255 / 0.5) 58%,
+      rgb(255 255 255 / 0.1) 61%,
+      rgb(255 255 255 / 0.2) 75%,
+      rgb(255 255 255 / 0.08) 88%,
+      rgb(255 255 255 / 0.45) 90%,
+      transparent 91%
+    );
+  filter: drop-shadow(0 16px 22px rgb(0 0 0 / 0.2));
+}
+
+.orb:nth-child(2) {
+  top: 20%;
+  right: 34%;
+  width: 13%;
+  aspect-ratio: 2.3;
+  rotate: -24deg;
+  border: 1px solid rgb(255 255 255 / 0.32);
+  background:
+    radial-gradient(40% 60% at 30% 25%, rgb(255 255 255 / 0.5), transparent 70%),
+    linear-gradient(
+      165deg,
+      rgb(255 255 255 / 0.3),
+      rgb(255 255 255 / 0.05) 62%,
+      rgb(255 255 255 / 0.14)
+    );
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 0.6),
+    inset 0 -3px 8px rgb(255 255 255 / 0.16),
+    0 18px 30px -14px rgb(0 0 0 / 0.4);
+  animation-duration: 7s;
+  animation-delay: -2s;
+}
+
+.orb:nth-child(3) {
+  top: 6%;
+  right: 46%;
+  width: 5.5%;
+  aspect-ratio: 1;
+  border: 1px solid rgb(255 255 255 / 0.35);
+  background: radial-gradient(
+    circle at 32% 28%,
+    rgb(255 255 255 / 0.85),
+    rgb(255 255 255 / 0.18) 45%,
+    rgb(255 255 255 / 0.05) 72%
+  );
+  box-shadow:
+    inset -2px -4px 8px rgb(0 0 0 / 0.1),
+    0 10px 20px -8px rgb(0 0 0 / 0.35);
+  animation-duration: 11s;
+  animation-delay: -5s;
+}
+
+.badge {
+  border: 1px solid rgb(255 255 255 / 0.28);
+  background: rgb(255 255 255 / 0.16);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3);
+}
+
+@keyframes hero-blob {
+  to {
+    transform: translate3d(18%, 12%, 0) scale(1.15);
+  }
+}
+
+@keyframes hero-orb {
+  to {
+    transform: translate3d(0, -14%, 0) rotate(8deg);
+  }
+}
+
+/* Scroll-driven: dipasang lewat kelas terpisah agar pratinjau admin diam. */
+@supports (animation-timeline: view()) {
+  .scrollDepth {
+    transform-origin: 50% 100%;
+    animation: hero-recede linear both;
+    animation-timeline: --hero;
+    animation-range: exit 0% exit 100%;
+  }
+
+  .scrollDepth .media {
+    animation: hero-media-drift linear both;
+    animation-timeline: --hero;
+    animation-range: exit 0% exit 100%;
+  }
+
+  .scrollDepth .copy {
+    animation: hero-copy-rise linear both;
+    animation-timeline: --hero;
+    animation-range: exit 0% exit 70%;
+  }
+
+  .scrollDepth .orbs {
+    animation: hero-orbs-rise linear both;
+    animation-timeline: --hero;
+    animation-range: exit 0% exit 100%;
+  }
+}
+
+@keyframes hero-recede {
+  to {
+    opacity: 0.25;
+    transform: perspective(1200px) translate3d(0, 8%, -140px) rotateX(12deg);
+  }
+}
+
+@keyframes hero-media-drift {
+  to {
+    translate: 0 18%;
+    scale: 1.1;
+  }
+}
+
+@keyframes hero-copy-rise {
+  to {
+    translate: 0 -45%;
+    opacity: 0;
+  }
+}
+
+@keyframes hero-orbs-rise {
+  to {
+    translate: 0 -60%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrollDepth,
+  .scrollDepth .media,
+  .scrollDepth .copy,
+  .scrollDepth .orbs,
+  .blob,
+  .orb {
+    animation: none !important;
+  }
+
+  .media,
+  .orbs,
+  .copy {
+    transform: none !important;
+  }
+}
