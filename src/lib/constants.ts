@@ -154,9 +154,9 @@ export const ASSIGNABLE_FEATURES: AdminFeature[] = ADMIN_FEATURES.filter(
 
 // Batas upload publik
 export const UPLOAD_LIMITS = {
-  imageMaxBytes: 10 * 1024 * 1024, // 10 MB
-  videoMaxBytes: 50 * 1024 * 1024, // aman untuk batas global Supabase Free
-  audioMaxBytes: 50 * 1024 * 1024, // aman untuk batas global Supabase Free
+  imageMaxBytes: 100 * 1024 * 1024, // 10 MB
+  videoMaxBytes: 500 * 1024 * 1024, // aman untuk batas global Supabase Free
+  audioMaxBytes: 500 * 1024 * 1024, // aman untuk batas global Supabase Free
   /** Batas dimensi metadata foto/video, dipakai sama oleh browser dan API. */
   mediaMaxDimension: 20_000,
   /**
