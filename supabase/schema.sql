@@ -1345,6 +1345,9 @@ alter table public.site_settings
 -- media-inbox PRIVAT: semua direct upload media mendarat di sini dan baru
 -- dipindah ke bucket publik `media` saat disetujui, jadi kiriman yang belum
 -- dimoderasi tidak pernah punya URL publik.
+-- file_size_limit = UPLOAD_LIMITS di src/lib/constants.ts (dicek
+-- `npm run check:media-formats`): bucket media/music 500 MB, gambar 100 MB.
+-- Global file size limit proyek tetap menang; paket Free maksimal 50 MB.
 -- ============================================================================
 insert into storage.buckets (id, name, public)
 values
@@ -1359,7 +1362,7 @@ on conflict (id) do nothing;
 update storage.buckets
 set
   public = true,
-  file_size_limit = 52428800,
+  file_size_limit = 524288000,
   allowed_mime_types = array[
     'audio/mpeg', 'audio/mp3', 'audio/x-mpeg',
     'audio/mp4', 'audio/x-m4a', 'audio/mp4a-latm',
@@ -1373,7 +1376,7 @@ where id = 'music';
 update storage.buckets
 set
   public = (id = 'media'),
-  file_size_limit = 52428800,
+  file_size_limit = 524288000,
   allowed_mime_types = array[
     'image/jpeg', 'image/pjpeg', 'image/png', 'image/apng',
     'image/webp', 'image/gif', 'image/avif', 'image/avif-sequence',
@@ -1385,7 +1388,7 @@ where id in ('media', 'media-inbox');
 update storage.buckets
 set
   public = true,
-  file_size_limit = 10485760,
+  file_size_limit = 104857600,
   allowed_mime_types = array[
     'image/jpeg', 'image/pjpeg', 'image/png', 'image/apng',
     'image/webp', 'image/gif', 'image/avif', 'image/avif-sequence'

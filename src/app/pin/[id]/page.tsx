@@ -17,12 +17,12 @@ import { Avatar } from "@/components/ui/avatar";
 import { buttonClass } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { Masonry } from "@/components/ui/masonry";
+import { RelativeTime } from "@/components/ui/relative-time";
 import { MotionLink, listReveal } from "@/components/motion";
 import {
   MEDIA_ASPECT_LIMITS,
   mediaDisplayAspectRatio,
 } from "@/lib/media/display";
-import { timeAgo } from "@/lib/utils/time";
 import { JsonLd } from "@/components/seo/json-ld";
 import { buildPageMetadata, plainText } from "@/lib/seo";
 import {
@@ -140,7 +140,7 @@ export default async function PinPage({
               <Avatar name={media.uploader_name || "Anonim"} size={40} />
               <div>
                 <p className="text-sm font-semibold">{media.uploader_name || "Anonim"}</p>
-                <p className="text-muted text-xs">{timeAgo(media.created_at)}</p>
+                <RelativeTime iso={media.created_at} className="text-muted block text-xs" />
               </div>
             </div>
             {media.category && <Chip variant="softPrimary">{media.category}</Chip>}

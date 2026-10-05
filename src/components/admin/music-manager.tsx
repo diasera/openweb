@@ -31,11 +31,10 @@ import {
   uploadFileDirectly,
 } from "@/lib/uploads/client";
 import type { MusicTrackRow } from "@/lib/types/database";
+import { formatClock } from "@/lib/utils/time";
 
 function formatDuration(seconds: number | null) {
-  if (seconds === null) return "Durasi otomatis";
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
+  return seconds === null ? "Durasi otomatis" : formatClock(seconds);
 }
 
 export function MusicManager({ tracks }: { tracks: MusicTrackRow[] }) {

@@ -1,9 +1,10 @@
 "use client";
 
-import { useTransition, type FormEvent } from "react";
+import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
-import { getActionError, type ActionResult } from "@/lib/action-result";
+import { useAdminAction } from "@/components/admin/use-admin-action";
+import type { ActionResult } from "@/lib/action-result";
 import { hasPreparingImageDraft } from "@/lib/hooks/use-image-draft";
 
 const DEFAULT_PREPARING_MESSAGE = "Tunggu sampai gambar selesai disiapkan.";
@@ -22,7 +23,7 @@ interface AdminFormActionOptions {
 /**
  * Controller submit bersama untuk form admin berbasis Server Action.
  * Callback hanya menangani state lokal form; guard, feedback, dan refresh
- * tetap konsisten dari satu tempat.
+ * tetap konsisten dari satu tempat (useAdminAction).
  */
 export function useAdminFormAction({
   action,
@@ -36,42 +37,29 @@ export function useAdminFormAction({
 }: AdminFormActionOptions) {
   const router = useRouter();
   const { toast } = useToast();
-  const [pending, startTransition] = useTransition();
-
-  function reportError(message: string) {
-    onError?.(message);
-    toast.error(message);
-  }
+  const { pending, run } = useAdminAction();
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
 
     if (hasPreparingImageDraft(form)) {
-      reportError(preparingMessage);
+      onError?.(preparingMessage);
+      toast.error(preparingMessage);
       return;
     }
 
     const formData = new FormData(form);
     onStart?.();
-    startTransition(async () => {
-      try {
-        const result = await action(formData);
-        const actionError = getActionError(result);
-        if (actionError) {
-          reportError(actionError);
-          return;
-        }
-
+    run(() => action(formData), {
+      successMessage,
+      successDescription,
+      errorMessage: requestErrorMessage,
+      onError,
+      onSuccess: () => {
         onSuccess?.(form);
-        toast.success(
-          successMessage,
-          successDescription ? { description: successDescription } : undefined,
-        );
         router.refresh();
-      } catch {
-        reportError(requestErrorMessage);
-      }
+      },
     });
   }
 

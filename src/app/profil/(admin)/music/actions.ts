@@ -148,7 +148,7 @@ export async function moveMusicTrack(
   const sb = createAdminSupabase();
   const { data: tracks, error } = await sb
     .from("music_tracks")
-    .select("id")
+    .select("id, sort_order")
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
   if (error) return { error: "Gagal membaca urutan lagu." };
@@ -164,7 +164,9 @@ export async function moveMusicTrack(
   ];
   for (let index = 0; index < ordered.length; index += 1) {
     const track = ordered[index];
-    if (!track) continue;
+    // Hanya baris yang posisinya berubah. Setelah urutan pernah dinormalisasi
+    // ke 0..n-1, satu langkah geser cukup menulis dua baris, bukan seluruhnya.
+    if (!track || track.sort_order === index) continue;
     const saved = await checkedMutation(
       "music.order",
       "Gagal mengubah urutan lagu.",

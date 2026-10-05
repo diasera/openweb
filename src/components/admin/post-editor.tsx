@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -11,6 +11,7 @@ import { Field } from "@/components/ui/field";
 import { Card } from "@/components/ui/card";
 import { ImageField } from "@/components/admin/image-field";
 import { RichEditor } from "@/components/admin/rich-editor";
+import { useAdminAction } from "@/components/admin/use-admin-action";
 import { savePost } from "@/app/profil/(admin)/blog/actions";
 import { useToast } from "@/components/ui/toast";
 import { BLOG_CATEGORIES } from "@/lib/categories";
@@ -22,26 +23,29 @@ export function PostEditor({ post }: { post?: BlogPostRow }) {
   const router = useRouter();
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
-  const [pending, start] = useTransition();
+  const { pending, run } = useAdminAction();
   const [note, setNote] = useState("");
+  // Hanya penanda label tombol; `pending` menentukan apakah sedang menyimpan.
   const [savingStatus, setSavingStatus] = useState<PostStatus | null>(null);
   const [html, setHtml] = useState(post?.content_html ?? "");
   const [json, setJson] = useState(
     post?.content_json ? JSON.stringify(post.content_json) : "",
   );
 
+  function reject(message: string) {
+    setNote(message);
+    toast.error(message);
+  }
+
   function save(status: PostStatus) {
     if (!formRef.current) return;
     if (hasPreparingImageDraft(formRef.current)) {
-      const message = "Tunggu sampai gambar selesai disiapkan.";
-      setNote(message);
-      toast.error(message);
+      reject("Tunggu sampai gambar selesai disiapkan.");
       return;
     }
     const fd = new FormData(formRef.current);
     if (!String(fd.get("title") ?? "").trim()) {
-      setNote("Judul wajib diisi.");
-      toast.error("Judul wajib diisi.");
+      reject("Judul wajib diisi.");
       return;
     }
     fd.set("status", status);
@@ -49,26 +53,15 @@ export function PostEditor({ post }: { post?: BlogPostRow }) {
     fd.set("content_json", json);
     setNote("");
     setSavingStatus(status);
-    start(async () => {
-      try {
-        const res = await savePost(fd);
-        if (res.error) {
-          setNote(res.error);
-          toast.error(res.error);
-          return;
-        }
-        toast.success(
-          status === "published" ? "Artikel diterbitkan" : "Draft tersimpan",
-        );
+    run(() => savePost(fd), {
+      successMessage:
+        status === "published" ? "Artikel diterbitkan" : "Draft tersimpan",
+      errorMessage: "Koneksi terputus saat menyimpan artikel. Coba lagi.",
+      onError: setNote,
+      onSuccess: () => {
         router.push("/profil/blog");
         router.refresh();
-      } catch {
-        const message = "Koneksi terputus saat menyimpan artikel. Coba lagi.";
-        setNote(message);
-        toast.error(message);
-      } finally {
-        setSavingStatus(null);
-      }
+      },
     });
   }
 
@@ -98,6 +91,9 @@ export function PostEditor({ post }: { post?: BlogPostRow }) {
           name="title"
           defaultValue={post?.title}
           placeholder="Judul artikel"
+          aria-label="Judul artikel"
+          required
+          maxLength={160}
           className="font-display placeholder:text-muted w-full bg-transparent text-3xl font-bold outline-hidden"
         />
 
@@ -150,7 +146,11 @@ export function PostEditor({ post }: { post?: BlogPostRow }) {
           }}
         />
 
-        {note && <p className="text-danger text-sm">{note}</p>}
+        {note && (
+          <p className="text-danger text-sm" role="alert">
+            {note}
+          </p>
+        )}
       </form>
     </div>
   );

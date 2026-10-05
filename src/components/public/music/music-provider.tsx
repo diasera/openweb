@@ -454,7 +454,7 @@ export function MusicProvider({
   );
 
   return (
-    <MusicContext.Provider value={context}>
+    <MusicContext value={context}>
       {children}
       <audio
         ref={audioRef}
@@ -508,7 +508,7 @@ export function MusicProvider({
         }}
         onError={recoverFromPlaybackError}
       />
-    </MusicContext.Provider>
+    </MusicContext>
   );
 }
 

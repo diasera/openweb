@@ -62,6 +62,7 @@ function RangeControl({
   max = 100,
   step = 1,
   suffix = "",
+  disabled = false,
   onChange,
   onGestureStart,
   onGestureEnd,
@@ -73,6 +74,7 @@ function RangeControl({
   max?: number;
   step?: number;
   suffix?: string;
+  disabled?: boolean;
   onChange: (value: number) => void;
   onGestureStart: () => void;
   onGestureEnd: () => void;
@@ -94,6 +96,7 @@ function RangeControl({
         step={step}
         value={value}
         aria-label={label}
+        disabled={disabled}
         onPointerDown={onGestureStart}
         onPointerUp={onGestureEnd}
         onPointerCancel={onGestureEnd}
@@ -101,7 +104,7 @@ function RangeControl({
         onKeyUp={onGestureEnd}
         onBlur={onGestureEnd}
         onChange={(event) => onChange(Number(event.currentTarget.value))}
-        className="h-11 w-full cursor-pointer accent-white"
+        className="h-11 w-full cursor-pointer accent-white disabled:cursor-default disabled:opacity-30"
       />
     </label>
   );
@@ -110,11 +113,13 @@ function RangeControl({
 function RoundTool({
   label,
   active = false,
+  disabled = false,
   icon: Icon,
   onClick,
 }: {
   label: string;
   active?: boolean;
+  disabled?: boolean;
   icon: Icon;
   onClick: () => void;
 }) {
@@ -124,9 +129,10 @@ function RoundTool({
       aria-label={label}
       aria-pressed={active}
       title={label}
+      disabled={disabled}
       onClick={onClick}
       className={cn(
-        "grid h-11 w-11 shrink-0 place-items-center rounded-full transition active:scale-95",
+        "grid h-11 w-11 shrink-0 place-items-center rounded-full transition active:scale-95 disabled:opacity-30",
         active ? "bg-white text-black" : "bg-white/10 text-white",
       )}
     >
@@ -182,6 +188,7 @@ export function PhotoEditorControls({
   aspect,
   previewUrl,
   recipe,
+  disabled = false,
   onActiveToolChange,
   onAspectChange,
   onRotate,
@@ -195,6 +202,8 @@ export function PhotoEditorControls({
   aspect: PhotoAspectId;
   previewUrl: string;
   recipe: PhotoEditRecipe;
+  /** Mengunci seluruh kontrol recipe (mis. selama ekspor berjalan). */
+  disabled?: boolean;
   onActiveToolChange: (tool: PhotoEditorTool) => void;
   onAspectChange: (aspect: PhotoAspectId) => void;
   onRotate: () => void;
@@ -217,11 +226,17 @@ export function PhotoEditorControls({
               memindahkan area.
             </p>
             <div className="flex items-center gap-2 overflow-x-auto pb-1">
-              <RoundTool label="Putar 90 derajat" icon={RotateCw} onClick={onRotate} />
+              <RoundTool
+                label="Putar 90 derajat"
+                icon={RotateCw}
+                disabled={disabled}
+                onClick={onRotate}
+              />
               <RoundTool
                 label="Balik horizontal"
                 icon={FlipHorizontal2}
                 active={recipe.flipHorizontal}
+                disabled={disabled}
                 onClick={() =>
                   onDiscreteRecipe((current) => ({
                     ...current,
@@ -233,6 +248,7 @@ export function PhotoEditorControls({
                 label="Balik vertikal"
                 icon={FlipVertical2}
                 active={recipe.flipVertical}
+                disabled={disabled}
                 onClick={() =>
                   onDiscreteRecipe((current) => ({
                     ...current,
@@ -247,9 +263,10 @@ export function PhotoEditorControls({
                     key={item.id}
                     type="button"
                     aria-pressed={aspect === item.id}
+                    disabled={disabled}
                     onClick={() => onAspectChange(item.id)}
                     className={cn(
-                      "flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition",
+                      "flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition disabled:opacity-40",
                       aspect === item.id
                         ? "bg-white text-black"
                         : "text-white/70 hover:text-white",
@@ -273,6 +290,7 @@ export function PhotoEditorControls({
               step={0.1}
               suffix="°"
               icon={RotateCw}
+              disabled={disabled}
               onChange={(straighten) =>
                 onContinuousRecipe((current) => ({ ...current, straighten }))
               }
@@ -291,6 +309,7 @@ export function PhotoEditorControls({
                 value={recipe.adjustments[key]}
                 min={min}
                 icon={icon}
+                disabled={disabled}
                 onChange={(value) =>
                   onContinuousRecipe((current) => ({
                     ...current,
@@ -313,13 +332,14 @@ export function PhotoEditorControls({
                   key={item.id}
                   type="button"
                   aria-pressed={recipe.filter === item.id}
+                  disabled={disabled}
                   onClick={() =>
                     onDiscreteRecipe((current) => ({
                       ...current,
                       filter: item.id,
                     }))
                   }
-                  className="w-20 shrink-0 text-center text-xs text-white"
+                  className="w-20 shrink-0 text-center text-xs text-white disabled:opacity-40"
                 >
                   <span
                     className={cn(

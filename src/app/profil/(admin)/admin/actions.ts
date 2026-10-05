@@ -33,7 +33,7 @@ const createSchema = z.object({
 });
 
 const updateSchema = z.object({
-  id: z.string().uuid("ID admin tidak valid"),
+  id: z.uuid("ID admin tidak valid"),
   name: adminNameSchema,
   password: optionalAdminPasswordSchema,
 });

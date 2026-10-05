@@ -63,12 +63,14 @@ const nextConfig = {
     ],
   },
   experimental: {
-    // Upload gambar (cover blog, hero/logo/favicon, foto anggota) lewat Server
-    // Action mengirim file di body — default limit 1MB terlalu kecil. Gambar
-    // dibatasi 10MB (UPLOAD_LIMITS), jadi beri ruang 15MB. Video/audio besar
-    // dikirim langsung browser ke Supabase dan tidak melewati Function.
+    // Server Action hanya membawa gambar (cover blog, hero/logo/favicon/SEO,
+    // foto anggota). Batasnya = UPLOAD_LIMITS.imageMaxBytes (100 MB) + 10 MB
+    // untuk field lain; dicek `npm run check:media-formats`. Body diparse
+    // SEBELUM sesi admin diperiksa, jadi jangan dibesarkan melebihi kebutuhan
+    // gambar. Video/audio dikirim langsung browser ke Supabase (signed URL/TUS)
+    // dan tidak pernah melewati Function.
     serverActions: {
-      bodySizeLimit: "1500mb",
+      bodySizeLimit: "110mb",
     },
     // <ViewTransition> React aktif tanpa flag di Next 16.3+ (opsi lama
     // `viewTransition` kini ditolak validator konfigurasi).

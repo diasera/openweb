@@ -1,45 +1,9 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useNow } from "@/lib/hooks/use-now";
 import { countdownParts } from "@/lib/utils/time";
 import { eventPhase, type EventTiming } from "@/lib/agenda/status";
 import { cn } from "@/lib/utils/cn";
-
-const noopSubscribe = () => () => {};
-
-/** Jam bersama sekali per detik untuk seluruh hitung mundur di halaman. */
-let now = 0;
-let timer: ReturnType<typeof setInterval> | null = null;
-const clockListeners = new Set<() => void>();
-
-function subscribeClock(listener: () => void) {
-  clockListeners.add(listener);
-  if (!timer) {
-    now = Date.now();
-    timer = setInterval(() => {
-      now = Date.now();
-      for (const notify of clockListeners) notify();
-    }, 1000);
-  }
-  return () => {
-    clockListeners.delete(listener);
-    if (clockListeners.size === 0 && timer) {
-      clearInterval(timer);
-      timer = null;
-    }
-  };
-}
-
-/** Waktu sekarang (per detik) di klien; null saat render server/hidrasi. */
-export function useNow(): number | null {
-  const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
-  const tick = useSyncExternalStore(
-    subscribeClock,
-    () => now || Date.now(),
-    () => 0,
-  );
-  return hydrated ? tick : null;
-}
 
 const UNITS = [
   ["days", "hari"],

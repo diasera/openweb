@@ -9,6 +9,12 @@ const registryPath = join(root, "src/lib/media-formats/registry.ts");
 const sniffPath = join(root, "src/lib/media-formats/sniff.ts");
 const binaryPath = join(root, "src/lib/media/binary.ts");
 const schemaPath = join(root, "supabase/schema.sql");
+const constantsPath = join(root, "src/lib/constants.ts");
+const nextConfigPath = join(root, "next.config.mjs");
+const proxyPath = join(root, "src/proxy.ts");
+const MEGABYTE = 1024 * 1024;
+/** Ruang Server Action untuk field selain gambar (lihat next.config.mjs). */
+const SERVER_ACTION_EXTRA_BYTES = 10 * MEGABYTE;
 
 async function typeScriptModuleUrl(path, dependencies = {}) {
   const source = await readFile(path, "utf8");
@@ -49,11 +55,15 @@ async function importTypeScriptModule(path, dependencies) {
 }
 
 const binaryUrl = await typeScriptModuleUrl(binaryPath);
-const [schema, registry, sniff] = await Promise.all([
-  readFile(schemaPath, "utf8"),
-  importTypeScriptModule(registryPath),
-  importTypeScriptModule(sniffPath, { "@/lib/media/binary": binaryUrl }),
-]);
+const [schema, constantsSource, nextConfigSource, proxySource, registry, sniff] =
+  await Promise.all([
+    readFile(schemaPath, "utf8"),
+    readFile(constantsPath, "utf8"),
+    readFile(nextConfigPath, "utf8"),
+    readFile(proxyPath, "utf8"),
+    importTypeScriptModule(registryPath),
+    importTypeScriptModule(sniffPath, { "@/lib/media/binary": binaryUrl }),
+  ]);
 
 const {
   AUDIO_STORAGE_MIME_TYPES,
@@ -78,6 +88,7 @@ function storageBucketsFromSql(source) {
   const buckets = new Map();
   const storageUpdatePattern = new RegExp(
     String.raw`update\s+storage\.buckets\s+set[\s\S]*?` +
+      String.raw`file_size_limit\s*=\s*(\d+)[\s\S]*?` +
       String.raw`allowed_mime_types\s*=\s*array\[([\s\S]*?)\]` +
       String.raw`[\s\S]*?where\s+` +
       String.raw`(id\s*=\s*'[^']+'|id\s+in\s*\([\s\S]*?\))\s*;`,
@@ -85,11 +96,65 @@ function storageBucketsFromSql(source) {
   );
   const updates = source.matchAll(storageUpdatePattern);
   for (const update of updates) {
-    const mimes = valuesFromSql(update[1]);
-    const bucketIds = valuesFromSql(update[2]);
-    for (const bucketId of bucketIds) buckets.set(bucketId, mimes);
+    const sizeLimit = Number(update[1]);
+    const mimes = valuesFromSql(update[2]);
+    const bucketIds = valuesFromSql(update[3]);
+    for (const bucketId of bucketIds) buckets.set(bucketId, { mimes, sizeLimit });
   }
   return buckets;
+}
+
+/** UPLOAD_LIMITS ditulis `<angka> * 1024 * 1024` agar terbaca tanpa transpile. */
+function uploadLimitFromConstants(source, key) {
+  const match = source.match(
+    new RegExp(String.raw`${key}:\s*(\d+)\s*\*\s*1024\s*\*\s*1024`),
+  );
+  assert(match, `UPLOAD_LIMITS.${key} harus berbentuk <angka> * 1024 * 1024.`);
+  return Number(match[1]) * MEGABYTE;
+}
+
+function uploadLimits(source) {
+  return {
+    image: uploadLimitFromConstants(source, "imageMaxBytes"),
+    video: uploadLimitFromConstants(source, "videoMaxBytes"),
+    audio: uploadLimitFromConstants(source, "audioMaxBytes"),
+  };
+}
+
+/** Body Server Action cukup untuk gambar terbesar, tanpa ruang DoS berlebih. */
+function validateServerActionBodyLimit(source, limits) {
+  const match = source.match(/bodySizeLimit:\s*["'](\d+)mb["']/i);
+  assert(match, 'next.config.mjs: bodySizeLimit harus berbentuk "<angka>mb".');
+  const expected = limits.image + SERVER_ACTION_EXTRA_BYTES;
+  assert.equal(
+    Number(match[1]) * MEGABYTE,
+    expected,
+    `next.config.mjs: bodySizeLimit harus "${expected / MEGABYTE}mb" ` +
+      "(UPLOAD_LIMITS.imageMaxBytes + 10 MB).",
+  );
+}
+
+/**
+ * Next meng-clone body request yang melewati proxy dan memotongnya di
+ * `experimental.proxyClientMaxBodySize` (bawaan 10 MB). Server Action wajib
+ * dikecualikan dari matcher proxy, atau batas itu dinaikkan setara bodySizeLimit.
+ */
+function validateProxyPassesActionBodies(proxySource, nextConfig) {
+  const excludesActions =
+    /missing:\s*\[\s*\{\s*type:\s*["']header["']\s*,\s*key:\s*["']next-action["']/.test(
+      proxySource,
+    );
+  const proxyLimit = nextConfig.match(/proxyClientMaxBodySize:\s*["'](\d+)mb["']/i);
+  const actionLimit = nextConfig.match(/bodySizeLimit:\s*["'](\d+)mb["']/i);
+  assert(
+    excludesActions ||
+      (proxyLimit &&
+        actionLimit &&
+        Number(proxyLimit[1]) >= Number(actionLimit[1])),
+    "src/proxy.ts: kecualikan Server Action (header next-action) dari matcher, " +
+      "atau set experimental.proxyClientMaxBodySize ≥ bodySizeLimit; tanpa itu " +
+      "body unggahan > 10 MB terpotong.",
+  );
 }
 
 function constraintSql(source, name) {
@@ -223,19 +288,28 @@ function validateRegistry() {
   }
 }
 
-function validateSql(source, label) {
+function validateSql(source, label, limits) {
   const buckets = storageBucketsFromSql(source);
+  const mediaMimes = [...IMAGE_STORAGE_MIME_TYPES, ...VIDEO_STORAGE_MIME_TYPES];
+  const mediaLimit = Math.max(limits.image, limits.video);
   const expectedBuckets = new Map([
-    ["music", AUDIO_STORAGE_MIME_TYPES],
-    ["media", [...IMAGE_STORAGE_MIME_TYPES, ...VIDEO_STORAGE_MIME_TYPES]],
-    ["media-inbox", [...IMAGE_STORAGE_MIME_TYPES, ...VIDEO_STORAGE_MIME_TYPES]],
-    ["members", IMAGE_STORAGE_MIME_TYPES],
-    ["blog", IMAGE_STORAGE_MIME_TYPES],
-    ["site", IMAGE_STORAGE_MIME_TYPES],
+    ["music", { mimes: AUDIO_STORAGE_MIME_TYPES, sizeLimit: limits.audio }],
+    ["media", { mimes: mediaMimes, sizeLimit: mediaLimit }],
+    ["media-inbox", { mimes: mediaMimes, sizeLimit: mediaLimit }],
+    ["members", { mimes: IMAGE_STORAGE_MIME_TYPES, sizeLimit: limits.image }],
+    ["blog", { mimes: IMAGE_STORAGE_MIME_TYPES, sizeLimit: limits.image }],
+    ["site", { mimes: IMAGE_STORAGE_MIME_TYPES, sizeLimit: limits.image }],
   ]);
   for (const [bucket, expected] of expectedBuckets) {
     assert(buckets.has(bucket), `${label}: bucket ${bucket} tidak dikonfigurasi.`);
-    assertSetEqual(buckets.get(bucket), expected, `${label}: bucket ${bucket}`);
+    const actual = buckets.get(bucket);
+    assertSetEqual(actual.mimes, expected.mimes, `${label}: bucket ${bucket}`);
+    assert.equal(
+      actual.sizeLimit,
+      expected.sizeLimit,
+      `${label}: file_size_limit bucket ${bucket} harus ${expected.sizeLimit} ` +
+        "byte sesuai UPLOAD_LIMITS di src/lib/constants.ts.",
+    );
   }
 
   const imageCanonicalMimes = directFormats("image").map(
@@ -409,8 +483,12 @@ function validateHeaderFixtures() {
   assert(headerMatchesFormat(formatById("3gp-video"), threeGp));
 }
 
+const limits = uploadLimits(constantsSource);
+
 validateRegistry();
-validateSql(schema, "supabase/schema.sql");
+validateSql(schema, "supabase/schema.sql", limits);
+validateServerActionBodyLimit(nextConfigSource, limits);
+validateProxyPassesActionBodies(proxySource, nextConfigSource);
 validateResolutionFixtures();
 validateHeaderFixtures();
 
@@ -421,5 +499,6 @@ console.log(
       VIDEO_STORAGE_MIME_TYPES.length +
       AUDIO_STORAGE_MIME_TYPES.length
     } MIME storage, ` +
+    "batas ukuran bucket + Server Action + proxy sinkron, " +
     "13 resolusi dan 13 fixture signature diperiksa.",
 );

@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
-import {
-  getMediaByIds,
-  getPublishedPostsByIds,
-  MAX_SAVED_PER_REQUEST,
-} from "@/lib/data";
+import { getMediaByIds, getPublishedPostsByIds } from "@/lib/data";
+import { SAVED_ITEM_LIMITS } from "@/lib/constants";
 
 const ID_PATTERN = /^[A-Za-z0-9-]{1,64}$/;
 
@@ -12,7 +9,7 @@ function parseIds(value: string | null): string[] {
     .split(",")
     .map((id) => id.trim())
     .filter((id) => ID_PATTERN.test(id))
-    .slice(0, MAX_SAVED_PER_REQUEST);
+    .slice(0, SAVED_ITEM_LIMITS.idsPerRequest);
 }
 
 /** GET /api/tersimpan?pins=a,b&posts=c — data publik koleksi Tersimpan. */

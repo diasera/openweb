@@ -15,7 +15,7 @@ import {
 } from "@/lib/seo";
 import { themeBackgroundHex, themeCss } from "@/lib/theme";
 import { getContentLabels, toDisplayLabel } from "@/lib/site-config";
-import { ThemeScript } from "@/components/public/theme-toggle";
+import { ThemeScript } from "@/components/public/theme-script";
 import { AppChromeProvider } from "@/components/public/app-chrome-provider";
 import { MotionProvider } from "@/components/motion";
 import { MusicProvider } from "@/components/public/music";

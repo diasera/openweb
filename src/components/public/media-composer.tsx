@@ -141,7 +141,13 @@ export function MediaComposer({
 
   const slides = drafts.items.map(draftSlide);
   const cover = drafts.items[0];
-  const active = drafts.items[Math.min(activeIndex, drafts.items.length - 1)];
+  // Indeks induk bisa basi (mis. item terakhir dihapus). Satu indeks terjepit
+  // dipakai semua turunan agar carousel, filmstrip, dan tombol geser sepakat.
+  const currentIndex = Math.min(
+    Math.max(0, activeIndex),
+    drafts.items.length - 1,
+  );
+  const active = drafts.items[currentIndex];
   const ratio = mediaDisplayAspectRatio(
     cover.dims?.width ?? null,
     cover.dims?.height ?? null,
@@ -159,14 +165,14 @@ export function MediaComposer({
           sizes="(max-width: 512px) 100vw, 512px"
           unoptimized
           videoMuted
-          index={activeIndex}
+          index={currentIndex}
           onIndexChange={onActiveIndexChange}
           className={cn(
             "rounded-ios-lg max-h-[62dvh] transition-shadow",
             dragOver && "ring-primary ring-4",
           )}
         />
-        {activeIndex === 0 && (
+        {currentIndex === 0 && (
           <span className="glass pointer-events-none absolute left-2.5 top-2.5 z-10 flex items-center gap-1 rounded-full px-2.5 py-1 text-caption1 font-semibold">
             <Star className="size-3 fill-current" aria-hidden="true" /> Sampul
           </span>
@@ -200,7 +206,7 @@ export function MediaComposer({
 
       <Filmstrip
         drafts={drafts}
-        activeIndex={activeIndex}
+        activeIndex={currentIndex}
         onActiveIndexChange={onActiveIndexChange}
         onAdd={onPickGallery}
         uploadProgress={uploadProgress}
@@ -210,7 +216,7 @@ export function MediaComposer({
       {active && (
         <DraftActions
           draft={active}
-          index={activeIndex}
+          index={currentIndex}
           total={drafts.items.length}
           disabled={disabled}
           editButtonRef={editButtonRef}

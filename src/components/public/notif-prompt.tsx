@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import { Bell, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { IconPlate } from "@/components/ui/icon-plate";
+import {
+  hasStorage,
+  readStorage,
+  STORAGE_KEYS,
+  writeStorage,
+} from "@/lib/utils/storage";
 import { useBellSubscription } from "./use-bell-subscription";
 
 /**
@@ -15,21 +21,14 @@ export function NotifPrompt({ siteName }: { siteName: string }) {
   const bell = useBellSubscription(false);
 
   useEffect(() => {
-    try {
-      if (localStorage.getItem("notifPrompt")) return;
-    } catch {
-      return;
-    }
+    // Storage diblokir = jangan memaksa ajakan yang tidak bisa diingat.
+    if (!hasStorage() || readStorage(STORAGE_KEYS.notificationPrompt)) return;
     const t = setTimeout(() => setShow(true), 2500);
     return () => clearTimeout(t);
   }, []);
 
   function remember() {
-    try {
-      localStorage.setItem("notifPrompt", "1");
-    } catch {
-      /* ignore */
-    }
+    writeStorage(STORAGE_KEYS.notificationPrompt, "1");
     setShow(false);
   }
 

@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { IMAGE_UPLOAD_ACCEPT, UPLOAD_LIMITS } from "@/lib/constants";
+import { notifyFormChange } from "@/lib/hooks/use-form-dirty";
 import {
   canEditPhoto,
   createDefaultPhotoEdit,
@@ -21,7 +22,7 @@ import {
   type PhotoEditRecipe,
   type PhotoEditorProfileId,
 } from "@/lib/media-editor";
-import { prepareImageFile } from "@/lib/media-formats";
+import { prepareImageFile, prepareRemoteImage } from "@/lib/media-formats";
 import { normalizeMediaDimensions } from "@/lib/media/display";
 import { validateImageFile } from "@/lib/uploads/policy";
 
@@ -33,15 +34,6 @@ export function hasPreparingImageDraft(
   form: HTMLFormElement | null,
 ): boolean {
   return Boolean(form?.querySelector(PREPARING_IMAGE_DRAFT_SELECTOR));
-}
-
-function fileNameFromUrl(url: string) {
-  try {
-    const segment = new URL(url, window.location.href).pathname.split("/").pop();
-    return segment ? decodeURIComponent(segment) : "gambar";
-  } catch {
-    return "gambar";
-  }
 }
 
 export interface UseImageDraftOptions {
@@ -461,18 +453,10 @@ export function useImageDraft({
     controllerRef.current = controller;
     commitPreparing(true);
     try {
-      const response = await fetch(url, {
-        cache: "no-store",
-        credentials: "omit",
+      const prepared = await prepareRemoteImage(url, {
         signal: controller.signal,
+        errorMessage: "Gambar lama tidak dapat dimuat.",
       });
-      if (!response.ok) throw new Error("Gambar lama tidak dapat dimuat.");
-      const blob = await response.blob();
-      const fetchedFile = new File([blob], fileNameFromUrl(url), {
-        type: blob.type,
-        lastModified: Date.now(),
-      });
-      const prepared = await prepareImageFile(fetchedFile, controller.signal);
       const file = prepared.file;
       const validation = validateImageFile(file);
       if (!validation.ok) throw new Error(validation.error);
@@ -542,6 +526,9 @@ export function useImageDraft({
 
       setEditorRecipe(result.recipe ?? null);
       setEditorAspect(result.aspect ?? null);
+      // Kedua cabang di bawah mengganti FileList secara programatik dari
+      // editor (portal di luar form), jadi form tidak menerima event native.
+      notifyFormChange(inputRef.current);
       const original = originalFileRef.current;
 
       if (original && result.file === original) {
@@ -617,6 +604,7 @@ export function useImageDraft({
     setEditorAspect(null);
     commitRemoved(false);
     closeEditor();
+    notifyFormChange(inputRef.current);
     const original = originalFileRef.current;
     if (original && originalFromInputRef.current) {
       const baselineFile = baselineFileRef.current ?? original;
@@ -671,6 +659,7 @@ export function useImageDraft({
     commitPreparing(false);
     closeEditor();
     syncNativeInput(null);
+    notifyFormChange(inputRef.current);
   }, [
     closeEditor,
     commitActiveFile,

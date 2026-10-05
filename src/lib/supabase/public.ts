@@ -8,8 +8,9 @@ import {
 
 /**
  * Client anon TANPA cookie untuk membaca data publik di server (cacheable).
- * RLS tetap berlaku (hanya data publik yang terbaca). Berbeda dari server.ts
- * (cookie-aware) yang disiapkan bila kelak memakai Supabase Auth.
+ * RLS tetap berlaku (hanya data publik yang terbaca). Mutasi berhak istimewa
+ * memakai admin.ts (service role, server-only); sesi admin aplikasi berbasis
+ * cookie sendiri, bukan Supabase Auth.
  */
 export function createPublicSupabase() {
   return createClient<Database>(

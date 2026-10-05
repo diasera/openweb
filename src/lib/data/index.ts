@@ -20,6 +20,7 @@ import {
   DEMO_POSTS,
   DEMO_COMMENTS,
 } from "./demo";
+import { SAVED_ITEM_LIMITS } from "@/lib/constants";
 import { ensureMemberSlugs } from "@/lib/members/slug";
 import { normalizeSiteSettings } from "@/lib/site-config";
 import { isUuid } from "@/lib/utils/id";
@@ -318,14 +319,11 @@ export async function getApprovedMedia({
   return slideCounts ? withSlideCounts(rows) : rows;
 }
 
-/** Maksimal item per jenis yang diambil sekaligus untuk koleksi Tersimpan. */
-export const MAX_SAVED_PER_REQUEST = 60;
-
 /** Pin approved berdasarkan daftar id, mengikuti urutan permintaan. */
 export async function getMediaByIds(
   ids: readonly string[],
 ): Promise<MediaWithSlideCount[]> {
-  const unique = [...new Set(ids)].slice(0, MAX_SAVED_PER_REQUEST);
+  const unique = [...new Set(ids)].slice(0, SAVED_ITEM_LIMITS.idsPerRequest);
   if (unique.length === 0) return [];
   if (!isSupabaseConfigured()) {
     return withSlideCounts(
@@ -380,6 +378,9 @@ export async function getMemoriesToday(): Promise<MediaWithSlideCount[]> {
   );
 }
 
+const POST_CARD_COLUMNS =
+  "id, title, slug, excerpt, category, cover_image_url, published_at, updated_at, author_name, content_html" as const;
+
 export async function getPublishedPosts(
   limit = 30,
   offset = 0,
@@ -399,14 +400,11 @@ export async function getPublishedPosts(
   return data ?? [];
 }
 
-const POST_CARD_COLUMNS =
-  "id, title, slug, excerpt, category, cover_image_url, published_at, updated_at, author_name, content_html" as const;
-
 /** Artikel terbit berdasarkan daftar id, mengikuti urutan permintaan. */
 export async function getPublishedPostsByIds(
   ids: readonly string[],
 ): Promise<PublicPostCard[]> {
-  const unique = [...new Set(ids)].slice(0, MAX_SAVED_PER_REQUEST);
+  const unique = [...new Set(ids)].slice(0, SAVED_ITEM_LIMITS.idsPerRequest);
   if (unique.length === 0) return [];
   if (!isSupabaseConfigured()) {
     return unique.flatMap((id) => DEMO_POSTS.find((post) => post.id === id) ?? []);

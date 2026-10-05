@@ -7,7 +7,7 @@ import {
   throwIfAborted,
 } from "@/lib/media-editor";
 import { loadImageElement } from "@/lib/media/image-element";
-import { UPLOAD_LIMITS } from "@/lib/constants";
+import { formatUploadLimit, uploadMaxBytes } from "@/lib/constants";
 import {
   canonicalMimeForFormat,
   resolveMediaFormat,
@@ -46,11 +46,10 @@ async function portableJpegFile(blob: Blob, source: File): Promise<File> {
   if (blob.size <= 0) {
     throw new Error("Normalisasi gambar menghasilkan file kosong.");
   }
-  if (blob.size > UPLOAD_LIMITS.imageMaxBytes) {
+  const maxBytes = uploadMaxBytes("image");
+  if (blob.size > maxBytes) {
     throw new Error(
-      `Hasil normalisasi terlalu besar (maks ${Math.round(
-        UPLOAD_LIMITS.imageMaxBytes / 1048576,
-      )} MB).`,
+      `Hasil normalisasi terlalu besar (maks ${formatUploadLimit(maxBytes)}).`,
     );
   }
   const inspection = await inspectBlobHeader(blob);
@@ -203,16 +202,9 @@ export async function prepareMediaFile(
   if (file.size <= 0) {
     throw new Error("File kosong tidak dapat dipublikasikan.");
   }
-  const maxBytes =
-    format.kind === "image"
-      ? UPLOAD_LIMITS.imageMaxBytes
-      : format.kind === "video"
-        ? UPLOAD_LIMITS.videoMaxBytes
-        : UPLOAD_LIMITS.audioMaxBytes;
+  const maxBytes = uploadMaxBytes(format.kind);
   if (file.size > maxBytes) {
-    throw new Error(
-      `File terlalu besar (maks ${Math.round(maxBytes / 1048576)} MB).`,
-    );
+    throw new Error(`File terlalu besar (maks ${formatUploadLimit(maxBytes)}).`);
   }
   if (format.preparation === "external" || format.preparation === "blocked") {
     throw processorRequired(format);

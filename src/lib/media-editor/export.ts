@@ -7,6 +7,7 @@ import {
   renderFileToBoundedCanvas,
   throwIfAborted,
 } from "./image";
+import { storageFormatForMime } from "@/lib/media-formats/registry";
 import { createCanvas } from "./canvas";
 import { clampCropRect, coverScaleForStraighten } from "./crop-geometry";
 import { resolvedPhotoAdjustments } from "./filters";
@@ -24,15 +25,12 @@ function normalizedQuarterRotation(rotation: number): number {
   return (((Math.round(rotation / 90) % 4) + 4) % 4) * 90;
 }
 
-function extensionForMime(mime: string): string {
-  if (mime === "image/png") return "png";
-  if (mime === "image/webp") return "webp";
-  return "jpg";
-}
-
 function editedFileName(name: string, mime: string): string {
   const base = name.replace(/\.[^.]+$/, "").trim() || "foto";
-  return `${base}-edited.${extensionForMime(mime)}`;
+  // Ekstensi dari registry format: satu sumber dengan kebijakan upload.
+  const extension =
+    storageFormatForMime("image", mime)?.storageExtension ?? "jpg";
+  return `${base}-edited.${extension}`;
 }
 
 function recipeIsIdentity(recipe: PhotoEditRecipe): boolean {

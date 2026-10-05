@@ -14,7 +14,7 @@ import {
 
 /** POST /api/pesan/like — tambah 1 like ke sebuah pesan anonim, maksimal
  *  sekali per pengunjung per pesan. Dedup + penghitung atomik di RPC like_message. */
-const schema = z.object({ id: z.string().uuid() });
+const schema = z.object({ id: z.uuid() });
 
 export async function POST(req: Request) {
   const guarded = await guardPublicMutation(

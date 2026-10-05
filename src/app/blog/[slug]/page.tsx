@@ -13,6 +13,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Chip } from "@/components/ui/chip";
 import { categoryColor } from "@/lib/categories";
 import { readingTime } from "@/lib/utils/reading-time";
+import { formatSiteDate } from "@/lib/utils/time";
 import { normalizeArticleHtml } from "@/lib/blog/content";
 import { JsonLd } from "@/components/seo/json-ld";
 import { buildPageMetadata, plainText } from "@/lib/seo";
@@ -88,10 +89,9 @@ export default async function ArticlePage({
   if (post.slug !== slug) permanentRedirect(`/blog/${post.slug}`);
   const related = pickRelatedPosts(recentPosts, post.slug, post.category);
 
+  // Zona situs, bukan zona server: artikel 00.30 WIB tidak tampil sebagai kemarin.
   const dateStr = post.published_at
-    ? new Date(post.published_at)
-        .toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
-        .toUpperCase()
+    ? formatSiteDate(post.published_at).toUpperCase()
     : "";
 
   return (
@@ -128,8 +128,7 @@ export default async function ArticlePage({
               src={post.cover_image_url}
               alt={post.title}
               fill
-              priority
-              loading="eager"
+              preload
               sizes="(max-width: 672px) 100vw, 672px"
               className="motion-parallax"
               style={{ objectFit: BLOG_COVER_FRAME.objectFit }}

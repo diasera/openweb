@@ -20,7 +20,7 @@ const localDateTime = z
 
 const schema = z
   .object({
-    id: z.union([z.literal(""), z.string().uuid()]),
+    id: z.union([z.literal(""), z.uuid()]),
     title: z.string().trim().min(1, "Judul acara wajib diisi").max(120),
     description: z.string().trim().max(1000),
     location: z.string().trim().max(120),

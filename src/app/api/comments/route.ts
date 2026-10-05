@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminSupabase } from "@/lib/supabase/admin";
@@ -10,7 +11,7 @@ import { RATE_LIMITS } from "@/lib/security/rate-limit";
 
 /** POST /api/comments — komentar pada pin/media (publik, IP+device dicatat). */
 const schema = z.object({
-  media_id: z.string().uuid("Media tidak valid"),
+  media_id: z.uuid("Media tidak valid"),
   content: z.string().trim().min(1, "Komentar kosong").max(500, "Maksimal 500 karakter"),
   author_name: z.string().trim().max(60).optional(),
 });
@@ -62,5 +63,8 @@ export async function POST(req: Request) {
   if (error) {
     return NextResponse.json({ error: "Gagal menyimpan komentar" }, { status: 500 });
   }
+  // Halaman pin di-cache ISR: tanpa ini router.refresh() pengirim masih
+  // menerima versi lama dan komentarnya tertahan sebagai "Mengirim…".
+  revalidatePath(`/pin/${parsed.data.media_id}`);
   return NextResponse.json({ ok: true });
 }

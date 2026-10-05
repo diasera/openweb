@@ -144,7 +144,7 @@ export function MotionProvider({ children }: { children: ReactNode }) {
     [goBack, markPageReady, navigate, pathname, transition],
   );
 
-  return <MotionContext.Provider value={value}>{children}</MotionContext.Provider>;
+  return <MotionContext value={value}>{children}</MotionContext>;
 }
 
 export function useAppMotion() {

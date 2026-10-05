@@ -29,6 +29,7 @@ export function LoginForm({ next }: { next?: string }) {
           required
           autoComplete="username"
           placeholder="username"
+          defaultValue={state.values?.username}
         />
       </AuthField>
       <AuthField label="Password" htmlFor="password" delay={380}>
@@ -42,10 +43,10 @@ export function LoginForm({ next }: { next?: string }) {
         />
       </AuthField>
 
-      {/* key agar teks error ter-animasi ulang tiap galat baru; nilai input
-          tetap aman karena form tidak di-remount. */}
+      {/* key agar teks error ter-animasi ulang tiap galat baru. React 19
+          me-reset form sesudah action; username dipulihkan dari state.values. */}
       {state.error && (
-        <p key={state.error} className={styles.errorText}>
+        <p key={state.error} role="alert" className={styles.errorText}>
           {state.error}
         </p>
       )}

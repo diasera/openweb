@@ -28,6 +28,7 @@ export function SetupForm() {
           required
           autoComplete="name"
           placeholder="Nama lengkap"
+          defaultValue={state.values?.name}
         />
       </AuthField>
       <AuthField
@@ -42,6 +43,7 @@ export function SetupForm() {
           required
           autoComplete="username"
           placeholder="username"
+          defaultValue={state.values?.username}
         />
       </AuthField>
       <AuthField label="Password" htmlFor="password" delay={420}>
@@ -65,8 +67,10 @@ export function SetupForm() {
         />
       </AuthField>
 
+      {/* React 19 me-reset form sesudah action; nama & username dipulihkan
+          dari state.values, password sengaja dikosongkan. */}
       {state.error && (
-        <p key={state.error} className={styles.errorText}>
+        <p key={state.error} role="alert" className={styles.errorText}>
           {state.error}
         </p>
       )}

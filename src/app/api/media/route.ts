@@ -1,4 +1,3 @@
-import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { mutationPrerequisiteResponse } from "@/lib/api/public-mutation";
@@ -9,6 +8,10 @@ import {
   cleanupRejectedMediaFinalization,
   finalizeMediaUpload,
 } from "@/lib/media/finalize";
+import {
+  revalidateMediaAdminPages,
+  revalidateMediaPages,
+} from "@/lib/media/revalidate";
 import { saveMediaRecord } from "@/lib/media/upload";
 
 const dimension = z.number().int().positive().max(UPLOAD_LIMITS.mediaMaxDimension);
@@ -114,8 +117,9 @@ export async function POST(request: Request) {
     );
   }
 
-  revalidatePath("/");
-  revalidatePath("/galeri");
-  revalidatePath("/profil");
+  // Kiriman publik masih pending: belum ada halaman publik yang berubah, jadi
+  // pengunjung anonim tidak bisa memicu invalidasi cache seluruh situs.
+  if (approved) revalidateMediaPages();
+  else revalidateMediaAdminPages();
   return NextResponse.json({ ok: true, approved });
 }

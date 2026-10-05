@@ -12,7 +12,7 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast";
 import { postJson } from "@/lib/api/client";
 import { canEditPhoto, readPhotoDimensions } from "@/lib/media-editor";
-import { prepareImageFile } from "@/lib/media-formats";
+import { prepareRemoteImage } from "@/lib/media-formats";
 import type { MediaRow } from "@/lib/types/database";
 import {
   requestSignedUpload,
@@ -29,27 +29,15 @@ interface WorkingPhoto {
   sourceDimensions: { width: number; height: number } | null;
 }
 
-async function downloadMediaFile(media: EditableMedia, signal: AbortSignal) {
-  const response = await fetch(media.url, {
-    cache: "no-store",
-    credentials: "omit",
+async function downloadMediaFile(
+  media: Pick<EditableMedia, "id" | "url">,
+  signal: AbortSignal,
+) {
+  const prepared = await prepareRemoteImage(media.url, {
     signal,
+    fallbackName: `edit-${media.id}`,
+    errorMessage: "Foto asli tidak dapat dimuat.",
   });
-  if (!response.ok) throw new Error("Foto asli tidak dapat dimuat.");
-
-  const blob = await response.blob();
-  if (blob.type && !blob.type.startsWith("image/")) {
-    throw new Error("File media bukan foto yang dapat diedit.");
-  }
-  const sourceName =
-    new URL(media.url, window.location.href).pathname.split("/").pop() ??
-    `edit-${media.id}`;
-  const sourceFile = new File(
-    [blob],
-    sourceName,
-    { type: blob.type, lastModified: Date.now() },
-  );
-  const prepared = await prepareImageFile(sourceFile, signal);
   if (!canEditPhoto(prepared.file) || prepared.animated) {
     throw new Error(
       "Media animasi dipertahankan seperti aslinya dan tidak dapat diedit sebagai foto statis.",
@@ -73,10 +61,16 @@ export function MediaEditPage({ media }: { media: EditableMedia }) {
   const [progress, setProgress] = useState(0);
   const savingRef = useRef(false);
 
+  // Bergantung pada id/url, bukan identitas objek `media`: prop baru dari
+  // server (mis. router.refresh) tidak boleh mengunduh ulang dan mereset
+  // sesi editor yang sedang berjalan.
   useEffect(() => {
     const controller = new AbortController();
 
-    downloadMediaFile(media, controller.signal)
+    downloadMediaFile(
+      { id: media.id, url: media.url },
+      controller.signal,
+    )
       .then((nextPhoto) => {
         if (controller.signal.aborted) return;
         setLoadError(null);
@@ -91,7 +85,7 @@ export function MediaEditPage({ media }: { media: EditableMedia }) {
       });
 
     return () => controller.abort();
-  }, [loadAttempt, media]);
+  }, [loadAttempt, media.id, media.url]);
 
   const save = useCallback(
     async (result: PhotoEditorResult) => {

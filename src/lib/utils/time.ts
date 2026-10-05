@@ -1,6 +1,10 @@
-/** Waktu relatif Bahasa Indonesia, mis. "2 jam lalu". Dipakai pesan, blog, media. */
-export function timeAgo(iso: string): string {
-  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+/**
+ * Waktu relatif Bahasa Indonesia, mis. "2 jam lalu". Bergantung pada jam saat
+ * ini, jadi halaman publik (ISR/klien) memakai <RelativeTime> agar label tidak
+ * beku di cache maupun berbeda saat hidrasi; render admin dinamis boleh langsung.
+ */
+export function timeAgo(iso: string, now = Date.now()): string {
+  const s = Math.max(0, (now - new Date(iso).getTime()) / 1000);
   if (s < 60) return "baru saja";
   const m = Math.floor(s / 60);
   if (m < 60) return `${m} menit lalu`;
@@ -162,6 +166,74 @@ const monthShort = new Intl.DateTimeFormat("id-ID", {
   timeZone: SITE_TIME_ZONE,
   month: "short",
 });
+
+/** Gaya tanggal absolut bersama: satu definisi untuk artikel, profil, dan grafik. */
+const DATE_STYLES = {
+  /** "5 Okt 2026" */
+  medium: { day: "numeric", month: "short", year: "numeric" },
+  /** "Oktober 2026" */
+  monthYear: { month: "long", year: "numeric" },
+  /** "5 Okt" */
+  dayMonth: { day: "numeric", month: "short" },
+} as const satisfies Record<string, Intl.DateTimeFormatOptions>;
+
+export type SiteDateStyle = keyof typeof DATE_STYLES;
+
+const dateFormatters = new Map<string, Intl.DateTimeFormat>();
+
+function dateFormatter(style: SiteDateStyle, timeZone: string) {
+  const key = `${style}:${timeZone}`;
+  let formatter = dateFormatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat("id-ID", {
+      ...DATE_STYLES[style],
+      timeZone,
+    });
+    dateFormatters.set(key, formatter);
+  }
+  return formatter;
+}
+
+/**
+ * Tanggal sebuah instan di zona situs. Server (biasanya UTC) dan browser
+ * pengunjung menghasilkan teks yang sama, jadi aman untuk ISR dan hidrasi.
+ */
+export function formatSiteDate(
+  iso: string,
+  style: SiteDateStyle = "medium",
+): string {
+  return dateFormatter(style, SITE_TIME_ZONE).format(new Date(iso));
+}
+
+/** Kunci tanggal kalender "YYYY-MM-DD" dari komponen tahun/bulan/hari. */
+export function calendarKey(year: number, month: number, day: number): string {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${year}-${pad(month)}-${pad(day)}`;
+}
+
+/** Kunci hari kalender "YYYY-MM-DD" di zona situs (grafik aktivitas, dsb). */
+export function siteDateKey(date: Date): string {
+  const { year, month, day } = zonedParts(date);
+  return calendarKey(year, month, day);
+}
+
+/** Format kunci "YYYY-MM-DD" apa adanya, tanpa digeser zona waktu mana pun. */
+export function formatCalendarDate(
+  key: string,
+  style: SiteDateStyle = "medium",
+): string {
+  const [year, month, day] = key.split("-").map(Number);
+  return dateFormatter(style, "UTC").format(
+    new Date(Date.UTC(year ?? 1970, (month ?? 1) - 1, day ?? 1)),
+  );
+}
+
+/** Durasi pemutar "m:ss"; nilai tidak valid menjadi "0:00". */
+export function formatClock(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+  const whole = Math.floor(seconds);
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
+}
 
 /** Isi ubin tanggal kalender (hari + bulan singkat) di zona situs. */
 export function eventDateTile(iso: string): { day: string; month: string } {

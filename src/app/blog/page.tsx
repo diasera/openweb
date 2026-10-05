@@ -14,7 +14,7 @@ import { Chip } from "@/components/ui/chip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { readingTime } from "@/lib/utils/reading-time";
-import { timeAgo } from "@/lib/utils/time";
+import { RelativeTime } from "@/components/ui/relative-time";
 import { MotionLink, listReveal } from "@/components/motion";
 import { JsonLd } from "@/components/seo/json-ld";
 import { buildPageMetadata, PUBLIC_PAGE_SEO } from "@/lib/seo";
@@ -95,7 +95,7 @@ export default async function BlogListPage({
                   src={featured.cover_image_url}
                   alt={featured.title}
                   fill
-                  priority
+                  preload
                   sizes="(max-width: 672px) 100vw, 672px"
                   className="motion-parallax"
                   style={{ objectFit: BLOG_COVER_FRAME.objectFit }}
@@ -115,8 +115,13 @@ export default async function BlogListPage({
                 </h2>
                 <p className="mt-1 text-xs text-white/80">
                   {featured.author_name || "Redaksi"}
-                  {featured.published_at && ` · ${timeAgo(featured.published_at)}`} ·{" "}
-                  {readingTime(featured.content_html)} mnt baca
+                  {featured.published_at && (
+                    <>
+                      {" · "}
+                      <RelativeTime iso={featured.published_at} />
+                    </>
+                  )}{" "}
+                  · {readingTime(featured.content_html)} mnt baca
                 </p>
               </div>
               </div>

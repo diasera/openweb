@@ -1,8 +1,4 @@
-const MUSIC_STORAGE_KEYS = {
-  enabled: "webkelas.music.enabled",
-  track: "webkelas.music.track",
-  time: "webkelas.music.time",
-} as const;
+import { readStorage, STORAGE_KEYS, writeStorage } from "@/lib/utils/storage";
 
 export interface PersistedMusicState {
   enabled: boolean;
@@ -10,57 +6,35 @@ export interface PersistedMusicState {
   time: number;
 }
 
-function browserStorage(): Storage | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return window.localStorage;
-  } catch {
-    return null;
-  }
-}
-
-function read(key: string): string | null {
-  try {
-    return browserStorage()?.getItem(key) ?? null;
-  } catch {
-    return null;
-  }
-}
-
-function write(key: string, value: string): void {
-  try {
-    browserStorage()?.setItem(key, value);
-  } catch {
-    // Storage privat/penuh tidak boleh menghentikan playback.
-  }
-}
+// Storage privat/penuh tidak boleh menghentikan playback: helper bersama
+// menelan error dan pemutar tetap berjalan dengan state di memori.
 
 export function readMusicTrackId(): string | null {
-  return read(MUSIC_STORAGE_KEYS.track);
+  return readStorage(STORAGE_KEYS.musicTrack);
 }
 
 export function readMusicTime(): number {
-  const value = Number(read(MUSIC_STORAGE_KEYS.time));
+  const value = Number(readStorage(STORAGE_KEYS.musicTime));
   return Number.isFinite(value) ? Math.max(0, value) : 0;
 }
 
 export function readMusicState(): PersistedMusicState {
   return {
-    enabled: read(MUSIC_STORAGE_KEYS.enabled) === "true",
+    enabled: readStorage(STORAGE_KEYS.musicEnabled) === "true",
     trackId: readMusicTrackId(),
     time: readMusicTime(),
   };
 }
 
 export function persistMusicEnabled(enabled: boolean): void {
-  write(MUSIC_STORAGE_KEYS.enabled, String(enabled));
+  writeStorage(STORAGE_KEYS.musicEnabled, String(enabled));
 }
 
 export function persistMusicTrackId(trackId: string): void {
-  write(MUSIC_STORAGE_KEYS.track, trackId);
+  writeStorage(STORAGE_KEYS.musicTrack, trackId);
 }
 
 export function persistMusicTime(time: number): void {
   if (!Number.isFinite(time)) return;
-  write(MUSIC_STORAGE_KEYS.time, String(Math.max(0, time)));
+  writeStorage(STORAGE_KEYS.musicTime, String(Math.max(0, time)));
 }

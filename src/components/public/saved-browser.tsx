@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bookmark } from "lucide-react";
 import { Masonry } from "@/components/ui/masonry";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -10,54 +10,110 @@ import { MediaCard } from "@/components/public/media-card";
 import { PostRow } from "@/components/public/post-row";
 import { MotionLink, listReveal } from "@/components/motion";
 import { requestJson } from "@/lib/api/client";
+import { SAVED_ITEM_LIMITS } from "@/lib/constants";
+import { useHydrated } from "@/lib/hooks/use-now";
 import { forgetSaved, useSavedItems } from "@/lib/saved-items";
 import type { MediaWithSlideCount } from "@/lib/media/slides";
 import type { PublicPostCard } from "@/lib/data";
 
-const noopSubscribe = () => () => {};
-
 type SavedPayload = { pins: MediaWithSlideCount[]; posts: PublicPostCard[] };
 type LoadState = { key: string; data: SavedPayload | null; error: string | null };
 
+const LOAD_ERROR = "Koleksi tersimpan belum bisa dimuat.";
+
+function collectionKey(pinIds: readonly string[], postIds: readonly string[]) {
+  return `${pinIds.join(",")}|${postIds.join(",")}`;
+}
+
+/**
+ * API membatasi id per permintaan agar URL tetap pendek, jadi koleksi besar
+ * diminta per batch. Tanpa ini, item di luar batch pertama dianggap hilang
+ * lalu terhapus permanen dari koleksi.
+ */
+async function fetchSavedCollection(
+  pinIds: readonly string[],
+  postIds: readonly string[],
+  signal: AbortSignal,
+): Promise<SavedPayload> {
+  const size = SAVED_ITEM_LIMITS.idsPerRequest;
+  const batches = Math.max(
+    Math.ceil(pinIds.length / size),
+    Math.ceil(postIds.length / size),
+  );
+  const responses = await Promise.all(
+    Array.from({ length: batches }, (_, batch) => {
+      const query = new URLSearchParams({
+        pins: pinIds.slice(batch * size, (batch + 1) * size).join(","),
+        posts: postIds.slice(batch * size, (batch + 1) * size).join(","),
+      });
+      return requestJson<Partial<SavedPayload>>(
+        `/api/tersimpan?${query}`,
+        { signal },
+        LOAD_ERROR,
+      );
+    }),
+  );
+  // Ketiadaan item di respons berarti item dilepas PERMANEN dari koleksi, jadi
+  // respons wajib utuh. requestJson mengubah body 200 yang gagal dibaca
+  // (koneksi putus di tengah, halaman non-JSON dari perantara) menjadi `{}`.
+  for (const payload of responses) {
+    if (!Array.isArray(payload.pins) || !Array.isArray(payload.posts)) {
+      throw new Error(LOAD_ERROR);
+    }
+  }
+  return {
+    pins: responses.flatMap((payload) => payload.pins ?? []),
+    posts: responses.flatMap((payload) => payload.posts ?? []),
+  };
+}
+
 /** Isi koleksi Tersimpan milik perangkat ini (tanpa akun). */
 export function SavedBrowser() {
-  const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
+  const hydrated = useHydrated();
   const saved = useSavedItems();
-  const pinIds = saved.filter((item) => item.kind === "pin").map((item) => item.id);
-  const postIds = saved.filter((item) => item.kind === "post").map((item) => item.id);
-  const query = `pins=${encodeURIComponent(pinIds.join(","))}&posts=${encodeURIComponent(postIds.join(","))}`;
+  const pinIds = useMemo(
+    () => saved.filter((item) => item.kind === "pin").map((item) => item.id),
+    [saved],
+  );
+  const postIds = useMemo(
+    () => saved.filter((item) => item.kind === "post").map((item) => item.id),
+    [saved],
+  );
+  const key = collectionKey(pinIds, postIds);
   const empty = saved.length === 0;
   const [state, setState] = useState<LoadState | null>(null);
+  // Koleksi yang datanya sudah lengkap (termasuk setelah item hilang dilepas)
+  // tidak perlu diminta ulang hanya karena daftarnya menyusut.
+  const loadedKey = useRef<string | null>(null);
 
   useEffect(() => {
-    if (empty) return;
+    if (empty || loadedKey.current === key) return;
     const controller = new AbortController();
-    requestJson<Partial<SavedPayload>>(
-      `/api/tersimpan?${query}`,
-      { signal: controller.signal },
-      "Koleksi tersimpan belum bisa dimuat.",
-    )
-      .then((payload) => {
-        const data = { pins: payload.pins ?? [], posts: payload.posts ?? [] };
-        setState({ key: query, data, error: null });
+    fetchSavedCollection(pinIds, postIds, controller.signal)
+      .then((data) => {
+        if (controller.signal.aborted) return;
         // Item yang dihapus/tak lagi terbit ikut dilepas dari koleksi.
-        const params = new URLSearchParams(query);
-        const requested = (name: string) => (params.get(name) ?? "").split(",").filter(Boolean);
         const pins = new Set(data.pins.map((pin) => pin.id));
         const posts = new Set(data.posts.map((post) => post.id));
-        forgetSaved("pin", requested("pins").filter((id) => !pins.has(id)));
-        forgetSaved("post", requested("posts").filter((id) => !posts.has(id)));
+        const keptKey = collectionKey(
+          pinIds.filter((id) => pins.has(id)),
+          postIds.filter((id) => posts.has(id)),
+        );
+        loadedKey.current = keptKey;
+        setState({ key: keptKey, data, error: null });
+        forgetSaved("pin", pinIds.filter((id) => !pins.has(id)));
+        forgetSaved("post", postIds.filter((id) => !posts.has(id)));
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
         setState({
-          key: query,
+          key,
           data: null,
-          error: error instanceof Error ? error.message : "Koleksi tersimpan belum bisa dimuat.",
+          error: error instanceof Error ? error.message : LOAD_ERROR,
         });
       });
     return () => controller.abort();
-  }, [empty, query]);
+  }, [empty, key, pinIds, postIds]);
 
   if (hydrated && empty) {
     return (
@@ -74,7 +130,7 @@ export function SavedBrowser() {
     );
   }
 
-  const current = state?.key === query ? state : null;
+  const current = state?.key === key ? state : null;
   if (current?.error) {
     return <EmptyState title="Belum bisa dimuat" description={current.error} />;
   }

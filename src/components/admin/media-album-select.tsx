@@ -1,14 +1,17 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { FolderOpen } from "lucide-react";
-import { useToast } from "@/components/ui/toast";
 import { fieldClass } from "@/components/ui/input";
-import { getActionError } from "@/lib/action-result";
+import { useAdminAction } from "@/components/admin/use-admin-action";
 import { setMediaAlbum } from "@/app/profil/(admin)/media/album/actions";
 import type { AlbumOption } from "@/lib/admin/albums";
 
-/** Pilih album untuk satu media langsung dari kartu moderasi. */
+/**
+ * Pilih album untuk satu media langsung dari kartu moderasi. Nilai optimistis
+ * dikembalikan bila aksi gagal, dan mengikuti album tersimpan setiap data
+ * server berubah (revalidasi sesudah simpan, perubahan admin lain).
+ */
 export function MediaAlbumSelect({
   mediaId,
   albumId,
@@ -18,9 +21,15 @@ export function MediaAlbumSelect({
   albumId: string | null;
   albums: AlbumOption[];
 }) {
-  const { toast } = useToast();
   const [value, setValue] = useState(albumId ?? "");
-  const [pending, start] = useTransition();
+  const [syncedAlbumId, setSyncedAlbumId] = useState(albumId);
+  // Sesuaikan state saat prop berubah (pola resmi React) alih-alih remount
+  // lewat `key`, yang membuang fokus keyboard sesudah setiap simpan.
+  if (albumId !== syncedAlbumId) {
+    setSyncedAlbumId(albumId);
+    setValue(albumId ?? "");
+  }
+  const { pending, run } = useAdminAction();
 
   if (albums.length === 0) return null;
 
@@ -35,14 +44,10 @@ export function MediaAlbumSelect({
           const previous = value;
           const next = event.target.value;
           setValue(next);
-          start(async () => {
-            const error = getActionError(await setMediaAlbum(mediaId, next || null));
-            if (error) {
-              setValue(previous);
-              toast.error(error);
-              return;
-            }
-            toast.success(next ? "Dimasukkan ke album" : "Dikeluarkan dari album");
+          run(() => setMediaAlbum(mediaId, next || null), {
+            successMessage: next ? "Dimasukkan ke album" : "Dikeluarkan dari album",
+            errorMessage: "Album media gagal diubah. Coba lagi.",
+            onError: () => setValue(previous),
           });
         }}
         className="text-foreground h-9 min-w-0 flex-1 bg-transparent text-base outline-hidden sm:text-xs disabled:opacity-50"

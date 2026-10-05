@@ -10,6 +10,7 @@ import {
   finalizeMediaUpload,
   getMediaUploadAdmin,
 } from "@/lib/media/finalize";
+import { revalidateMediaPages } from "@/lib/media/revalidate";
 import { replaceMediaPhoto } from "@/lib/media/upload";
 
 const schema = z.object({
@@ -89,10 +90,6 @@ export async function POST(
   }
 
   revalidatePath(`/profil/media/${id}/edit`);
-  revalidatePath("/profil/media");
-  revalidatePath("/profil");
-  revalidatePath("/");
-  revalidatePath("/galeri");
-  revalidatePath(`/pin/${id}`);
+  revalidateMediaPages(id);
   return NextResponse.json({ ok: true });
 }

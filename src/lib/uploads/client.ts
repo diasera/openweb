@@ -15,6 +15,21 @@ import type {
 
 const TUS_CHUNK_BYTES = 6 * 1024 * 1024;
 const TUS_RETRY_DELAYS = [0, 3_000, 5_000, 10_000, 20_000];
+const UPLOAD_INTERRUPTED = "Unggahan terputus. Periksa koneksi lalu coba lagi.";
+const STORAGE_TOO_LARGE =
+  "Ukuran file melebihi batas penyimpanan situs ini. Coba file yang lebih kecil.";
+
+/**
+ * Batas bucket/Global file size limit Supabase (paket Free: 50 MB) bisa lebih
+ * kecil dari UPLOAD_LIMITS. Storage menjawab 413 (atau 400 dengan pesan yang
+ * sama pada versi lama); tampilkan alasan yang jelas, bukan "koneksi terputus".
+ */
+function isPayloadTooLarge(status: number, body: string | null | undefined) {
+  return (
+    status === 413 ||
+    /payload too large|exceeded the maximum allowed size/i.test(body ?? "")
+  );
+}
 
 export async function requestSignedUpload(
   kind: DirectUploadKind,
@@ -72,7 +87,7 @@ async function uploadSignedFile(
       if (event.lengthComputable) reportProgress(onProgress, event.loaded, event.total);
     };
     request.onerror = () => {
-      reject(new Error("Unggahan terputus. Periksa koneksi lalu coba lagi."));
+      reject(new Error(UPLOAD_INTERRUPTED));
     };
     request.onabort = () => reject(new Error("Unggahan dibatalkan."));
     request.onload = () => {
@@ -81,7 +96,13 @@ async function uploadSignedFile(
         resolve();
         return;
       }
-      reject(new Error("Gagal mengunggah file ke penyimpanan."));
+      reject(
+        new Error(
+          isPayloadTooLarge(request.status, request.responseText)
+            ? STORAGE_TOO_LARGE
+            : "Gagal mengunggah file ke penyimpanan.",
+        ),
+      );
     };
     request.send(body);
   });
@@ -134,11 +155,20 @@ async function uploadResumableFile(
       },
       onProgress: (sent, total) => reportProgress(onProgress, sent, total),
       onError: (error) => {
+        const response =
+          "originalResponse" in error ? error.originalResponse : null;
         console.error("[upload:tus] unggahan gagal", {
           name: error.name,
           message: error.message,
+          status: response?.getStatus(),
         });
-        reject(new Error("Unggahan terputus. Periksa koneksi lalu coba lagi."));
+        reject(
+          new Error(
+            response && isPayloadTooLarge(response.getStatus(), response.getBody())
+              ? STORAGE_TOO_LARGE
+              : UPLOAD_INTERRUPTED,
+          ),
+        );
       },
       onSuccess: () => {
         reportProgress(onProgress, file.size, file.size);

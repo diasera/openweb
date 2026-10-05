@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type Ref } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
+import {
+  useEditor,
+  useEditorState,
+  EditorContent,
+  type Editor,
+} from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -34,6 +39,30 @@ import { canEditPhoto } from "@/lib/media-editor";
 import { prepareImageFile } from "@/lib/media-formats";
 import { validateImageFile } from "@/lib/uploads/policy";
 import { cn } from "@/lib/utils/cn";
+
+/**
+ * Status aktif tombol toolbar. TipTap v3 tidak lagi merender ulang komponen
+ * pada tiap transaksi, jadi status dibaca lewat useEditorState: memindah
+ * kursor ke teks tebal/judul langsung memperbarui tombol yang aktif.
+ */
+function toolbarState(editor: Editor | null) {
+  if (!editor) return null;
+  return {
+    heading1: editor.isActive("heading", { level: 1 }),
+    heading2: editor.isActive("heading", { level: 2 }),
+    bold: editor.isActive("bold"),
+    italic: editor.isActive("italic"),
+    underline: editor.isActive("underline"),
+    strike: editor.isActive("strike"),
+    bulletList: editor.isActive("bulletList"),
+    orderedList: editor.isActive("orderedList"),
+    blockquote: editor.isActive("blockquote"),
+    alignLeft: editor.isActive({ textAlign: "left" }),
+    alignCenter: editor.isActive({ textAlign: "center" }),
+    alignRight: editor.isActive({ textAlign: "right" }),
+    link: editor.isActive("link"),
+  };
+}
 
 /**
  * Editor artikel admin ala Word (TipTap). StarterKit v3 mencakup bold/italic/
@@ -90,6 +119,7 @@ export function RichEditor({
     content: (initialContent as object | string) ?? "",
     editorProps: {
       attributes: {
+        "aria-label": "Isi artikel",
         class:
           "prose prose-sm sm:prose-base max-w-none min-h-[320px] p-4 focus:outline-hidden prose-headings:font-display prose-a:text-primary-readable",
       },
@@ -97,8 +127,12 @@ export function RichEditor({
     onUpdate: ({ editor }) =>
       onChange(editor.getHTML(), JSON.stringify(editor.getJSON())),
   });
+  const active = useEditorState({
+    editor,
+    selector: ({ editor: current }) => toolbarState(current),
+  });
 
-  if (!editor) return null;
+  if (!editor || !active) return null;
   const activeEditor = editor;
 
   async function uploadAndInsertImage(file: File, signal: AbortSignal) {
@@ -173,27 +207,31 @@ export function RichEditor({
   return (
     <>
       <div className="border-border rounded-ios overflow-hidden border">
-        <div className="border-border bg-surface sticky top-0 z-10 flex flex-wrap items-center gap-0.5 border-b p-1.5">
+        <div
+          role="toolbar"
+          aria-label="Format artikel"
+          className="border-border bg-surface sticky top-0 z-10 flex flex-wrap items-center gap-0.5 border-b p-1.5"
+        >
           <Tb icon={Undo2} title="Undo" onClick={() => editor.chain().focus().undo().run()} />
           <Tb icon={Redo2} title="Redo" onClick={() => editor.chain().focus().redo().run()} />
           <Divider />
-          <Tb icon={Heading1} title="Judul 1" active={editor.isActive("heading", { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} />
-          <Tb icon={Heading2} title="Judul 2" active={editor.isActive("heading", { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} />
+          <Tb icon={Heading1} title="Judul 1" active={active.heading1} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} />
+          <Tb icon={Heading2} title="Judul 2" active={active.heading2} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} />
           <Divider />
-          <Tb icon={Bold} title="Tebal" active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()} />
-          <Tb icon={Italic} title="Miring" active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()} />
-          <Tb icon={UnderlineIcon} title="Garis bawah" active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()} />
-          <Tb icon={Strikethrough} title="Coret" active={editor.isActive("strike")} onClick={() => editor.chain().focus().toggleStrike().run()} />
+          <Tb icon={Bold} title="Tebal" active={active.bold} onClick={() => editor.chain().focus().toggleBold().run()} />
+          <Tb icon={Italic} title="Miring" active={active.italic} onClick={() => editor.chain().focus().toggleItalic().run()} />
+          <Tb icon={UnderlineIcon} title="Garis bawah" active={active.underline} onClick={() => editor.chain().focus().toggleUnderline().run()} />
+          <Tb icon={Strikethrough} title="Coret" active={active.strike} onClick={() => editor.chain().focus().toggleStrike().run()} />
           <Divider />
-          <Tb icon={List} title="Poin" active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()} />
-          <Tb icon={ListOrdered} title="Bernomor" active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()} />
-          <Tb icon={Quote} title="Kutipan" active={editor.isActive("blockquote")} onClick={() => editor.chain().focus().toggleBlockquote().run()} />
+          <Tb icon={List} title="Poin" active={active.bulletList} onClick={() => editor.chain().focus().toggleBulletList().run()} />
+          <Tb icon={ListOrdered} title="Bernomor" active={active.orderedList} onClick={() => editor.chain().focus().toggleOrderedList().run()} />
+          <Tb icon={Quote} title="Kutipan" active={active.blockquote} onClick={() => editor.chain().focus().toggleBlockquote().run()} />
           <Divider />
-          <Tb icon={AlignLeft} title="Rata kiri" active={editor.isActive({ textAlign: "left" })} onClick={() => editor.chain().focus().setTextAlign("left").run()} />
-          <Tb icon={AlignCenter} title="Rata tengah" active={editor.isActive({ textAlign: "center" })} onClick={() => editor.chain().focus().setTextAlign("center").run()} />
-          <Tb icon={AlignRight} title="Rata kanan" active={editor.isActive({ textAlign: "right" })} onClick={() => editor.chain().focus().setTextAlign("right").run()} />
+          <Tb icon={AlignLeft} title="Rata kiri" active={active.alignLeft} onClick={() => editor.chain().focus().setTextAlign("left").run()} />
+          <Tb icon={AlignCenter} title="Rata tengah" active={active.alignCenter} onClick={() => editor.chain().focus().setTextAlign("center").run()} />
+          <Tb icon={AlignRight} title="Rata kanan" active={active.alignRight} onClick={() => editor.chain().focus().setTextAlign("right").run()} />
           <Divider />
-          <Tb icon={Link2} title="Tautan" active={editor.isActive("link")} onClick={toggleLink} />
+          <Tb icon={Link2} title="Tautan" active={active.link} onClick={toggleLink} />
           <Tb
             buttonRef={imageButtonRef}
             icon={uploading ? LoaderCircle : ImageIcon}
@@ -273,6 +311,7 @@ function Tb({
       type="button"
       title={title}
       aria-label={title}
+      aria-pressed={active === undefined ? undefined : active}
       aria-busy={busy || undefined}
       disabled={disabled}
       onClick={onClick}

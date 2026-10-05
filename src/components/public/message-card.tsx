@@ -1,6 +1,6 @@
 import { pastelTint } from "@/lib/utils/color";
-import { timeAgo } from "@/lib/utils/time";
 import { Card } from "@/components/ui/card";
+import { RelativeTime } from "@/components/ui/relative-time";
 import { MessageLike } from "./message-like";
 import type { PublicMessage } from "@/lib/data";
 
@@ -19,7 +19,7 @@ export function MessageCard({ message }: { message: PublicMessage }) {
         {message.content}
       </p>
       <div className="text-muted mt-2 flex items-center justify-between text-caption2">
-        <span>{timeAgo(message.created_at)}</span>
+        <RelativeTime iso={message.created_at} />
         <MessageLike id={message.id} likes={message.likes} />
       </div>
     </Card>

@@ -40,5 +40,16 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/profil/:path*"],
+  matcher: [
+    {
+      source: "/profil/:path*",
+      // Server Action tidak lewat proxy: Next meng-clone body request yang
+      // melewati proxy dan memotongnya di `proxyClientMaxBodySize` (bawaan
+      // 10 MB), sehingga unggahan gambar admin > 10 MB rusak di tengah jalan.
+      // Proxy juga tidak pernah menjadi pagar action (action bisa dikirim ke
+      // path mana pun); setiap action admin memanggil requireFeature/
+      // requireAdmin sendiri, dan layout admin memanggil requireAdmin.
+      missing: [{ type: "header", key: "next-action" }],
+    },
+  ],
 };

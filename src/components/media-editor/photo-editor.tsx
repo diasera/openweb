@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useEffectEvent,
   useMemo,
   useRef,
   useState,
@@ -269,6 +270,11 @@ function PhotoEditorSession({
     onCancel();
   }, [dirty, exporting, onCancel]);
 
+  // Effect Event: pemanggil bebas mengirim arrow inline. Bila `returnFocus`
+  // menjadi dependency, setiap render induk menjalankan ulang efek di bawah —
+  // inert dilepas-pasang dan fokus dilempar balik ke tombol "Batal".
+  const resolveReturnFocus = useEffectEvent(() => returnFocus?.() ?? null);
+
   useEffect(() => {
     const fallbackFocus =
       document.activeElement instanceof HTMLElement
@@ -306,7 +312,7 @@ function PhotoEditorSession({
       });
       let frames = 60;
       const restore = () => {
-        const target = returnFocus?.() ?? fallbackFocus;
+        const target = resolveReturnFocus() ?? fallbackFocus;
         if (target?.isConnected && !target.matches(":disabled")) {
           target.focus({ preventScroll: true });
           return;
@@ -316,7 +322,7 @@ function PhotoEditorSession({
       };
       window.requestAnimationFrame(restore);
     };
-  }, [returnFocus]);
+  }, []);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -349,12 +355,14 @@ function PhotoEditorSession({
         return;
       }
       event.preventDefault();
+      // Selaras dengan tombol Urungkan/Ulangi yang nonaktif selama ekspor.
+      if (exporting) return;
       if (event.shiftKey) redo();
       else undo();
     };
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [cancel, redo, undo]);
+  }, [cancel, exporting, redo, undo]);
 
   function beginGesture() {
     if (!gestureStartRef.current) {
@@ -449,21 +457,19 @@ function PhotoEditorSession({
   async function save() {
     if (!measuredSource || exporting) return;
     endGesture();
+    // Dibekukan sebelum `await`: kontrol masih bisa disentuh selama ekspor,
+    // jadi recipe dan aspect hasil harus berasal dari snapshot yang sama.
+    const { recipe, aspect } = cloneSnapshot(snapshotRef.current);
     setExporting(true);
     setExportError(null);
     try {
-      const recipe = snapshotRef.current.recipe;
       const rendered = await exportPhotoForProfile(
         file,
         recipe,
         measuredSource,
         profile,
       );
-      await onSave({
-        ...rendered,
-        recipe: cloneRecipe(recipe),
-        aspect: snapshotRef.current.aspect,
-      });
+      await onSave({ ...rendered, recipe, aspect });
     } catch (error) {
       setExportError(
         error instanceof Error ? error.message : "Hasil edit gagal disimpan.",
@@ -627,6 +633,7 @@ function PhotoEditorSession({
             aspect={snapshot.aspect}
             previewUrl={previewUrl}
             recipe={snapshot.recipe}
+            disabled={exporting}
             onActiveToolChange={setActiveTool}
             onAspectChange={changeAspect}
             onRotate={rotate}

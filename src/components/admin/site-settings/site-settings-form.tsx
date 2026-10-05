@@ -30,7 +30,20 @@ export function SiteSettingsForm({
     dirtyRef.current = dirty;
   }, []);
 
-  function guardTabSwitch(event: MouseEvent<HTMLAnchorElement>) {
+  function guardTabSwitch(
+    event: MouseEvent<HTMLAnchorElement>,
+    tabId: SiteSettingsTabId,
+  ) {
+    // Klik bermodifier membuka tab browser baru: draf di sini tetap utuh.
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+    // Tab aktif: tidak ada yang dibuang. Tanpa ini konfirmasi "buang
+    // perubahan" muncul, lalu dirtyRef direset padahal form tetap berisi draf.
+    if (tabId === activeTab) {
+      event.preventDefault();
+      return;
+    }
     if (dirtyRef.current) {
       const leave = window.confirm(
         "Perubahan tab ini belum disimpan. Pindah tab akan membuang perubahan. Lanjutkan?",
@@ -53,7 +66,7 @@ export function SiteSettingsForm({
               <Link
                 key={tab.id}
                 href={`${TAB_PATH}?tab=${tab.id}`}
-                onClick={guardTabSwitch}
+                onClick={(event) => guardTabSwitch(event, tab.id)}
                 aria-current={active ? "page" : undefined}
                 className={
                   active

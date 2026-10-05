@@ -111,5 +111,5 @@ export function ToastProvider({
 
   const value = useMemo(() => ({ show, dismiss }), [dismiss, show]);
 
-  return <ToastContext.Provider value={value}>{children}</ToastContext.Provider>;
+  return <ToastContext value={value}>{children}</ToastContext>;
 }

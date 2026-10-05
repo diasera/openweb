@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { useDynamicIsland } from "./dynamic-island";
 import { postJson } from "@/lib/api/client";
 import { isEnvConfigured } from "@/lib/env";
+import { STORAGE_KEYS, writeStorage } from "@/lib/utils/storage";
 
 /** Hasil usaha menautkan perangkat ke kanal push. */
 type PushEnroll =
@@ -38,10 +39,30 @@ function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   return bytes;
 }
 
-async function enrollPushDevice(): Promise<PushEnroll> {
-  if (!pushCapable() || !PUSH_PUBLIC_KEY) return "unsupported";
+/**
+ * Izin notifikasi WAJIB diminta pada giliran sinkron klik: Firefox dan Safari
+ * menolak permintaan di luar aktivasi pengguna, padahal request jaringan
+ * lonceng bisa memakan waktu. Jadi diminta lebih dulu, hasilnya ditunggu nanti.
+ */
+function requestPushPermission(): Promise<NotificationPermission> | null {
+  if (!pushCapable() || !PUSH_PUBLIC_KEY) return null;
   try {
-    const permission = await Notification.requestPermission();
+    const request = Promise.resolve(Notification.requestPermission());
+    // Bisa tidak pernah ditunggu (lonceng gagal disimpan): jangan jadi
+    // unhandled rejection; penunggu berikutnya tetap menerima galatnya.
+    request.catch(() => undefined);
+    return request;
+  } catch {
+    return null;
+  }
+}
+
+async function enrollPushDevice(
+  permissionRequest: Promise<NotificationPermission> | null,
+): Promise<PushEnroll> {
+  if (!permissionRequest || !PUSH_PUBLIC_KEY) return "unsupported";
+  try {
+    const permission = await permissionRequest;
     if (permission !== "granted") return "denied";
 
     const registration = await navigator.serviceWorker.register("/sw.js");
@@ -123,6 +144,8 @@ export function useBellSubscription(initialEnabled: boolean) {
       if (pendingRef.current) return false;
       pendingRef.current = true;
       setPending(true);
+      // Sebelum `await` pertama agar masih di dalam aktivasi pengguna.
+      const permissionRequest = nextEnabled ? requestPushPermission() : null;
       const noticeId = showNotice({
         status: "loading",
         title: nextEnabled
@@ -142,17 +165,11 @@ export function useBellSubscription(initialEnabled: boolean) {
 
         const saved = Boolean(data.enabled);
         setEnabledState(saved);
-        if (saved) {
-          try {
-            localStorage.setItem("notifPrompt", "1");
-          } catch {
-            /* ignore */
-          }
-        }
 
         if (saved) {
+          writeStorage(STORAGE_KEYS.notificationPrompt, "1");
           // Lonceng berhasil menyala — tautkan perangkat ini ke kanal push.
-          const enroll = await enrollPushDevice();
+          const enroll = await enrollPushDevice(permissionRequest);
           const notice =
             enroll === "failed"
               ? {

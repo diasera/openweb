@@ -40,10 +40,16 @@ const optionalUrl = z
 const canonicalUrl = z
   .string()
   .trim()
-  .url("URL utama tidak valid.")
+  .pipe(z.url("URL utama tidak valid."))
   .refine((value) => {
-    const url = new URL(value);
-    return url.protocol === "https:" || url.hostname === "localhost";
+    // Refine Zod tetap berjalan walau cek URL di atas gagal; tanpa guard,
+    // `new URL` melempar dan request berakhir 500 alih-alih pesan validasi.
+    try {
+      const url = new URL(value);
+      return url.protocol === "https:" || url.hostname === "localhost";
+    } catch {
+      return true; // pesan "URL utama tidak valid." sudah dilaporkan
+    }
   }, "Gunakan HTTPS untuk website publik.");
 
 const optionalEmail = z

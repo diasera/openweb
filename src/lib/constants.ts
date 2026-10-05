@@ -10,6 +10,7 @@ import {
   IMAGE_STORAGE_MIME_TYPES,
   MEDIA_SOURCE_ACCEPT,
   VIDEO_STORAGE_MIME_TYPES,
+  type MediaFormatKind,
 } from "@/lib/media-formats/registry";
 
 // Nama cookie
@@ -152,11 +153,17 @@ export const ASSIGNABLE_FEATURES: AdminFeature[] = ADMIN_FEATURES.filter(
   (feature) => !ADMIN_FEATURE_META[feature].ownerOnly,
 );
 
-// Batas upload publik
+/**
+ * Batas upload satu sumber untuk picker, policy signed upload, pesan error,
+ * `file_size_limit` bucket di schema.sql, dan `bodySizeLimit` Server Action di
+ * next.config.mjs (keduanya dicek `npm run check:media-formats`).
+ * Supabase Free membatasi SETIAP file maksimal 50 MB lewat Global file size
+ * limit; angka di atas itu baru berlaku pada paket Pro/self-hosted.
+ */
 export const UPLOAD_LIMITS = {
-  imageMaxBytes: 100 * 1024 * 1024, // 10 MB
-  videoMaxBytes: 500 * 1024 * 1024, // aman untuk batas global Supabase Free
-  audioMaxBytes: 500 * 1024 * 1024, // aman untuk batas global Supabase Free
+  imageMaxBytes: 100 * 1024 * 1024, // 100 MB
+  videoMaxBytes: 500 * 1024 * 1024, // 500 MB
+  audioMaxBytes: 500 * 1024 * 1024, // 500 MB
   /** Batas dimensi metadata foto/video, dipakai sama oleh browser dan API. */
   mediaMaxDimension: 20_000,
   /**
@@ -169,11 +176,33 @@ export const UPLOAD_LIMITS = {
   audioMime: AUDIO_STORAGE_MIME_TYPES,
 } as const;
 
+/** Batas byte per jenis media; dipakai normalizer browser dan policy server. */
+export function uploadMaxBytes(kind: MediaFormatKind): number {
+  if (kind === "video") return UPLOAD_LIMITS.videoMaxBytes;
+  if (kind === "audio") return UPLOAD_LIMITS.audioMaxBytes;
+  return UPLOAD_LIMITS.imageMaxBytes;
+}
+
+/** Label batas yang sama di setiap pesan validasi, mis. "100 MB". */
+export function formatUploadLimit(bytes: number): string {
+  return `${Math.round(bytes / (1024 * 1024))} MB`;
+}
+
 /**
  * Masa simpan data teknis (IP, browser/perangkat). Dipakai fungsi SQL
  * apply_data_retention dan dijelaskan apa adanya di halaman Privasi.
  */
 export const DATA_RETENTION_DAYS = 180;
+
+/**
+ * Koleksi Tersimpan milik perangkat: total item yang diingat browser dan
+ * jumlah id per permintaan /api/tersimpan (URL tetap pendek). Klien memecah
+ * koleksi besar menjadi beberapa permintaan agar tidak ada item terlewat.
+ */
+export const SAVED_ITEM_LIMITS = {
+  maxItems: 300,
+  idsPerRequest: 60,
+} as const;
 
 /** Picker menerima sumber luas; normalizer membuat file storage yang portabel. */
 export const IMAGE_UPLOAD_ACCEPT = IMAGE_SOURCE_ACCEPT;

@@ -30,7 +30,10 @@ export function AdminDialog({ admin }: { admin?: AdminAccount }) {
       <AdminDialogTrigger
         editing={editing}
         createLabel="Tambah admin"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setNote("");
+          setOpen(true);
+        }}
       />
 
       <Modal
@@ -41,13 +44,28 @@ export function AdminDialog({ admin }: { admin?: AdminAccount }) {
         <form onSubmit={onSubmit} className="space-y-4">
           {admin && <input type="hidden" name="id" value={admin.id} />}
 
+          {/* autoComplete eksplisit: tanpa ini password manager menganggap form
+              ini login dan bisa mengisi password owner ke "Password baru",
+              sehingga menyimpan izin diam-diam mereset password admin lain. */}
           <Field label="Nama" htmlFor="a-name">
-            <Input id="a-name" name="name" defaultValue={admin?.name} required />
+            <Input
+              id="a-name"
+              name="name"
+              defaultValue={admin?.name}
+              required
+              autoComplete="off"
+            />
           </Field>
 
           {!editing && (
             <Field label="Username" htmlFor="a-user">
-              <Input id="a-user" name="username" required placeholder="username" />
+              <Input
+                id="a-user"
+                name="username"
+                required
+                placeholder="username"
+                autoComplete="off"
+              />
             </Field>
           )}
 
@@ -61,6 +79,7 @@ export function AdminDialog({ admin }: { admin?: AdminAccount }) {
               type="password"
               minLength={8}
               required={!editing}
+              autoComplete="new-password"
               placeholder={editing ? "Kosongkan jika tidak diubah" : "Min. 8 karakter"}
             />
           </Field>
@@ -97,7 +116,11 @@ export function AdminDialog({ admin }: { admin?: AdminAccount }) {
             </label>
           )}
 
-          {note && <p className="text-danger text-sm">{note}</p>}
+          {note && (
+            <p className="text-danger text-sm" role="alert">
+              {note}
+            </p>
+          )}
           <Button type="submit" disabled={pending} className="w-full">
             {pending ? "Menyimpan…" : "Simpan"}
           </Button>

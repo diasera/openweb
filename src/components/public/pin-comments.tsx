@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Send } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
-import { timeAgo } from "@/lib/utils/time";
+import { RelativeTime } from "@/components/ui/relative-time";
 import { InlineTextComposer } from "./inline-text-composer";
 import { usePublicTextMutation } from "./use-public-text-mutation";
 import type { PublicComment } from "@/lib/data";
@@ -77,7 +77,7 @@ export function PinComments({
             <div className="min-w-0">
               <p className="text-sm">
                 <span className="font-semibold">{c.author_name || "Anonim"}</span>{" "}
-                <span className="text-muted text-xs">{timeAgo(c.created_at)}</span>
+                <RelativeTime iso={c.created_at} className="text-muted text-xs" />
               </p>
               <p className="text-sm">{c.content}</p>
             </div>
