@@ -1,9 +1,7 @@
 "use client";
 
-import { useTransition } from "react";
 import { Button, type ButtonProps } from "@/components/ui/button";
-import { useToast } from "@/components/ui/toast";
-import { getActionError } from "@/lib/action-result";
+import { useAdminAction } from "@/components/admin/use-admin-action";
 
 type AdminActionButtonProps = Omit<ButtonProps, "onClick" | "type"> & {
   action: () => Promise<unknown>;
@@ -22,8 +20,7 @@ export function AdminActionButton({
   disabled,
   ...buttonProps
 }: AdminActionButtonProps) {
-  const { toast } = useToast();
-  const [pending, start] = useTransition();
+  const { pending, run } = useAdminAction();
 
   return (
     <Button
@@ -32,19 +29,7 @@ export function AdminActionButton({
       disabled={disabled || pending}
       onClick={() => {
         if (confirmMessage && !window.confirm(confirmMessage)) return;
-        start(async () => {
-          try {
-            const result = await action();
-            const actionError = getActionError(result);
-            if (actionError) {
-              toast.error(actionError);
-              return;
-            }
-            toast.success(successMessage);
-          } catch {
-            toast.error(errorMessage);
-          }
-        });
+        run(action, { successMessage, errorMessage });
       }}
     >
       {children}

@@ -1,4 +1,6 @@
 import { useSyncExternalStore } from "react";
+import { SAVED_ITEM_LIMITS } from "@/lib/constants";
+import { STORAGE_KEYS, writeStorage } from "@/lib/utils/storage";
 
 /**
  * Koleksi Tersimpan milik perangkat (localStorage), satu sumber untuk tombol
@@ -13,10 +15,8 @@ export interface SavedItem {
   savedAt: number;
 }
 
-const STORAGE_KEY = "saved_items";
 /** Format lama: satu kunci per item, `saved:pin-<id>` / `saved:post-<id>` = "1". */
 const LEGACY_PATTERN = /^saved:(pin|post)-(.+)$/;
-const MAX_SAVED = 300;
 const EMPTY: SavedItem[] = [];
 
 let cache: SavedItem[] | null = null;
@@ -33,12 +33,9 @@ function isSavedItem(value: unknown): value is SavedItem {
   );
 }
 
-function write(list: SavedItem[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  } catch {
-    /* penyimpanan penuh/diblokir: koleksi tetap berlaku di sesi ini */
-  }
+function persist(list: SavedItem[]) {
+  // Storage penuh/diblokir: koleksi tetap berlaku di memori selama sesi ini.
+  writeStorage(STORAGE_KEYS.savedItems, JSON.stringify(list));
 }
 
 function migrateLegacy(list: SavedItem[]): SavedItem[] {
@@ -58,13 +55,15 @@ function migrateLegacy(list: SavedItem[]): SavedItem[] {
     ...list,
     ...legacy.filter((item) => !known.has(`${item.kind}:${item.id}`)),
   ];
-  write(merged);
+  persist(merged);
   return merged;
 }
 
 function read(): SavedItem[] {
   try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
+    const parsed: unknown = JSON.parse(
+      localStorage.getItem(STORAGE_KEYS.savedItems) ?? "[]",
+    );
     const list = Array.isArray(parsed) ? parsed.filter(isSavedItem) : [];
     return migrateLegacy(list);
   } catch {
@@ -77,13 +76,21 @@ function snapshot(): SavedItem[] {
   return cache;
 }
 
-function emit() {
-  cache = null;
+function notify() {
   for (const listener of listeners) listener();
 }
 
+/** Perubahan lokal: memori menjadi sumber kebenaran, storage best-effort. */
+function commit(list: SavedItem[]) {
+  cache = list;
+  persist(list);
+  notify();
+}
+
 function onStorage(event: StorageEvent) {
-  if (event.key === null || event.key === STORAGE_KEY) emit();
+  if (event.key !== null && event.key !== STORAGE_KEYS.savedItems) return;
+  cache = null;
+  notify();
 }
 
 function subscribe(listener: () => void) {
@@ -114,12 +121,14 @@ export function useIsSaved(kind: SavedKind, id: string): boolean {
 export function toggleSaved(kind: SavedKind, id: string): boolean {
   const list = snapshot();
   const saved = list.some((item) => item.kind === kind && item.id === id);
-  write(
+  commit(
     saved
       ? list.filter((item) => !(item.kind === kind && item.id === id))
-      : [{ kind, id, savedAt: Date.now() }, ...list].slice(0, MAX_SAVED),
+      : [{ kind, id, savedAt: Date.now() }, ...list].slice(
+          0,
+          SAVED_ITEM_LIMITS.maxItems,
+        ),
   );
-  emit();
   return !saved;
 }
 
@@ -133,6 +142,7 @@ export function saveItem(kind: SavedKind, id: string): boolean {
 export function forgetSaved(kind: SavedKind, ids: Iterable<string>) {
   const gone = new Set(ids);
   if (gone.size === 0) return;
-  write(snapshot().filter((item) => !(item.kind === kind && gone.has(item.id))));
-  emit();
+  const list = snapshot();
+  const next = list.filter((item) => !(item.kind === kind && gone.has(item.id)));
+  if (next.length !== list.length) commit(next);
 }

@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { CalendarDays } from "lucide-react";
 import { MotionLink } from "@/components/motion";
-import { useNow } from "@/components/public/event-countdown";
+import { useNow } from "@/lib/hooks/use-now";
 import { compactCountdown, eventPhase, isIslandWorthy } from "@/lib/agenda/status";
 import { eventPagePath } from "@/lib/agenda/calendar";
 import { eventDateTile, formatEventSchedule } from "@/lib/utils/time";

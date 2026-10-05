@@ -5,13 +5,8 @@ import { ChevronDown, LoaderCircle, Pause, Play, SkipBack, SkipForward } from "l
 import { useToast } from "@/components/ui/toast";
 import { MusicBars } from "@/components/public/music/music-bars";
 import { useMusic } from "@/components/public/music";
+import { formatClock } from "@/lib/utils/time";
 import styles from "../dynamic-island.module.css";
-
-function timeLabel(value: number) {
-  if (!Number.isFinite(value) || value < 0) return "0:00";
-  const seconds = Math.floor(value);
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
-}
 
 export function MusicIslandView() {
   const music = useMusic();
@@ -69,7 +64,7 @@ export function MusicIslandView() {
       </div>
 
       <div className={styles.musicTimeline}>
-        <span className={styles.musicTime}>{timeLabel(music.currentTime)}</span>
+        <span className={styles.musicTime}>{formatClock(music.currentTime)}</span>
         <input
           type="range"
           min={0}
@@ -82,7 +77,7 @@ export function MusicIslandView() {
           className={styles.musicProgress}
           style={{ "--music-progress": `${progress}%` } as CSSProperties}
         />
-        <span className={styles.musicTime}>{timeLabel(music.duration)}</span>
+        <span className={styles.musicTime}>{formatClock(music.duration)}</span>
       </div>
 
       <div className={styles.musicTransport}>

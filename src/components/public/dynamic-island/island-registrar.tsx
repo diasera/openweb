@@ -1,19 +1,20 @@
 "use client";
 
-import { useEffect, useLayoutEffect } from "react";
+import { useLayoutEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useDynamicIsland } from "./dynamic-island-context";
 import type { PageChromeRegistration } from "./dynamic-island.types";
 
-const useIsoLayoutEffect =
-  typeof window !== "undefined" ? useLayoutEffect : useEffect;
-
-/** Halaman hanya mendaftarkan konfigurasi; tidak merender bar fisik. */
+/**
+ * Halaman hanya mendaftarkan konfigurasi; tidak merender bar fisik. Layout
+ * effect agar chrome terpasang sebelum paint pertama. React 19 tidak lagi
+ * memperingatkan useLayoutEffect saat SSR, jadi shim isomorfik tak diperlukan.
+ */
 export function IslandRegistrar({ config }: { config: PageChromeRegistration }) {
   const pathname = usePathname();
   const { registerPage } = useDynamicIsland();
 
-  useIsoLayoutEffect(
+  useLayoutEffect(
     () => registerPage(pathname, config),
     [config, pathname, registerPage],
   );

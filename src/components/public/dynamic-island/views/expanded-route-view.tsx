@@ -12,6 +12,7 @@ import {
 } from "@/components/public/destination-icons";
 import { MotionLink } from "@/components/motion";
 import { iconButtonClass } from "@/components/ui/icon-button";
+import { ApiError, requestJson } from "@/lib/api/client";
 import { APP_TAB_ROUTES } from "@/lib/navigation/app-routes";
 import { cn } from "@/lib/utils/cn";
 import type { SiteSearchResult } from "@/lib/data";
@@ -60,6 +61,7 @@ export function ExpandedRouteView({
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SiteSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   const trimmed = query.trim();
   const spotlightActive = trimmed.length >= 2;
@@ -77,15 +79,25 @@ export function ExpandedRouteView({
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       setSearching(true);
+      setSearchError(null);
       try {
-        const response = await fetch(
+        const data = await requestJson<{ results?: SiteSearchResult[] }>(
           `/api/search?q=${encodeURIComponent(trimmed)}`,
           { signal: controller.signal },
+          "Pencarian gagal. Coba lagi sebentar.",
         );
-        const data = (await response.json()) as { results?: SiteSearchResult[] };
+        // requestJson menelan galat body (abort di tengah unduhan → `{}`).
+        if (controller.signal.aborted) return;
         setResults(data.results ?? []);
-      } catch {
-        /* dibatalkan atau gagal jaringan — biarkan hasil terakhir. */
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        // 429/503 bukan "tidak ada hasil": tampilkan alasannya apa adanya.
+        setResults([]);
+        setSearchError(
+          error instanceof ApiError
+            ? error.message
+            : "Tidak dapat terhubung. Periksa koneksi lalu coba lagi.",
+        );
       } finally {
         setSearching(false);
       }
@@ -162,7 +174,11 @@ export function ExpandedRouteView({
 
         {spotlightActive ? (
           <div className={styles.panelResults} aria-live="polite">
-            {!searching && visibleResults.length === 0 ? (
+            {!searching && searchError ? (
+              <p className="text-danger px-2 py-3 text-center text-sm">
+                {searchError}
+              </p>
+            ) : !searching && visibleResults.length === 0 ? (
               <p className="text-muted px-2 py-3 text-center text-sm">
                 Tidak ada hasil untuk “{trimmed}”.
               </p>

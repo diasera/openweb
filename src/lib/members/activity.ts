@@ -2,6 +2,7 @@ import "server-only";
 import { createPublicSupabase, isSupabaseConfigured } from "@/lib/supabase/public";
 import { DEMO_MEDIA, DEMO_POSTS } from "@/lib/data/demo";
 import type { MemberRow } from "@/lib/types/database";
+import { calendarKey, siteDateKey, zonedParts } from "@/lib/utils/time";
 import { textMentionsMember } from "./name-match";
 import { blogMentionValues, mediaMentionValues } from "./mention-values";
 
@@ -194,37 +195,45 @@ function heatLevel(count: number): ActivityHeatmapDay["level"] {
   return 4;
 }
 
+const DAY_MS = 86_400_000;
+
 /**
  * Bangun data grafik aktivitas (grid minggu × hari) dari item aktivitas yang
  * sudah ada — fungsi pure tanpa query tambahan. Kolom pertama = Senin pada
  * (hari ini - (weeks-1) minggu), dirotasi agar minggu berjalan paling kanan.
+ * Hari dihitung di zona situs (bukan zona server yang biasanya UTC), lalu
+ * aritmetikanya memakai tanggal kalender UTC agar bebas pergeseran DST.
  */
 export function buildActivityHeatmap(
   items: MemberActivityItem[],
   weeks = 26,
+  now = new Date(),
 ): ActivityHeatmap {
   const perDay = new Map<string, number>();
   for (const item of items) {
     const stamp = Date.parse(item.occurredAt);
     if (Number.isNaN(stamp)) continue;
-    const day = new Date(stamp);
-    const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
+    const key = siteDateKey(new Date(stamp));
     perDay.set(key, (perDay.get(key) ?? 0) + 1);
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = zonedParts(now);
+  const todayUtc = Date.UTC(today.year, today.month - 1, today.day);
   // Mundur ke Senin minggu ini, lalu (weeks-1) minggu ke belakang.
-  const monday = new Date(today);
-  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7) - (weeks - 1) * 7);
+  const weekday = (new Date(todayUtc).getUTCDay() + 6) % 7;
+  const mondayUtc = todayUtc - (weekday + (weeks - 1) * 7) * DAY_MS;
 
   const days: ActivityHeatmapDay[] = [];
   let total = 0;
   for (let offset = 0; offset < weeks * 7; offset += 1) {
-    const day = new Date(monday);
-    day.setDate(monday.getDate() + offset);
-    const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
-    const count = day > today ? 0 : (perDay.get(key) ?? 0);
+    const dayUtc = mondayUtc + offset * DAY_MS;
+    const day = new Date(dayUtc);
+    const key = calendarKey(
+      day.getUTCFullYear(),
+      day.getUTCMonth() + 1,
+      day.getUTCDate(),
+    );
+    const count = dayUtc > todayUtc ? 0 : (perDay.get(key) ?? 0);
     total += count;
     days.push({ date: key, level: heatLevel(count), count });
   }

@@ -4,6 +4,7 @@ import { Chip } from "@/components/ui/chip";
 import { CountUp } from "@/components/ui/count-up";
 import { getContentLabels, toDisplayLabel } from "@/lib/site-config";
 import { cn } from "@/lib/utils/cn";
+import { formatSiteDate } from "@/lib/utils/time";
 import type { MemberRow, SiteSettingsRow } from "@/lib/types/database";
 
 /** Kartu identitas anggota: banner tema + avatar overlap + peran + bio.
@@ -21,10 +22,7 @@ export function MemberProfileCard({
 }) {
   const labels = getContentLabels(settings);
   const joinedAt = member.created_at
-    ? new Date(member.created_at).toLocaleDateString("id-ID", {
-        month: "long",
-        year: "numeric",
-      })
+    ? formatSiteDate(member.created_at, "monthYear")
     : null;
 
   const stats = [

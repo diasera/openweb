@@ -1,4 +1,4 @@
-import { forwardRef, type HTMLAttributes } from "react";
+import type { ComponentPropsWithRef } from "react";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -25,14 +25,13 @@ const CHIP: Record<ChipVariant, string> = {
   outline: "bg-transparent text-foreground border border-border",
 };
 
-export interface ChipProps extends HTMLAttributes<HTMLSpanElement> {
+export interface ChipProps extends ComponentPropsWithRef<"span"> {
   variant?: ChipVariant;
 }
 
-export const Chip = forwardRef<HTMLSpanElement, ChipProps>(
-  ({ className, variant = "soft", ...props }, ref) => (
+export function Chip({ className, variant = "soft", ...props }: ChipProps) {
+  return (
     <span
-      ref={ref}
       className={cn(
         "inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium",
         CHIP[variant],
@@ -40,6 +39,5 @@ export const Chip = forwardRef<HTMLSpanElement, ChipProps>(
       )}
       {...props}
     />
-  ),
-);
-Chip.displayName = "Chip";
+  );
+}

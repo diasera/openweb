@@ -5,7 +5,7 @@ tetap tunduk pada lisensinya masing-masing.
 
 ## heic-to
 
-- Package: `heic-to` 1.5.x
+- Package: `heic-to` 1.6.x (membundel libheif 1.23.x)
 - Project: <https://github.com/hoppergee/heic-to>
 - License: LGPL-3.0
 - Purpose: decoder HEIC/HEIF yang dimuat dinamis hanya ketika sumber Apple

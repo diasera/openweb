@@ -1,6 +1,7 @@
 import "server-only";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import type { BlogPostRow, PostStatus } from "@/lib/types/database";
+import { isUuid } from "@/lib/utils/id";
 import { pageBounds, toPaged, type Paged } from "./paging";
 
 /** Filter artikel yang digunakan halaman pengelolaan blog. */
@@ -25,6 +26,7 @@ export async function getAdminPosts(
 }
 
 export async function getPostById(id: string): Promise<BlogPostRow | null> {
+  if (!isUuid(id)) return null;
   const sb = createAdminSupabase();
   const { data } = await sb
     .from("blog_posts")

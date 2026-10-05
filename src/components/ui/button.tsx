@@ -1,4 +1,4 @@
-import { forwardRef, type ButtonHTMLAttributes } from "react";
+import type { ComponentPropsWithRef } from "react";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -34,7 +34,7 @@ const SIZES: Record<Size, string> = {
   lg: "h-12 px-6 text-base",
 };
 
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends ComponentPropsWithRef<"button"> {
   variant?: Variant;
   size?: Size;
 }
@@ -55,14 +55,18 @@ export function buttonClass({
   );
 }
 
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "primary", size = "md", ...props }, ref) => (
+/** React 19: `ref` adalah prop biasa dan ikut diteruskan lewat spread. */
+export function Button({
+  className,
+  variant = "primary",
+  size = "md",
+  ...props
+}: ButtonProps) {
+  return (
     <button
-      ref={ref}
       type="button"
       className={buttonClass({ className, variant, size })}
       {...props}
     />
-  ),
-);
-Button.displayName = "Button";
+  );
+}

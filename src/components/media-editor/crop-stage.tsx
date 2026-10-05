@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useEffectEvent,
   useMemo,
   useRef,
   useState,
@@ -179,16 +180,13 @@ export function CropStage({
   const surfaceRef = useRef<HTMLDivElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragSession | null>(null);
-  const gestureEndRef = useRef(onGestureEnd);
   const [surfaceSize, setSurfaceSize] = useState<SurfaceSize>({
     width: 0,
     height: 0,
   });
   const [gesturing, setGesturing] = useState(false);
-
-  useEffect(() => {
-    gestureEndRef.current = onGestureEnd;
-  }, [onGestureEnd]);
+  // Cleanup unmount selalu memanggil handler terbaru tanpa resubscribe.
+  const finishGestureOnUnmount = useEffectEvent(() => onGestureEnd());
 
   useEffect(() => {
     const surface = surfaceRef.current;
@@ -220,7 +218,7 @@ export function CropStage({
 
   useEffect(
     () => () => {
-      if (dragRef.current) gestureEndRef.current();
+      if (dragRef.current) finishGestureOnUnmount();
     },
     [],
   );

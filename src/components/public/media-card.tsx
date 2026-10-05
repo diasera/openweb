@@ -5,7 +5,7 @@ import {
   mediaDisplayAspectRatio,
 } from "@/lib/media/display";
 import { gradientCss } from "@/lib/utils/color";
-import { timeAgo } from "@/lib/utils/time";
+import { RelativeTime } from "@/components/ui/relative-time";
 import { slidePreviewUrl, type MediaWithSlideCount } from "@/lib/media/slides";
 import { MediaBadges } from "./media-badges";
 
@@ -78,7 +78,7 @@ export function MediaCard({
             {media.title || media.caption || "Tanpa judul"}
           </p>
           <p className="text-muted text-caption1">
-            {media.uploader_name || "Anonim"} · {timeAgo(media.created_at)}
+            {media.uploader_name || "Anonim"} · <RelativeTime iso={media.created_at} />
           </p>
         </div>
       )}

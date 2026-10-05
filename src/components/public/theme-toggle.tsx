@@ -1,29 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { Sun, Moon } from "lucide-react";
 import { IconButton } from "@/components/ui/icon-button";
 import { cn } from "@/lib/utils/cn";
+import { STORAGE_KEYS, writeStorage } from "@/lib/utils/storage";
+
+/**
+ * Kelas `dark` di <html> (dipasang ThemeScript sebelum hidrasi) adalah satu-
+ * satunya sumber kebenaran; setiap tombol tema berlangganan perubahannya.
+ */
+function subscribeTheme(listener: () => void) {
+  const observer = new MutationObserver(listener);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+  return () => observer.disconnect();
+}
+
+function isDarkTheme() {
+  return document.documentElement.classList.contains("dark");
+}
 
 /** Tombol ganti tema terang/gelap. Menyimpan pilihan ke localStorage. */
 export function ThemeToggle({ className }: { className?: string }) {
-  const [dark, setDark] = useState(false);
-
-  useEffect(() => {
-    const current = document.documentElement.classList.contains("dark");
-    setDark(current);
-  }, []);
+  const dark = useSyncExternalStore(subscribeTheme, isDarkTheme, () => false);
 
   function toggle() {
-    const root = document.documentElement;
-    const next = !root.classList.contains("dark");
-    setDark(next);
-    root.classList.toggle("dark", next);
-    try {
-      localStorage.setItem("theme", next ? "dark" : "light");
-    } catch {
-      /* ignore */
-    }
+    const next = !isDarkTheme();
+    document.documentElement.classList.toggle("dark", next);
+    writeStorage(STORAGE_KEYS.theme, next ? "dark" : "light");
   }
 
   return (
@@ -41,11 +48,4 @@ export function ThemeToggle({ className }: { className?: string }) {
       )}
     </IconButton>
   );
-}
-
-/** Skrip anti-FOUC: pilihan tersimpan menang; selain itu ikuti tema perangkat. */
-export function ThemeScript() {
-  const js =
-    "try{var t=localStorage.getItem('theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d)}catch(e){}";
-  return <script dangerouslySetInnerHTML={{ __html: js }} />;
 }

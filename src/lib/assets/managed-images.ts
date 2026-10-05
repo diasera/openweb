@@ -6,9 +6,7 @@ import {
   removeStorageObject,
   uploadToBucket,
 } from "@/lib/storage";
-
-const UUID_PATH =
-  "[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}";
+import { UUID_REGEX_SOURCE } from "@/lib/utils/id";
 
 const MANAGED_IMAGE_SPECS = {
   "site-hero": { bucket: STORAGE_BUCKETS.site, prefix: "hero-" },
@@ -65,7 +63,7 @@ function trustedManagedPath(kind: ManagedImageKind, rawUrl: string): string | nu
     }
 
     const expected = new RegExp(
-      `^${escapeRegExp(spec.prefix)}${UUID_PATH}\\.[a-z0-9]{1,10}$`,
+      `^${escapeRegExp(spec.prefix)}${UUID_REGEX_SOURCE}\\.[a-z0-9]{1,10}$`,
       "i",
     );
     return expected.test(path) ? path : null;

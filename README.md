@@ -97,6 +97,21 @@ Apple atau Pinterest.
 - `src/components/public/destination-icons.ts` adalah satu peta ikon per
   tujuan navigasi untuk tab bar, panel cepat island, menu Profil, hasil
   Spotlight, dan navigasi admin.
+- `src/lib/utils/time.ts` memusatkan format tanggal/jam di zona waktu situs.
+  Halaman publik ber-cache memakai `src/components/ui/relative-time.tsx`:
+  tanggal absolut saat SSR/hydration, lalu label relatif ("5 menit lalu")
+  sesudah hydration, sehingga tidak ada hydration mismatch. Jam yang terus
+  berdetak memakai `useNow` di `src/lib/hooks/use-now.ts`.
+- `src/lib/utils/storage.ts` adalah satu daftar key `localStorage` beserta
+  pembaca/penulis yang aman (mode privat, kuota penuh, JSON rusak).
+- `src/lib/media/revalidate.ts` adalah satu daftar halaman yang menampilkan
+  media; moderasi, unggah, dan edit foto memakainya agar tidak ada halaman
+  ber-ISR yang tertinggal basi.
+- `src/lib/seo/feed.ts` adalah satu sumber isi `/feed.xml` dan `/feed.json`.
+- `src/components/admin/use-admin-action.ts` memusatkan pending, konfirmasi,
+  dan toast untuk aksi admin; `useFormDirty` (`src/lib/hooks/use-form-dirty.ts`)
+  menyediakan `notifyFormChange` untuk kontrol yang berubah tanpa event native
+  (Switch, editor foto).
 - `src/lib/types/database.ts` adalah kontrak TypeScript untuk skema Supabase.
 - `supabase/schema.sql` adalah sumber kebenaran database instalasi baru.
 
@@ -110,6 +125,22 @@ Apple atau Pinterest.
 
 Tanpa environment Supabase, aplikasi tetap dapat dibuka memakai data demo
 generik. Fitur yang menulis data memerlukan Supabase.
+
+### Versi yang sengaja ditahan
+
+Seluruh dependensi berada di rilis terbaru yang kompatibel, kecuali dua major:
+
+- **TypeScript tetap 6.0.x.** TypeScript 7 (compiler native) belum menyertakan
+  JS compiler API, padahal `typescript-eslint` mensyaratkan
+  `typescript <6.1.0` dan skrip `check:*` memakai `ts.transpileModule`.
+  Next.js 16.3 sendiri sudah mendukung TypeScript 7.
+- **ESLint tetap 9.x.** `eslint-config-next` 16 bergantung pada
+  `eslint-plugin-react`, `eslint-plugin-jsx-a11y`, dan `eslint-plugin-import`
+  yang belum mendukung ESLint 10.
+
+`npm audit` masih melaporkan satu advisory `braces` khusus dev (lewat
+`@next/eslint-plugin-next` → `fast-glob`) yang belum memiliki rilis perbaikan;
+dependensi produksi bersih (`npm run audit:prod`).
 
 ## Mulai cepat
 
@@ -193,8 +224,40 @@ Catatan pembaruan keamanan terbaru:
 - GIF/APNG serta WebP/AVIF animasi tidak dibuka sebagai foto statis agar frame
   lain tidak hilang tanpa persetujuan.
 
-Jalankan `npm run check:media-formats` setelah mengubah registry atau SQL.
-Daftar lisensi decoder pihak ketiga tersedia di
+### Batas ukuran unggah
+
+- Satu sumber: `UPLOAD_LIMITS` di `src/lib/constants.ts`, yaitu foto 100 MB
+  serta video dan audio 500 MB per file.
+- `file_size_limit` bucket di `supabase/schema.sql` bernilai sama dengan
+  `UPLOAD_LIMITS`.
+- `serverActions.bodySizeLimit` di `next.config.mjs` adalah batas foto ditambah
+  10 MB. Server Action hanya membawa foto (pengaturan, anggota, cover artikel).
+  Video dan audio dikirim langsung ke Storage lewat signed URL/TUS dan tidak
+  pernah melewati server aplikasi.
+- `src/proxy.ts` mengecualikan request Server Action (header `next-action`).
+  Next memotong body yang melewati proxy di `proxyClientMaxBodySize`
+  (bawaan 10 MB). Setiap action admin tetap memeriksa sesi sendiri lewat
+  `requireFeature`/`requireAdmin`.
+- `npm run check:media-formats` gagal bila nilai-nilai di atas tidak lagi
+  selaras.
+
+Batas platform tetap berlaku di atas angka aplikasi:
+
+- **Supabase Free** membatasi setiap file maksimal 50 MB (batas global
+  project). File yang lebih besar ditolak Storage meskipun limit bucket lebih
+  tinggi. Naikkan *Global file size limit* di Storage Settings dashboard
+  (paket Pro ke atas, hingga 500 GB), atau turunkan `UPLOAD_LIMITS`.
+  Sumber: [Supabase Storage file limits](https://supabase.com/docs/guides/storage/uploads/file-limits).
+- **Vercel Functions** menerima body request maksimal 4,5 MB. Foto yang
+  dikirim lewat Server Action biasanya jauh lebih kecil karena editor
+  mengekspornya ke WebP ≤2048 px. Namun GIF/WebP animasi besar akan ditolak
+  dengan 413 pada deploy Vercel.
+
+Klien unggah menampilkan pesan yang jelas bila Storage menolak file karena
+ukurannya.
+
+Jalankan `npm run check:media-formats` setelah mengubah registry, batas ukuran,
+atau SQL. Daftar lisensi decoder pihak ketiga tersedia di
 [`THIRD_PARTY_NOTICES.md`](./.github/THIRD_PARTY_NOTICES.md).
 
 ## Konfigurasi tanpa mengubah kode
@@ -279,7 +342,7 @@ supabase/
 npm run lint
 npm run typecheck
 npm run check:member-slugs
-npm run check:media-formats
+npm run check:media-formats   # registry ↔ SQL, termasuk batas ukuran unggah
 npm run check:share-target
 npm run check:schema   # schema.sql 2× di Postgres (PGlite) + uji RPC/RLS
 npm run audit:prod

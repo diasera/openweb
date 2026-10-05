@@ -45,14 +45,39 @@ import {
   type RateLimitResult,
 } from "@/lib/security/rate-limit";
 
+type AuthEchoField = "name" | "username";
+
 /** Bentuk state form auth (dipakai useActionState di form login/setup). */
 export interface AuthState {
   error?: string;
+  /**
+   * Isian non-rahasia yang dikirim balik sebagai defaultValue: React 19
+   * mengosongkan field tak terkendali setiap kali <form action> selesai,
+   * termasuk saat login gagal. Password sengaja tidak pernah ikut.
+   */
+  values?: Partial<Record<AuthEchoField, string>>;
 }
 
 const NO_DB: AuthState = {
   error: "Database Supabase belum terhubung. Isi .env.local lalu jalankan schema.sql.",
 };
+
+const ECHO_MAX_LENGTH = 120;
+
+function echoFields(
+  formData: FormData,
+  fields: readonly AuthEchoField[],
+): AuthState["values"] {
+  return Object.fromEntries(
+    fields.map((field) => {
+      const value = formData.get(field);
+      return [
+        field,
+        typeof value === "string" ? value.slice(0, ECHO_MAX_LENGTH) : "",
+      ];
+    }),
+  );
+}
 
 /** Error pertama dari sekumpulan kuota, atau detik tunggu terpanjang bila habis. */
 function rateLimitFailure(
@@ -84,6 +109,11 @@ export async function setupOwnerAction(
   _prev: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
+  const state = await setupOwner(formData);
+  return { ...state, values: echoFields(formData, ["name", "username"]) };
+}
+
+async function setupOwner(formData: FormData): Promise<AuthState> {
   if (!isSupabaseConfigured()) return NO_DB;
   const parsed = setupSchema.safeParse({
     name: formData.get("name"),
@@ -172,6 +202,11 @@ export async function loginAction(
   _prev: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
+  const state = await login(formData);
+  return { ...state, values: echoFields(formData, ["username"]) };
+}
+
+async function login(formData: FormData): Promise<AuthState> {
   if (!isSupabaseConfigured()) return NO_DB;
   const parsed = loginSchema.safeParse({
     username: formData.get("username"),

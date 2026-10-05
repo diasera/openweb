@@ -8,6 +8,7 @@ import {
   type MediaSlide,
 } from "@/lib/media/slides";
 import type { MediaRow, MediaSlideRow, MediaStatus } from "@/lib/types/database";
+import { isUuid } from "@/lib/utils/id";
 import { pageBounds, toPaged, type Paged } from "./paging";
 
 export type MediaFilter = "pending" | "approved" | "rejected" | "all";
@@ -117,6 +118,8 @@ export async function getMediaStatusCounts(): Promise<Record<MediaFilter, number
 export async function getAdminEditableMedia(
   id: string,
 ): Promise<AdminEditableMedia | null> {
+  // Segmen URL bebas: tolak sebelum Postgres melempar 22P02 ke log.
+  if (!isUuid(id)) return null;
   const { data, error } = await createAdminSupabase()
     .from("media")
     .select("id, type, url, title, status, width, height")

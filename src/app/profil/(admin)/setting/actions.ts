@@ -44,7 +44,7 @@ function hasDimensionInput(value: FormDataEntryValue | null): boolean {
 }
 
 /**
- * Pusat persistensi Setting: satu alur (validasi -> koncurrency -> upload ->
+ * Pusat persistensi Setting: satu alur (validasi -> cek konkurensi -> upload ->
  * GC) yang dipanggil tipis oleh action per-tab. Parsing & transformasi ada di
  * site-config/schema.ts, bukan di sini.
  */
@@ -92,7 +92,7 @@ async function persistSiteSection(
   const sectionFields = SECTION_IMAGE_FIELDS[section];
   let heroDimensions: { width: number; height: number } | null = null;
 
-  // Upacara dimensi hero hanya relevan untuk tab Beranda (satu-satunya gambar
+  // Penanganan dimensi hero hanya relevan untuk tab Beranda (satu-satunya gambar
   // dengan kolom width/height di database).
   if (section === "home") {
     const heroFile = formData.get(SITE_HERO_IMAGE_FIELD.formKey);

@@ -4,14 +4,10 @@ import {
   type MemberActivityItem,
 } from "@/lib/members/activity";
 import { cardClass } from "@/components/ui/card";
+import { formatCalendarDate } from "@/lib/utils/time";
 import styles from "./member-heatmap.module.css";
 
-function formatDate(iso: string): string {
-  return new Date(`${iso}T00:00:00`).toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-  });
-}
+const formatDate = (key: string) => formatCalendarDate(key, "dayMonth");
 
 /**
  * Grafik aktivitas {memberLabel}: intensitas momen per hari selama setengah

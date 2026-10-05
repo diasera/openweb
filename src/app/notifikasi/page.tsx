@@ -9,7 +9,7 @@ import { FreshBadge, FreshnessSync } from "@/components/public/notification-fres
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
-import { timeAgo } from "@/lib/utils/time";
+import { RelativeTime } from "@/components/ui/relative-time";
 import { buildPageMetadata, PUBLIC_PAGE_SEO } from "@/lib/seo";
 import { normalizeNotificationHref } from "@/lib/utils/url";
 
@@ -44,22 +44,24 @@ export default async function NotifikasiPage() {
           <div className="space-y-3">
             {notifications.map((n) => {
               const href = normalizeNotificationHref(n.url);
-              return <Card key={n.id} className="p-4">
-                <p className="flex items-center gap-2 font-semibold">
-                  {n.title}
-                  <FreshBadge createdAt={n.created_at} />
-                </p>
-                {n.body && <p className="text-muted mt-1 text-sm">{n.body}</p>}
-                <p className="text-muted mt-2 text-xs">{timeAgo(n.created_at)}</p>
-                {href && (
-                  <a
-                    href={href}
-                    className="text-primary-readable mt-1 inline-block text-sm font-medium"
-                  >
-                    Buka →
-                  </a>
-                )}
-              </Card>;
+              return (
+                <Card key={n.id} className="p-4">
+                  <p className="flex items-center gap-2 font-semibold">
+                    {n.title}
+                    <FreshBadge createdAt={n.created_at} />
+                  </p>
+                  {n.body && <p className="text-muted mt-1 text-sm">{n.body}</p>}
+                  <RelativeTime iso={n.created_at} className="text-muted mt-2 block text-xs" />
+                  {href && (
+                    <a
+                      href={href}
+                      className="text-primary-readable mt-1 inline-block text-sm font-medium"
+                    >
+                      Buka →
+                    </a>
+                  )}
+                </Card>
+              );
             })}
           </div>
         )}

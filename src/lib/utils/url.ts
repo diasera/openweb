@@ -2,7 +2,8 @@
  * Normalisasi tujuan notifikasi publik. Hanya path internal absolut dan HTTPS
  * yang boleh menjadi tautan; skema aktif seperti javascript:/data: ditolak.
  */
-export function normalizeNotificationHref(value: string | null | undefined) {  const href = value?.trim() ?? "";
+export function normalizeNotificationHref(value: string | null | undefined) {
+  const href = value?.trim() ?? "";
   if (!href || /[\u0000-\u001f\u007f]/.test(href)) return null;
 
   if (

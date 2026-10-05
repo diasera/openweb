@@ -3,14 +3,7 @@ import { History, ImageIcon, Newspaper, Play } from "lucide-react";
 import { MotionLink } from "@/components/motion";
 import { cardClass } from "@/components/ui/card";
 import type { MemberActivityItem } from "@/lib/members/activity";
-
-function dateLabel(value: string) {
-  return new Date(value).toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
+import { formatSiteDate } from "@/lib/utils/time";
 
 function ActivityVisual({ item }: { item: MemberActivityItem }) {
   if (item.imageUrl) {
@@ -98,7 +91,7 @@ export function MemberActivityFeed({
                   </span>
                 )}
                 <span className="text-muted mt-1 block text-caption2">
-                  {dateLabel(item.occurredAt)}
+                  {formatSiteDate(item.occurredAt)}
                 </span>
               </span>
             </MotionLink>

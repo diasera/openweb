@@ -178,16 +178,16 @@ export function AppChromeProvider({
   const visible = isAppChromeRoute(pathname);
 
   return (
-    <DynamicIslandContext.Provider value={context}>
+    <DynamicIslandContext value={context}>
       <ToastProvider showNotice={showNotice} dismissNotice={dismissNotice}>
-      {visible && (
-        <DynamicIslandViewport
-          route={page.island}
-          notice={notice}
-          brand={{ siteName, logoUrl }}
-          event={nextEvent}
-        />
-      )}
+        {visible && (
+          <DynamicIslandViewport
+            route={page.island}
+            notice={notice}
+            brand={{ siteName, logoUrl }}
+            event={nextEvent}
+          />
+        )}
         {children}
         {visible && page.tabBarVisible && (
           <TabBar profileLabel={page.profileTabLabel} />
@@ -196,6 +196,6 @@ export function AppChromeProvider({
           <NotifPrompt siteName={siteName} />
         )}
       </ToastProvider>
-    </DynamicIslandContext.Provider>
+    </DynamicIslandContext>
   );
 }

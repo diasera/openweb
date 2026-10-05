@@ -1,4 +1,8 @@
-import { STORAGE_BUCKETS, UPLOAD_LIMITS } from "@/lib/constants";
+import {
+  formatUploadLimit,
+  STORAGE_BUCKETS,
+  uploadMaxBytes,
+} from "@/lib/constants";
 import {
   resolveMediaFormat,
   storageFormatForMime,
@@ -40,8 +44,12 @@ export function validateUploadDescriptor(
         error: "Audio perlu dinormalisasi ke format web sebelum diunggah.",
       };
     }
-    if (descriptor.size > UPLOAD_LIMITS.audioMaxBytes) {
-      return { ok: false, error: "Audio terlalu besar (maks 50 MB)." };
+    const maxBytes = uploadMaxBytes("audio");
+    if (descriptor.size > maxBytes) {
+      return {
+        ok: false,
+        error: `Audio terlalu besar (maks ${formatUploadLimit(maxBytes)}).`,
+      };
     }
     return {
       ok: true,
@@ -61,13 +69,11 @@ export function validateUploadDescriptor(
     };
   }
   const isVideo = mediaKind === "video";
-  const maxBytes = isVideo
-    ? UPLOAD_LIMITS.videoMaxBytes
-    : UPLOAD_LIMITS.imageMaxBytes;
+  const maxBytes = uploadMaxBytes(mediaKind);
   if (descriptor.size > maxBytes) {
     return {
       ok: false,
-      error: `File terlalu besar (maks ${Math.round(maxBytes / 1048576)} MB).`,
+      error: `File terlalu besar (maks ${formatUploadLimit(maxBytes)}).`,
     };
   }
   return {

@@ -1,13 +1,21 @@
 "use client";
 
 import { useEffect } from "react";
+import {
+  hasStorage,
+  readStorage,
+  STORAGE_KEYS,
+  writeStorage,
+} from "@/lib/utils/storage";
 
 /** Tracking ringan: satu ping per tab, dijalankan setelah load + saat browser idle. */
 export function VisitorTracker() {
   useEffect(() => {
-    try {
-      if (sessionStorage.getItem("kelas_tracked")) return;
-    } catch {
+    // Tanpa sessionStorage tiap navigasi akan mengirim ping: lewati saja.
+    if (
+      !hasStorage("session") ||
+      readStorage(STORAGE_KEYS.visitTracked, "session")
+    ) {
       return;
     }
 
@@ -15,7 +23,7 @@ export function VisitorTracker() {
     let idleId: number | undefined;
 
     const track = () => {
-      sessionStorage.setItem("kelas_tracked", "1");
+      writeStorage(STORAGE_KEYS.visitTracked, "1", "session");
       void fetch("/api/track", { method: "POST", keepalive: true }).catch(
         () => {},
       );

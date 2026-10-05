@@ -1,7 +1,7 @@
-import { forwardRef, type ButtonHTMLAttributes } from "react";
+import type { ComponentPropsWithRef } from "react";
 import { cn } from "@/lib/utils/cn";
 
-export type IconButtonProps = ButtonHTMLAttributes<HTMLButtonElement>;
+export type IconButtonProps = ComponentPropsWithRef<"button">;
 
 /**
  * Kontrol ikon kaca untuk button maupun Link pada chrome aplikasi. Visual
@@ -16,14 +16,8 @@ export function iconButtonClass(className?: string) {
   );
 }
 
-export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
-  ({ className, ...props }, ref) => (
-    <button
-      ref={ref}
-      type="button"
-      className={iconButtonClass(className)}
-      {...props}
-    />
-  ),
-);
-IconButton.displayName = "IconButton";
+export function IconButton({ className, ...props }: IconButtonProps) {
+  return (
+    <button type="button" className={iconButtonClass(className)} {...props} />
+  );
+}

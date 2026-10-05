@@ -17,7 +17,7 @@ import {
   type ActionResult,
 } from "@/lib/action-result";
 
-const optionalUuid = z.union([z.literal(""), z.string().uuid("Acara tidak valid")]);
+const optionalUuid = z.union([z.literal(""), z.uuid("Acara tidak valid")]);
 
 const schema = z.object({
   id: optionalUuid,
@@ -123,7 +123,7 @@ export async function setMediaAlbum(
 ): Promise<ActionResult> {
   await requireFeature("media");
   const ids = z
-    .object({ mediaId: z.string().uuid(), albumId: z.string().uuid().nullable() })
+    .object({ mediaId: z.uuid(), albumId: z.uuid().nullable() })
     .safeParse({ mediaId, albumId });
   if (!ids.success) return { error: "Data album tidak valid." };
   const sb = createAdminSupabase();

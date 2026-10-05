@@ -1,4 +1,4 @@
-import { forwardRef, type InputHTMLAttributes } from "react";
+import type { ComponentPropsWithRef } from "react";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -20,10 +20,9 @@ export function fieldClass(
 }
 
 /** Input teks bergaya iOS. 16px di ponsel agar iOS Safari tidak auto-zoom. */
-export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
-  ({ className, ...props }, ref) => (
+export function Input({ className, ...props }: ComponentPropsWithRef<"input">) {
+  return (
     <input
-      ref={ref}
       className={fieldClass(
         "self",
         cn(
@@ -33,6 +32,5 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
       )}
       {...props}
     />
-  ),
-);
-Input.displayName = "Input";
+  );
+}

@@ -1,50 +1,76 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { Heart } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils/cn";
 import { postJson } from "@/lib/api/client";
+import {
+  readStorageJson,
+  STORAGE_KEYS,
+  writeStorage,
+} from "@/lib/utils/storage";
 
 /**
- * Tombol suka pesan anonim. Optimistic + guard 1 like per browser (localStorage)
- * supaya angka tidak bisa dipompa dari satu perangkat. Balikan server dipakai
- * sebagai angka final bila tersedia.
+ * Tombol suka pesan anonim. Optimistic + guard 1 like per browser (storage)
+ * supaya angka tidak bisa dipompa dari satu perangkat; server tetap menjadi
+ * penegak dedup per pengunjung dan angkanya dipakai sebagai nilai final.
  */
-const KEY = "liked_messages";
+let likedCache: ReadonlySet<string> | null = null;
+const listeners = new Set<() => void>();
 
-function likedIds(): Set<string> {
-  try {
-    return new Set(JSON.parse(localStorage.getItem(KEY) || "[]") as string[]);
-  } catch {
-    return new Set();
+function likedIds(): ReadonlySet<string> {
+  if (!likedCache) {
+    const stored = readStorageJson(STORAGE_KEYS.likedMessages);
+    likedCache = new Set(
+      Array.isArray(stored)
+        ? stored.filter((id): id is string => typeof id === "string")
+        : [],
+    );
   }
+  return likedCache;
 }
-function persist(set: Set<string>) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify([...set]));
-  } catch {
-    /* ignore */
-  }
+
+function setLiked(id: string, liked: boolean) {
+  const next = new Set(likedIds());
+  if (liked) next.add(id);
+  else next.delete(id);
+  likedCache = next;
+  writeStorage(STORAGE_KEYS.likedMessages, JSON.stringify([...next]));
+  for (const listener of listeners) listener();
+}
+
+function onStorage(event: StorageEvent) {
+  if (event.key !== null && event.key !== STORAGE_KEYS.likedMessages) return;
+  likedCache = null;
+  for (const listener of listeners) listener();
+}
+
+/** Satu langganan untuk semua kartu pesan; tab lain ikut tersinkron. */
+function subscribe(listener: () => void) {
+  if (listeners.size === 0) window.addEventListener("storage", onStorage);
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size === 0) window.removeEventListener("storage", onStorage);
+  };
 }
 
 export function MessageLike({ id, likes }: { id: string; likes: number }) {
+  const { toast } = useToast();
+  const liked = useSyncExternalStore(
+    subscribe,
+    () => likedIds().has(id),
+    () => false,
+  );
   const [count, setCount] = useState(likes);
-  const [liked, setLiked] = useState(false);
   const [pending, setPending] = useState(false);
-
-  useEffect(() => {
-    setLiked(likedIds().has(id));
-  }, [id]);
 
   async function like() {
     if (liked || pending) return;
     setPending(true);
-    // Optimistic
-    setLiked(true);
+    setLiked(id, true);
     setCount((c) => c + 1);
-    const set = likedIds();
-    set.add(id);
-    persist(set);
 
     try {
       const data = await postJson<{ likes?: number }>(
@@ -53,13 +79,10 @@ export function MessageLike({ id, likes }: { id: string; likes: number }) {
         "Gagal menyukai pesan",
       );
       if (typeof data.likes === "number") setCount(data.likes);
-    } catch {
-      // Revert bila gagal
-      setLiked(false);
+    } catch (error) {
+      setLiked(id, false);
       setCount((c) => Math.max(0, c - 1));
-      const s = likedIds();
-      s.delete(id);
-      persist(s);
+      toast.error(error instanceof Error ? error.message : "Gagal menyukai pesan");
     } finally {
       setPending(false);
     }

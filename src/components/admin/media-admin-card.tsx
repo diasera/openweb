@@ -62,7 +62,11 @@ export function MediaAdminCard({
           {media.slides.length > 1 && ` · ${media.slides.length} item`}
         </p>
 
-        <MediaAlbumSelect mediaId={media.id} albumId={media.album_id} albums={albums} />
+        <MediaAlbumSelect
+          mediaId={media.id}
+          albumId={media.album_id}
+          albums={albums}
+        />
 
         <div className="mt-2 flex flex-wrap gap-1">
           {media.type === "photo" && (

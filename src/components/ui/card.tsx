@@ -1,4 +1,4 @@
-import { forwardRef, type HTMLAttributes } from "react";
+import type { ComponentPropsWithRef } from "react";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -22,7 +22,7 @@ const VARIANTS: Record<Variant, string> = {
     "motion-card relative border border-border bg-surface shadow-soft active:shadow-soft",
 };
 
-export interface CardProps extends HTMLAttributes<HTMLDivElement> {
+export interface CardProps extends ComponentPropsWithRef<"div"> {
   variant?: Variant;
 }
 
@@ -31,9 +31,6 @@ export function cardClass(variant: Variant = "elevated", className?: string) {
   return cn("rounded-card", VARIANTS[variant], className);
 }
 
-export const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ className, variant = "elevated", ...props }, ref) => (
-    <div ref={ref} className={cardClass(variant, className)} {...props} />
-  ),
-);
-Card.displayName = "Card";
+export function Card({ className, variant = "elevated", ...props }: CardProps) {
+  return <div className={cardClass(variant, className)} {...props} />;
+}

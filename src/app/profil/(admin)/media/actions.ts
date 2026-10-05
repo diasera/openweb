@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { requireFeature } from "@/lib/auth";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import {
@@ -8,17 +7,10 @@ import {
   removeMediaObject,
   setMediaObjectsPublic,
 } from "@/lib/media/upload";
+import { revalidateMediaPages } from "@/lib/media/revalidate";
 import { setIpBlocked } from "@/lib/admin/ip-bans";
 import { checkedMutation } from "@/lib/database/mutation";
 import type { ActionResult } from "@/lib/action-result";
-
-/** Segarkan halaman yang menampilkan media agar perubahan langsung terlihat. */
-function revalidateMedia() {
-  revalidatePath("/profil/media");
-  revalidatePath("/profil");
-  revalidatePath("/");
-  revalidatePath("/galeri");
-}
 
 type MediaReviewStatus = "approved" | "rejected";
 
@@ -75,7 +67,7 @@ async function reviewMedia(
   if (!approving && !(await setMediaObjectsPublic(urls, false))) {
     console.warn("[media:reject] objek masih di bucket publik", { id });
   }
-  revalidateMedia();
+  revalidateMediaPages(id);
   return {};
 }
 
@@ -108,7 +100,7 @@ export async function togglePinMedia(
     { notFoundMessage: "Media harus berstatus disetujui sebelum disematkan." },
   );
   if (!saved.ok) return { error: saved.error };
-  revalidateMedia();
+  revalidateMediaPages(id);
   return {};
 }
 
@@ -136,7 +128,7 @@ export async function deleteMedia(id: string): Promise<ActionResult> {
   await Promise.all(
     [deleted.data.url, ...slideUrls].filter(Boolean).map(removeMediaObject),
   );
-  revalidateMedia();
+  revalidateMediaPages(id);
   return {};
 }
 

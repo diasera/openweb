@@ -135,34 +135,34 @@ async function openNotificationTarget(url) {
 
 /* Browser memutar kunci langganan — daftarkan ulang dan laporkan ke server. */
 self.addEventListener("pushsubscriptionchange", (event) => {
-  event.waitUntil(
-    self.registration.pushManager
-      .getSubscription()
-      .then((subscription) =>
-        subscription
-          ? subscription
-          : self.registration.pushManager.subscribe(
-              event.oldSubscription
-                ? event.oldSubscription.options
-                : { userVisibleOnly: true },
-            ),
-      )
-      .then((subscription) => {
-        const payload = subscription.toJSON();
-        return fetch("/api/push/subscribe", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            endpoint: payload.endpoint,
-            keys: payload.keys,
-          }),
-        });
-      })
-      .catch(() => {
-        /* best-effort: halaman akan mendaftar ulang saat lonceng dinyalakan. */
-      }),
-  );
+  event.waitUntil(resubscribePush(event));
 });
+
+async function resubscribePush(event) {
+  try {
+    const manager = self.registration.pushManager;
+    const options = event.oldSubscription ? event.oldSubscription.options : null;
+    // Urutan: langganan baru dari event → yang sudah dibuat browser → buat ulang
+    // dengan opsi lama. Server memakai VAPID, jadi subscribe tanpa
+    // applicationServerKey pasti ditolak (Chrome/Edge); lewati saja dan biarkan
+    // pengguna menautkan ulang lewat lonceng.
+    const subscription =
+      event.newSubscription ||
+      (await manager.getSubscription()) ||
+      (options && options.applicationServerKey
+        ? await manager.subscribe(options)
+        : null);
+    if (!subscription) return;
+    const payload = subscription.toJSON();
+    await fetch("/api/push/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ endpoint: payload.endpoint, keys: payload.keys }),
+    });
+  } catch {
+    /* best-effort: halaman akan mendaftar ulang saat lonceng dinyalakan. */
+  }
+}
 
 /* Navigasi saat offline → layani /offline yang di-precache; selebihnya
  * dibiarkan ke jaringan/browser agar cache Next tidak diganggu. */
