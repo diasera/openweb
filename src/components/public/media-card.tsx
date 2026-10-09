@@ -1,12 +1,11 @@
-import Image from "next/image";
 import { MotionLink } from "@/components/motion";
 import {
   MEDIA_ASPECT_LIMITS,
   mediaDisplayAspectRatio,
 } from "@/lib/media/display";
-import { gradientCss } from "@/lib/utils/color";
+import { MediaPreview } from "@/components/ui/media-preview";
 import { RelativeTime } from "@/components/ui/relative-time";
-import { slidePreviewUrl, type MediaWithSlideCount } from "@/lib/media/slides";
+import type { MediaWithSlideCount } from "@/lib/media/slides";
 import { MediaBadges } from "./media-badges";
 
 /**
@@ -31,7 +30,6 @@ export function MediaCard({
     MEDIA_ASPECT_LIMITS.card,
   );
   const overlayCaption = !showMeta ? media.caption : null;
-  const previewUrl = slidePreviewUrl(media);
 
   return (
     <MotionLink
@@ -44,21 +42,14 @@ export function MediaCard({
         className="bg-surface-2 relative overflow-hidden rounded-pin"
         style={{ aspectRatio: ratio, viewTransitionName: `pin-${media.id}` }}
       >
-        {previewUrl ? (
-          <Image
-            src={previewUrl}
-            alt={media.title ?? media.caption ?? "Media"}
-            fill
-            // Lebar kolom nyata Masonry: 2 kolom <768px, 3 kolom di max-w-4xl, 4 kolom di max-w-5xl.
-            sizes="(max-width: 767px) 50vw, (max-width: 1023px) 288px, 240px"
-            className="motion-media-image object-cover"
-          />
-        ) : (
-          <div
-            className="absolute inset-0"
-            style={{ background: gradientCss(media.id) }}
-          />
-        )}
+        <MediaPreview
+          media={media}
+          alt={media.title ?? media.caption ?? "Media"}
+          // Lebar kolom nyata Masonry: 2 kolom <768px, 3 kolom di max-w-4xl, 4 kolom di max-w-5xl.
+          sizes="(max-width: 767px) 50vw, (max-width: 1023px) 288px, 240px"
+          seed={media.id}
+          className="motion-media-image"
+        />
         <span className="media-tint" aria-hidden="true" />
 
         <MediaBadges type={media.type} slideCount={media.slide_count} />

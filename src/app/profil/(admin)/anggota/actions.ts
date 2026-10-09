@@ -89,6 +89,7 @@ export async function saveMember(
   const slug = nextAvailableMemberSlug(
     parsed.data.name,
     normalizedOtherMembers.map((member) => member.slug),
+    currentMember?.slug,
   );
 
   // Foto opsional — hanya di-upload bila ada file baru.

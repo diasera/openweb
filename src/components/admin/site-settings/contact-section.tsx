@@ -5,7 +5,6 @@ import {
   SITE_CONFIG_LIMITS,
   SOCIAL_NETWORKS,
 } from "@/lib/site-config/client";
-import { getSiteOrigin } from "@/lib/site-config/client";
 import type { SiteSettingsRow } from "@/lib/types/database";
 import { saveContactSettings } from "@/app/profil/(admin)/setting/actions";
 import { TextField, TextAreaField } from "./form-fields";
@@ -17,9 +16,11 @@ import { useSettingsSectionForm } from "./use-settings-section-form";
 /** Tab Kontak & Integrasi: kontak publik, sosial, analitik, dan iklan. */
 export function ContactSection({
   settings,
+  siteUrl,
   onDirtyChange,
 }: {
   settings: SiteSettingsRow;
+  siteUrl: string;
   onDirtyChange?: (dirty: boolean) => void;
 }) {
   const { formRef, dirty, handleSubmit, pending, fieldErrors } =
@@ -29,7 +30,6 @@ export function ContactSection({
       "Kontak dan integrasi tersimpan",
       { onDirtyChange },
     );
-  const siteUrl = getSiteOrigin(settings);
 
   return (
     <SettingsTabForm

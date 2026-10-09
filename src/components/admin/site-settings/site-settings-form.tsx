@@ -20,9 +20,12 @@ const TAB_PATH = "/profil/setting";
  */
 export function SiteSettingsForm({
   settings,
+  siteUrl,
   activeTab,
 }: {
   settings: SiteSettingsRow;
+  /** Origin kanonis hasil server (getSiteOrigin); jangan dihitung ulang di klien. */
+  siteUrl: string;
   activeTab: SiteSettingsTabId;
 }) {
   const dirtyRef = useRef(false);
@@ -82,16 +85,28 @@ export function SiteSettingsForm({
       </Card>
 
       {activeTab === "identity" && (
-        <IdentitySection settings={settings} onDirtyChange={onDirtyChange} />
+        <IdentitySection
+          settings={settings}
+          siteUrl={siteUrl}
+          onDirtyChange={onDirtyChange}
+        />
       )}
       {activeTab === "home" && (
         <HomeSection settings={settings} onDirtyChange={onDirtyChange} />
       )}
       {activeTab === "seo" && (
-        <SeoSection settings={settings} onDirtyChange={onDirtyChange} />
+        <SeoSection
+          settings={settings}
+          siteUrl={siteUrl}
+          onDirtyChange={onDirtyChange}
+        />
       )}
       {activeTab === "contact" && (
-        <ContactSection settings={settings} onDirtyChange={onDirtyChange} />
+        <ContactSection
+          settings={settings}
+          siteUrl={siteUrl}
+          onDirtyChange={onDirtyChange}
+        />
       )}
     </div>
   );

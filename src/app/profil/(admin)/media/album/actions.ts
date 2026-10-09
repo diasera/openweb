@@ -61,6 +61,7 @@ export async function saveAlbum(formData: FormData): Promise<ActionResult> {
     slugify(title) || "album",
     id || null,
     (candidate) => sb.from("albums").select("id").eq("slug", candidate).maybeSingle(),
+    current?.data.slug,
   );
   if (!slug.ok) {
     return { error: slug.error };

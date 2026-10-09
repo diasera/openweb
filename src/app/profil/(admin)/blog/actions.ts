@@ -124,6 +124,7 @@ export async function savePost(
     id,
     (candidate) =>
       sb.from("blog_posts").select("id").eq("slug", candidate).maybeSingle(),
+    current?.data.slug,
   );
   if (!slugResult.ok) return { error: slugResult.error };
   const slug = slugResult.data;

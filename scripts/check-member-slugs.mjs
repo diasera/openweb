@@ -77,9 +77,13 @@ const testableMemberSource = memberSource
     )};\n`,
   )
   .replace(
-    /import \{ normalizeSlugSource \} from "@\/lib\/utils\/slug";\r?\n/,
-    `import { normalizeSlugSource } from "${utilityUrl}";\n`,
+    /import \{([^}]*)\} from "@\/lib\/utils\/slug";\r?\n/,
+    (_match, names) => `import {${names}} from "${utilityUrl}";\n`,
   );
+assert(
+  !testableMemberSource.includes('"@/lib/'),
+  "Import alias @/lib di src/lib/members/slug.ts belum diganti untuk pengujian.",
+);
 const memberModule = await import(
   transpiledModuleUrl(testableMemberSource, "src/lib/members/slug.ts")
 );
@@ -99,7 +103,11 @@ assert.equal(
     .slug,
   "slug-stabil",
 );
+// Simpan ulang tanpa ganti nama: slug saat ini tetap meski varian pendek kosong.
+assert.equal(memberModule.nextAvailableMemberSlug("Dimas", [], "dimas-2"), "dimas-2");
+assert.equal(memberModule.nextAvailableMemberSlug("Dimas", ["dimas-2"], "dimas-2"), "dimas");
+assert.equal(memberModule.nextAvailableMemberSlug("Budi", [], "dimas-2"), "budi");
 
 console.log(
-  `Member slug contract OK: ${reserved.length} reserved routes, ${allocated.length + 4} fixtures.`,
+  `Member slug contract OK: ${reserved.length} reserved routes, ${allocated.length + 7} fixtures.`,
 );

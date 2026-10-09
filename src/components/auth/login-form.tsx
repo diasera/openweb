@@ -1,14 +1,11 @@
 "use client";
 
 import { useActionState } from "react";
-import { LoaderCircle } from "lucide-react";
 import { loginAction, type AuthState } from "@/lib/auth/actions";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { AuthField } from "./auth-field";
-import { Magnetic } from "./magnetic";
-import { cn } from "@/lib/utils/cn";
-import styles from "./auth-theater.module.css";
+import { GroupedField, groupedInputClass } from "@/components/ui/grouped-field";
+import { MenuGroup } from "@/components/ui/menu-row";
+import { PasswordInput } from "@/components/ui/password-input";
+import { AuthForm } from "./auth-form";
 
 const INITIAL: AuthState = {};
 
@@ -17,58 +14,44 @@ export function LoginForm({ next }: { next?: string }) {
   const [state, action, pending] = useActionState(loginAction, INITIAL);
 
   return (
-    <form
+    <AuthForm
       action={action}
-      className={cn(styles.formBody, state.error && styles.shake)}
+      state={state}
+      pending={pending}
+      submitLabel="Masuk"
+      pendingLabel="Memverifikasi…"
     >
       {next && <input type="hidden" name="next" value={next} />}
-      <AuthField label="Username" htmlFor="username" delay={300}>
-        <Input
-          id="username"
-          name="username"
-          required
-          autoComplete="username"
-          placeholder="username"
-          defaultValue={state.values?.username}
-        />
-      </AuthField>
-      <AuthField label="Password" htmlFor="password" delay={380}>
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          required
-          autoComplete="current-password"
-          placeholder="••••••••"
-        />
-      </AuthField>
-
-      {/* key agar teks error ter-animasi ulang tiap galat baru. React 19
-          me-reset form sesudah action; username dipulihkan dari state.values. */}
-      {state.error && (
-        <p key={state.error} role="alert" className={styles.errorText}>
-          {state.error}
-        </p>
-      )}
-
-      <div className={styles.itemIn} style={{ animationDelay: "460ms" }}>
-        <Magnetic>
-          <Button
-            type="submit"
-            disabled={pending}
-            className={cn("w-full", pending && styles.busy)}
-          >
-            {pending ? (
-              <>
-                <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
-                Memverifikasi…
-              </>
-            ) : (
-              "Masuk ke Dasbor"
-            )}
-          </Button>
-        </Magnetic>
-      </div>
-    </form>
+      {/* React 19 me-reset form sesudah action; username dipulihkan dari
+          state.values, password sengaja dikosongkan. */}
+      <MenuGroup>
+        <GroupedField label="Username" htmlFor="username">
+          <input
+            id="username"
+            name="username"
+            required
+            maxLength={30}
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            placeholder="username"
+            defaultValue={state.values?.username}
+            className={groupedInputClass}
+          />
+        </GroupedField>
+        <GroupedField label="Password" htmlFor="password">
+          <PasswordInput
+            id="password"
+            name="password"
+            required
+            maxLength={200}
+            autoComplete="current-password"
+            placeholder="••••••••"
+            className={groupedInputClass}
+          />
+        </GroupedField>
+      </MenuGroup>
+    </AuthForm>
   );
 }

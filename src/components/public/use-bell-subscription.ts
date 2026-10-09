@@ -4,6 +4,10 @@ import { useCallback, useRef, useState } from "react";
 import { useDynamicIsland } from "./dynamic-island";
 import { postJson } from "@/lib/api/client";
 import { isEnvConfigured } from "@/lib/env";
+import {
+  ensureServiceWorker,
+  supportsServiceWorker,
+} from "@/lib/pwa/service-worker";
 import { STORAGE_KEYS, writeStorage } from "@/lib/utils/storage";
 
 /** Hasil usaha menautkan perangkat ke kanal push. */
@@ -21,8 +25,7 @@ const PUSH_PUBLIC_KEY = isEnvConfigured(VAPID_PUBLIC_KEY)
 
 function pushCapable(): boolean {
   return (
-    typeof window !== "undefined" &&
-    "serviceWorker" in navigator &&
+    supportsServiceWorker() &&
     "PushManager" in window &&
     "Notification" in window
   );
@@ -65,8 +68,8 @@ async function enrollPushDevice(
     const permission = await permissionRequest;
     if (permission !== "granted") return "denied";
 
-    const registration = await navigator.serviceWorker.register("/sw.js");
-    await navigator.serviceWorker.ready;
+    const registration = await ensureServiceWorker();
+    if (!registration) return "unsupported";
     const existing = await registration.pushManager.getSubscription();
     const subscription =
       existing ??

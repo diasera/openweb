@@ -13,6 +13,7 @@ import {
 } from "@/lib/action-result";
 import { normalizeNotificationHref } from "@/lib/utils/url";
 import { dispatchPushNotification } from "@/lib/push/send";
+import { removePushSubscriptionsByVisitor } from "@/lib/push/subscriptions";
 
 const notifSchema = z.object({
   title: z.string().trim().min(1, "Judul wajib diisi").max(120),
@@ -85,9 +86,12 @@ export async function deleteVisitor(id: string): Promise<ActionResult> {
   const deleted = await checkedMutation(
     "visitors.delete",
     "Gagal menghapus data pengunjung.",
-    sb.from("visitors").delete().eq("id", id).select("id").maybeSingle(),
+    sb.from("visitors").delete().eq("id", id).select("id, visitor_id").maybeSingle(),
   );
   if (!deleted.ok) return { error: deleted.error };
+  // push_subscriptions tidak ber-FK ke visitors: tanpa ini perangkatnya tetap
+  // menerima push dan ikut terhitung sebagai "Perangkat push".
+  await removePushSubscriptionsByVisitor(deleted.data.visitor_id);
   revalidatePath("/profil/pengunjung");
   return {};
 }

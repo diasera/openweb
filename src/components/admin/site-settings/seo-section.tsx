@@ -3,7 +3,6 @@
 import { Search } from "lucide-react";
 import { ImageField } from "@/components/admin/image-field";
 import { SITE_CONFIG_LIMITS } from "@/lib/site-config/client";
-import { getSiteOrigin } from "@/lib/site-config/client";
 import type { SiteSettingsRow } from "@/lib/types/database";
 import { saveSeoSettings } from "@/app/profil/(admin)/setting/actions";
 import { TextField } from "./form-fields";
@@ -18,16 +17,17 @@ import { useSettingsSectionForm } from "./use-settings-section-form";
  */
 export function SeoSection({
   settings,
+  siteUrl,
   onDirtyChange,
 }: {
   settings: SiteSettingsRow;
+  siteUrl: string;
   onDirtyChange?: (dirty: boolean) => void;
 }) {
   const { formRef, dirty, handleSubmit, pending, fieldErrors } =
     useSettingsSectionForm("seo", saveSeoSettings, "Pengaturan SEO tersimpan", {
       onDirtyChange,
     });
-  const siteUrl = getSiteOrigin(settings);
 
   return (
     <SettingsTabForm

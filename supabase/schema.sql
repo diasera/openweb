@@ -1124,6 +1124,19 @@ begin
   update public.media
   set ip_address = null
   where created_at < v_cutoff and ip_address is not null;
+
+  -- Langganan push ikut aturan yang sama: info perangkat lama dianonimkan,
+  -- dan langganan lama milik pengunjung yang barisnya sudah tiada dihapus.
+  update public.push_subscriptions
+  set user_agent = null
+  where created_at < v_cutoff and user_agent is not null;
+
+  delete from public.push_subscriptions as subscription
+  where subscription.created_at < v_cutoff
+    and not exists (
+      select 1 from public.visitors as visitor
+      where visitor.visitor_id = subscription.visitor_id
+    );
 end;
 $$;
 

@@ -1,0 +1,144 @@
+/* Gerbang Auth: dinding pin ala Pinterest yang bergeser pelan dalam ruang 3D
+ * (sistem Depth), di belakang sheet kaca iOS. Seluruh warna dari token tema;
+ * gerak hanya transform di compositor dan mati untuk reduced motion. */
+
+.wallViewport {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.wall {
+  --wall-gap: 0.75rem;
+  position: absolute;
+  inset: -20% -16%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--wall-gap);
+  /* Dinding sedikit rebah dan miring: kedalaman tanpa library 3D. */
+  transform: perspective(1400px) rotateX(18deg) rotateZ(-8deg);
+  transform-origin: 50% 35%;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  /* Isi kolom dirender dua kali; geser -50% = satu putaran tanpa sambungan. */
+  animation: gate-drift var(--drift, 80s) linear infinite;
+}
+
+.column:nth-child(even) {
+  animation-direction: reverse;
+}
+
+.column:nth-child(n + 4) {
+  display: none;
+}
+
+/* margin (bukan gap) agar tinggi tiap salinan identik dan putaran mulus. */
+.tile {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: var(--wall-gap);
+}
+
+/* Lapisan pembaca: dinding tetap terasa, form selalu kontras AA. */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      to bottom,
+      rgb(var(--bg) / 0.45),
+      rgb(var(--bg) / 0.12) 28%,
+      rgb(var(--bg) / 0.55) 58%,
+      rgb(var(--bg) / 0.95)
+    ),
+    radial-gradient(90% 55% at 50% 0%, rgb(var(--primary) / 0.16), transparent 70%);
+}
+
+@media (min-width: 640px) {
+  .scrim {
+    background:
+      radial-gradient(
+        38rem 32rem at 50% 50%,
+        rgb(var(--bg) / 0.88),
+        rgb(var(--bg) / 0.5) 55%,
+        rgb(var(--bg) / 0.18)
+      ),
+      radial-gradient(90% 55% at 50% 0%, rgb(var(--primary) / 0.16), transparent 70%);
+  }
+}
+
+@media (min-width: 768px) {
+  .wall {
+    --wall-gap: 1rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .column:nth-child(4) {
+    display: flex;
+  }
+}
+
+@media (min-width: 1024px) {
+  .wall {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .column:nth-child(n + 4) {
+    display: flex;
+  }
+}
+
+/* Login gagal: form bergetar sekali, seperti kolom kode sandi iOS. */
+.shake {
+  animation: gate-shake 380ms var(--motion-ease-in-out);
+}
+
+@keyframes gate-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, -50%, 0);
+  }
+}
+
+@keyframes gate-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-7px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .column,
+  .shake {
+    animation: none;
+  }
+}
+
+/* Increase Contrast / High Contrast: hanya form di atas latar polos. */
+@media (prefers-contrast: more), (forced-colors: active) {
+  .wallViewport,
+  .scrim {
+    display: none;
+  }
+}

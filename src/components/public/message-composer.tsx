@@ -4,13 +4,18 @@ import { InlineTextComposer } from "./inline-text-composer";
 import { usePublicTextMutation } from "./use-public-text-mutation";
 
 /** Input kirim pesan anonim -> POST /api/pesan (IP & device ditangkap di server). */
-export function MessageComposer() {
+export function MessageComposer({
+  successNote = "Terkirim! Pesanmu sudah masuk.",
+}: {
+  /** Catatan di bawah input setelah terkirim, mis. menjelaskan pesan perlu dipin admin. */
+  successNote?: string;
+}) {
   const mutation = usePublicTextMutation({
     endpoint: "/api/pesan",
     payload: (content) => ({ content }),
     successTitle: "Pesan terkirim",
     successDescription: "Pesanmu sudah masuk.",
-    successNote: "Terkirim! Pesanmu sudah masuk.",
+    successNote,
     fallbackError: "Gagal mengirim pesan",
   });
 

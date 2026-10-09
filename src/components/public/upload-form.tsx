@@ -1,10 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CircleCheck, MessageCircle } from "lucide-react";
 import { PhotoEditor } from "@/components/media-editor";
 import { Button } from "@/components/ui/button";
+import {
+  GroupedField,
+  GroupLabel,
+  groupedInputClass,
+} from "@/components/ui/grouped-field";
 import { MenuGroup } from "@/components/ui/menu-row";
 import { ToggleRow } from "@/components/ui/toggle-row";
 import { useToast } from "@/components/ui/toast";
@@ -246,7 +251,7 @@ export function UploadForm() {
                 maxLength={120}
                 disabled={busy}
                 placeholder="Beri judul yang menarik…"
-                className="placeholder:text-muted w-full bg-transparent text-base outline-hidden sm:text-subhead"
+                className={groupedInputClass}
               />
             </GroupedField>
             <GroupedField
@@ -271,7 +276,7 @@ export function UploadForm() {
                 disabled={busy}
                 onChange={(event) => setCaptionLength(event.currentTarget.value.length)}
                 placeholder="Ceritakan konteks media ini…"
-                className="placeholder:text-muted w-full resize-none bg-transparent text-base leading-relaxed outline-hidden sm:text-subhead"
+                className={cn(groupedInputClass, "resize-none leading-relaxed")}
               />
             </GroupedField>
             <GroupedField label="Unggah sebagai (opsional)" htmlFor="uploader_name">
@@ -281,7 +286,7 @@ export function UploadForm() {
                 maxLength={60}
                 disabled={busy}
                 placeholder="Nama kamu / Anonim"
-                className="placeholder:text-muted w-full bg-transparent text-base outline-hidden sm:text-subhead"
+                className={groupedInputClass}
               />
             </GroupedField>
           </MenuGroup>
@@ -380,38 +385,5 @@ export function UploadForm() {
         }}
       />
     </>
-  );
-}
-
-function GroupLabel({ id, children }: { id?: string; children: ReactNode }) {
-  return (
-    <h2 id={id} className="text-muted px-4 text-footnote font-medium uppercase">
-      {children}
-    </h2>
-  );
-}
-
-/** Baris field tanpa bingkai di dalam grup ala iOS Settings. */
-function GroupedField({
-  label,
-  htmlFor,
-  trailing,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  trailing?: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <div className="focus-within:bg-surface-2/40 px-4 py-3 transition-colors">
-      <div className="mb-1 flex items-center justify-between gap-2">
-        <label htmlFor={htmlFor} className="text-muted text-caption1 font-semibold">
-          {label}
-        </label>
-        {trailing}
-      </div>
-      {children}
-    </div>
   );
 }

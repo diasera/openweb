@@ -26,11 +26,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { MediaCarousel } from "@/components/ui/media-carousel";
+import { MediaPreview } from "@/components/ui/media-preview";
 import { PHOTO_EDITOR_HELP } from "@/lib/constants";
 import type { MediaDraft, MediaDrafts } from "@/lib/hooks/use-media-drafts";
 import { MEDIA_ASPECT_LIMITS, mediaDisplayAspectRatio } from "@/lib/media/display";
 import type { MediaSlide } from "@/lib/media/slides";
-import { gradientCss } from "@/lib/utils/color";
 import { cn } from "@/lib/utils/cn";
 import styles from "./media-composer.module.css";
 
@@ -443,29 +443,17 @@ function Filmstrip({
 }
 
 function DraftThumb({ draft }: { draft: MediaDraft }) {
-  if (!draft.preview) {
-    return <span className="absolute inset-0" style={{ background: gradientCss(draft.id) }} />;
-  }
   return (
     <>
-      {draft.isVideo ? (
-        <video
-          src={draft.preview}
-          muted
-          playsInline
-          preload="metadata"
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-        />
-      ) : (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={draft.preview}
-          alt=""
-          draggable={false}
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-        />
-      )}
-      {draft.isVideo && (
+      <MediaPreview
+        media={draftSlide(draft)}
+        alt=""
+        sizes="64px"
+        seed={draft.id}
+        unoptimized
+        className="pointer-events-none"
+      />
+      {draft.preview && draft.isVideo && (
         <span className="media-badge absolute bottom-1 right-1 grid size-4.5 place-items-center rounded-full">
           <Play className="size-2.5 fill-current" aria-hidden="true" />
         </span>

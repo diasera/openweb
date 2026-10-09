@@ -102,8 +102,10 @@ export default async function Home() {
           <MessageBoard
             messages={messages}
             actionHref="/pesan"
-            showComposer={false}
             emptyDescription="Pesan pilihan yang dipin admin akan tampil di sini."
+            // Beranda hanya menampilkan pesan yang dipin: jelaskan kenapa pesan
+            // baru tidak langsung muncul di bawah input.
+            composerSuccessNote="Terkirim! Pesan pilihan admin akan tampil di halaman depan."
           />
         </div>
       </div>

@@ -21,6 +21,17 @@ export function slugify(text: string): string {
   );
 }
 
+/**
+ * Apakah `slug` adalah `base` atau `base-<angka>` (suffix anti-bentrok maupun
+ * cap waktu cadangan). Dipakai agar slug yang sedang dipakai tidak berpindah
+ * hanya karena varian yang lebih pendek kebetulan kosong lagi.
+ */
+export function isSlugVariantOf(slug: string, base: string): boolean {
+  if (slug === base) return true;
+  const suffix = slug.startsWith(`${base}-`) ? slug.slice(base.length + 1) : "";
+  return suffix !== "" && /^\d+$/.test(suffix);
+}
+
 const MAX_PREVIOUS_SLUGS = 20;
 
 /** Riwayat slug untuk pengalihan URL lama: terbaru dulu, unik, tanpa slug aktif. */

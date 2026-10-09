@@ -104,10 +104,12 @@ const MESH_TONES = ["orange", "indigo", "teal", "pink", "purple", "blue"] as con
 export function gradientCss(seed: string, angle = 135): string {
   const value = hash(seed);
   const tone = MESH_TONES[value % MESH_TONES.length];
-  const x = 15 + ((value >> 3) % 5) * 12;
-  const y = 10 + ((value >> 6) % 4) * 14;
-  const strong = 34 + ((value >> 9) % 4) * 8;
-  const turn = angle + ((value >> 4) % 5) * 12 - 24;
+  // `>>>`, bukan `>>`: hash tak bertanda ≥ 2^31 menjadi negatif bila digeser
+  // bertanda, sehingga posisi/intensitas keluar dari rentang yang dimaksud.
+  const x = 15 + ((value >>> 3) % 5) * 12;
+  const y = 10 + ((value >>> 6) % 4) * 14;
+  const strong = 34 + ((value >>> 9) % 4) * 8;
+  const turn = angle + ((value >>> 4) % 5) * 12 - 24;
   const primary = `color-mix(in oklab, rgb(var(--primary)) ${strong}%, transparent)`;
   const accent = `color-mix(in oklab, rgb(var(--tone-${tone})) ${strong - 6}%, transparent)`;
   return [

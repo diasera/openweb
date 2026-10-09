@@ -153,15 +153,6 @@ type SectionInput = {
   contact: z.infer<typeof contactConfigSchema>;
 };
 
-export type IdentityConfigInput = SectionInput["identity"];
-export type HomeConfigInput = SectionInput["home"];
-export type SeoConfigInput = SectionInput["seo"];
-export type ContactConfigInput = SectionInput["contact"];
-
-export function isSiteSettingsSection(value: string): value is SiteSettingsSection {
-  return value in SITE_SECTION_SCHEMAS;
-}
-
 function text(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value : "";

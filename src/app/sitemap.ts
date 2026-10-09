@@ -51,7 +51,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
     ...media.map((item) => ({
       url: absoluteUrl(`/pin/${item.id}`, settings),
-      lastModified: item.reviewed_at || item.created_at,
+      // reviewed_at tidak termasuk kolom publik (selalu null di sini).
+      lastModified: item.created_at,
       changeFrequency: "monthly" as const,
       priority: 0.6,
     })),

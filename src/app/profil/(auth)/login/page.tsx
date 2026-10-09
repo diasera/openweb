@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentAdmin, ownerExists } from "@/lib/auth";
 import { getSettings } from "@/lib/data";
 import { ADMIN_AUTH_PATHS } from "@/lib/constants";
-import { AuthShell, LoginForm } from "@/components/auth";
+import { AuthCard, LoginForm } from "@/components/auth";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -26,13 +26,15 @@ export default async function LoginPage({
   ]);
 
   return (
-    <AuthShell
-      title="Masuk Admin"
-      subtitle="Login owner atau admin."
-      logoUrl={settings.logo_url}
+    <AuthCard
       siteName={settings.site_name}
+      logoUrl={settings.logo_url}
+      eyebrow="Area pengelola"
+      title="Masuk"
+      subtitle={`Kelola konten, anggota, dan tampilan ${settings.site_name}.`}
+      footer="Lupa password? Minta owner mengatur ulang dari menu Admin."
     >
       <LoginForm next={next} />
-    </AuthShell>
+    </AuthCard>
   );
 }

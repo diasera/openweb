@@ -19,4 +19,6 @@ export {
 } from "./options";
 export type { SiteSettingsTabId } from "./options";
 export { normalizeStringList } from "./normalize";
-export { getSiteOrigin } from "./runtime";
+// getSiteOrigin sengaja TIDAK diekspor di sini: fallback env Vercel hanya ada di
+// server, sehingga hasilnya di browser berbeda dan memicu hydration mismatch.
+// Hitung di Server Component lalu oper sebagai prop.

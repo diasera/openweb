@@ -1,14 +1,15 @@
 "use client";
 
 import { useActionState } from "react";
-import { LoaderCircle } from "lucide-react";
 import { setupOwnerAction, type AuthState } from "@/lib/auth/actions";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { AuthField } from "./auth-field";
-import { Magnetic } from "./magnetic";
-import { cn } from "@/lib/utils/cn";
-import styles from "./auth-theater.module.css";
+import {
+  GroupedField,
+  GroupLabel,
+  groupedInputClass,
+} from "@/components/ui/grouped-field";
+import { MenuGroup } from "@/components/ui/menu-row";
+import { PasswordInput } from "@/components/ui/password-input";
+import { AuthForm } from "./auth-form";
 
 const INITIAL: AuthState = {};
 
@@ -17,82 +18,84 @@ export function SetupForm() {
   const [state, action, pending] = useActionState(setupOwnerAction, INITIAL);
 
   return (
-    <form
+    <AuthForm
       action={action}
-      className={cn(styles.formBody, state.error && styles.shake)}
+      state={state}
+      pending={pending}
+      submitLabel="Buat owner & masuk"
+      pendingLabel="Menyiapkan…"
     >
-      <AuthField label="Nama" htmlFor="name" delay={300}>
-        <Input
-          id="name"
-          name="name"
-          required
-          autoComplete="name"
-          placeholder="Nama lengkap"
-          defaultValue={state.values?.name}
-        />
-      </AuthField>
-      <AuthField
-        label="Username"
-        htmlFor="username"
-        hint="Huruf, angka, titik, _ atau -"
-        delay={360}
-      >
-        <Input
-          id="username"
-          name="username"
-          required
-          autoComplete="username"
-          placeholder="username"
-          defaultValue={state.values?.username}
-        />
-      </AuthField>
-      <AuthField label="Password" htmlFor="password" delay={420}>
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          required
-          autoComplete="new-password"
-          placeholder="Minimal 8 karakter"
-        />
-      </AuthField>
-      <AuthField label="Konfirmasi Password" htmlFor="confirm" delay={480}>
-        <Input
-          id="confirm"
-          name="confirm"
-          type="password"
-          required
-          autoComplete="new-password"
-          placeholder="Ulangi password"
-        />
-      </AuthField>
-
       {/* React 19 me-reset form sesudah action; nama & username dipulihkan
           dari state.values, password sengaja dikosongkan. */}
-      {state.error && (
-        <p key={state.error} role="alert" className={styles.errorText}>
-          {state.error}
-        </p>
-      )}
-
-      <div className={styles.itemIn} style={{ animationDelay: "560ms" }}>
-        <Magnetic>
-          <Button
-            type="submit"
-            disabled={pending}
-            className={cn("w-full", pending && styles.busy)}
+      <section aria-labelledby="setup-identity" className="space-y-2">
+        <GroupLabel id="setup-identity">Identitas</GroupLabel>
+        <MenuGroup>
+          <GroupedField label="Nama" htmlFor="name">
+            <input
+              id="name"
+              name="name"
+              required
+              maxLength={60}
+              autoComplete="name"
+              placeholder="Nama lengkap"
+              defaultValue={state.values?.name}
+              className={groupedInputClass}
+            />
+          </GroupedField>
+          <GroupedField
+            label="Username"
+            htmlFor="username"
+            trailing={
+              <span id="username-hint" className="text-muted text-caption2">
+                huruf, angka, . _ -
+              </span>
+            }
           >
-            {pending ? (
-              <>
-                <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
-                Menyiapkan…
-              </>
-            ) : (
-              "Buat Owner & Masuk"
-            )}
-          </Button>
-        </Magnetic>
-      </div>
-    </form>
+            <input
+              id="username"
+              name="username"
+              required
+              maxLength={30}
+              autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              aria-describedby="username-hint"
+              placeholder="username"
+              defaultValue={state.values?.username}
+              className={groupedInputClass}
+            />
+          </GroupedField>
+        </MenuGroup>
+      </section>
+
+      <section aria-labelledby="setup-security" className="space-y-2">
+        <GroupLabel id="setup-security">Keamanan</GroupLabel>
+        <MenuGroup>
+          <GroupedField label="Password" htmlFor="password">
+            <PasswordInput
+              id="password"
+              name="password"
+              required
+              maxLength={200}
+              autoComplete="new-password"
+              placeholder="Minimal 8 karakter"
+              className={groupedInputClass}
+            />
+          </GroupedField>
+          <GroupedField label="Ulangi password" htmlFor="confirm">
+            <PasswordInput
+              id="confirm"
+              name="confirm"
+              required
+              maxLength={200}
+              autoComplete="new-password"
+              placeholder="Ketik ulang password"
+              className={groupedInputClass}
+            />
+          </GroupedField>
+        </MenuGroup>
+      </section>
+    </AuthForm>
   );
 }

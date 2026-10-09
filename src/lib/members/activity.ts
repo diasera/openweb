@@ -15,7 +15,9 @@ export type MemberActivityItem =
       description: string | null;
       occurredAt: string;
       mediaType: "photo" | "video";
-      imageUrl: string | null;
+      /** URL media asli; video tanpa poster dipratinjau dari frame pertamanya. */
+      mediaUrl: string;
+      thumbnailUrl: string | null;
     }
   | {
       kind: "blog";
@@ -45,7 +47,8 @@ function mediaItem(media: {
     description: media.caption || media.uploader_name,
     occurredAt: media.created_at,
     mediaType: media.type,
-    imageUrl: media.type === "photo" ? media.url : media.thumbnail_url,
+    mediaUrl: media.url,
+    thumbnailUrl: media.thumbnail_url,
   };
 }
 

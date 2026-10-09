@@ -8,7 +8,8 @@ export const ADMIN_COMMENTS_PAGE_SIZE = 30;
 
 export type AdminComment = Omit<CommentRow, "ip_address" | "user_agent"> & {
   has_ip: boolean;
-  media: (Pick<MediaRow, "id" | "title" | "type" | "status"> & { preview_url: string | null }) | null;
+  /** `url` sudah bisa dibuka admin (signed URL inbox bila belum disetujui). */
+  media: Pick<MediaRow, "id" | "title" | "type" | "status" | "url" | "thumbnail_url"> | null;
 };
 
 /** Komentar terbaru lintas pin untuk moderasi; IP mentah tidak dikirim ke klien. */
@@ -38,10 +39,8 @@ export async function getAdminComments(page = 1): Promise<Paged<AdminComment>> {
         title: media.title,
         type: media.type,
         status: media.status,
-        preview_url:
-          media.type === "photo"
-            ? (readable.get(media.url) ?? media.url)
-            : media.thumbnail_url,
+        url: readable.get(media.url) ?? media.url,
+        thumbnail_url: media.thumbnail_url,
       },
     ]),
   );

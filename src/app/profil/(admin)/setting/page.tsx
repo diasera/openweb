@@ -3,7 +3,7 @@ import { getSettings } from "@/lib/data";
 import { buildAdminPageMetadata } from "@/lib/seo";
 import { PageHeader } from "@/components/ui/page-header";
 import { SiteSettingsForm } from "@/components/admin/site-settings";
-import { isSiteSettingsTabId } from "@/lib/site-config/client";
+import { getSiteOrigin, isSiteSettingsTabId } from "@/lib/site-config";
 
 export const metadata = buildAdminPageMetadata("Konfigurasi Website");
 
@@ -23,7 +23,13 @@ export default async function SettingPage({
         title="Konfigurasi website"
         description="Kelola identitas, beranda, SEO, dan integrasi tanpa mengubah source code."
       />
-      <SiteSettingsForm settings={settings} activeTab={activeTab} />
+      {/* Origin dihitung di server: fallback env Vercel tidak tersedia di
+          browser, jadi menghitungnya di klien memicu hydration mismatch. */}
+      <SiteSettingsForm
+        settings={settings}
+        siteUrl={getSiteOrigin(settings)}
+        activeTab={activeTab}
+      />
     </div>
   );
 }

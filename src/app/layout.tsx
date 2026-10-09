@@ -19,6 +19,7 @@ import { ThemeScript } from "@/components/public/theme-script";
 import { AppChromeProvider } from "@/components/public/app-chrome-provider";
 import { MotionProvider } from "@/components/motion";
 import { MusicProvider } from "@/components/public/music";
+import { ServiceWorkerRegistrar } from "@/components/public/service-worker-registrar";
 import { displayFont } from "./fonts";
 import "./globals.css";
 import "../components/motion/motion.css";
@@ -141,6 +142,7 @@ export default async function RootLayout({
             <AppChromeProvider
               siteName={settings.site_name}
               logoUrl={settings.logo_url}
+              tagline={settings.tagline}
               memberLabel={toDisplayLabel(labels.memberPlural, settings.locale)}
               nextEvent={
                 nextEvent && {
@@ -158,6 +160,7 @@ export default async function RootLayout({
             </AppChromeProvider>
           </MusicProvider>
         </MotionProvider>
+        <ServiceWorkerRegistrar />
 
         {analyticsId && (
           <>

@@ -172,6 +172,9 @@ Isi `.env.local` dengan nilai dari dashboard Supabase:
 | `NEXT_PUBLIC_SITE_URL` | Fallback origin sebelum URL disimpan di pengaturan | Tidak |
 | `TRUSTED_PROXY` | Sumber header IP self-hosted (`cloudflare`, `x-real-ip`, atau `x-forwarded-for`) | Tidak |
 | `NEXT_PUBLIC_SITE_TIME_ZONE` | Zona waktu agenda dan "Kenangan hari ini" (IANA, bawaan `Asia/Jakarta`) | Tidak |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Kunci publik Web Push (opsional; tanpa ini lonceng hanya in-app) | Tidak |
+| `VAPID_PRIVATE_KEY` | Kunci privat Web Push untuk mengirim notifikasi ke perangkat | Ya |
+| `VAPID_SUBJECT` | Kontak pengirim push, mis. `mailto:admin@example.com` | Tidak |
 
 `AUTH_SECRET` harus berupa string acak minimal 32 karakter. Jangan pernah
 commit `.env`, `.env.local`, service role key, atau secret produksi.

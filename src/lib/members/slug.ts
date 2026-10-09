@@ -1,6 +1,6 @@
 import type { MemberRow } from "@/lib/types/database";
 import { ADMIN_MANAGED_PATHS } from "@/lib/constants";
-import { normalizeSlugSource } from "@/lib/utils/slug";
+import { isSlugVariantOf, normalizeSlugSource } from "@/lib/utils/slug";
 
 const SLUG_SEPARATOR = /[^a-z0-9]+/g;
 const EDGE_SEPARATOR = /^-+|-+$/g;
@@ -39,16 +39,24 @@ export function slugifyMemberName(name: string): string {
   return slug || "member";
 }
 
-/** Pilih suffix terkecil yang belum dipakai: nama, nama-2, nama-3, dst. */
+/**
+ * Pilih suffix terkecil yang belum dipakai: nama, nama-2, nama-3, dst.
+ * `current` (slug anggota yang sedang diedit) dipertahankan selama masih
+ * varian nama yang sama dan belum dipakai, agar URL profil tidak berpindah.
+ */
 export function nextAvailableMemberSlug(
   name: string,
   usedSlugs: Iterable<string>,
+  current?: string | null,
 ): string {
   const base = slugifyMemberName(name);
   const used = new Set([
     ...RESERVED_MEMBER_SLUGS,
     ...Array.from(usedSlugs, (slug) => slug.trim().toLowerCase()),
   ]);
+  if (current && !used.has(current) && isSlugVariantOf(current, base)) {
+    return current;
+  }
   if (!used.has(base)) return base;
 
   let suffix = 2;

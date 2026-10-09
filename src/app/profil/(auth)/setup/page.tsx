@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { ownerExists } from "@/lib/auth";
 import { getSettings } from "@/lib/data";
 import { ADMIN_AUTH_PATHS } from "@/lib/constants";
-import { AuthShell, SetupForm } from "@/components/auth";
+import { AuthCard, SetupForm } from "@/components/auth";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -17,13 +17,15 @@ export default async function SetupPage() {
   const settings = await getSettings();
 
   return (
-    <AuthShell
-      title="Setup Owner"
-      subtitle="Buat akun owner pertama untuk mengelola seluruh website."
-      logoUrl={settings.logo_url}
+    <AuthCard
       siteName={settings.site_name}
+      logoUrl={settings.logo_url}
+      eyebrow="Instalasi baru"
+      title="Buat akun owner"
+      subtitle="Akun pertama memegang semua izin dan dapat menambah admin lain."
+      footer="Password disimpan sebagai hash scrypt, bukan teks asli."
     >
       <SetupForm />
-    </AuthShell>
+    </AuthCard>
   );
 }

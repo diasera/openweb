@@ -105,19 +105,3 @@ export const getAlbumById = cache(async (id: string): Promise<PublicAlbum | null
     null,
   );
 });
-
-/** Pilihan album ringan untuk form unggah publik. */
-export async function getAlbumOptions(): Promise<Array<Pick<PublicAlbum, "id" | "title">>> {
-  if (!isSupabaseConfigured()) {
-    return DEMO_ALBUMS.map(({ id, title }) => ({ id, title }));
-  }
-  return unwrapFeature(
-    "album-options",
-    await createPublicSupabase()
-      .from("albums")
-      .select("id, title")
-      .order("created_at", { ascending: false })
-      .limit(50),
-    [],
-  );
-}

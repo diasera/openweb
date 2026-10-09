@@ -22,7 +22,3 @@ export function getVapidConfig(): VapidConfig | null {
       : null;
   return cached;
 }
-
-export function isPushConfigured(): boolean {
-  return getVapidConfig() !== null;
-}

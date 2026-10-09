@@ -1,11 +1,26 @@
 import Image from "next/image";
-import { History, ImageIcon, Newspaper, Play } from "lucide-react";
+import { History, Newspaper, Play } from "lucide-react";
 import { MotionLink } from "@/components/motion";
 import { cardClass } from "@/components/ui/card";
+import { MediaPreview } from "@/components/ui/media-preview";
 import type { MemberActivityItem } from "@/lib/members/activity";
 import { formatSiteDate } from "@/lib/utils/time";
 
 function ActivityVisual({ item }: { item: MemberActivityItem }) {
+  if (item.kind === "media") {
+    return (
+      <MediaPreview
+        media={{
+          type: item.mediaType,
+          url: item.mediaUrl,
+          thumbnail_url: item.thumbnailUrl,
+        }}
+        alt=""
+        sizes="88px"
+        seed={item.id}
+      />
+    );
+  }
   if (item.imageUrl) {
     return (
       <Image
@@ -17,10 +32,9 @@ function ActivityVisual({ item }: { item: MemberActivityItem }) {
       />
     );
   }
-  const Icon = item.kind === "blog" ? Newspaper : item.mediaType === "video" ? Play : ImageIcon;
   return (
     <span className="from-primary/18 to-accent/12 text-primary-readable grid h-full w-full place-items-center bg-linear-to-br">
-      <Icon className="h-6 w-6" />
+      <Newspaper className="h-6 w-6" />
     </span>
   );
 }
@@ -68,7 +82,7 @@ export function MemberActivityFeed({
             >
               <span className="relative h-[76px] w-[76px] shrink-0 overflow-hidden rounded-xl">
                 <ActivityVisual item={item} />
-                {item.kind === "media" && item.mediaType === "video" && item.imageUrl && (
+                {item.kind === "media" && item.mediaType === "video" && item.mediaUrl && (
                   <span className="absolute inset-0 grid place-items-center bg-black/20 text-white">
                     <Play className="h-5 w-5 fill-current" />
                   </span>

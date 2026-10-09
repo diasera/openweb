@@ -70,12 +70,15 @@ function isAppChromeRoute(pathname: string) {
 export function AppChromeProvider({
   siteName,
   logoUrl,
+  tagline,
   memberLabel,
   nextEvent = null,
   children,
 }: {
   siteName: string;
   logoUrl?: string | null;
+  /** Ditampilkan di bawah nama situs pada panel cepat island. */
+  tagline?: string | null;
   memberLabel?: string;
   nextEvent?: IslandEvent | null;
   children: ReactNode;
@@ -184,7 +187,7 @@ export function AppChromeProvider({
           <DynamicIslandViewport
             route={page.island}
             notice={notice}
-            brand={{ siteName, logoUrl }}
+            brand={{ siteName, logoUrl, tagline }}
             event={nextEvent}
           />
         )}

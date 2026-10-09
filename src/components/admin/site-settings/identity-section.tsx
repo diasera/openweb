@@ -10,7 +10,6 @@ import {
   SITE_TYPE_OPTIONS,
 } from "@/lib/site-config/client";
 import { getHomeSeoDescription, getHomeSeoTitle } from "@/lib/seo";
-import { getSiteOrigin } from "@/lib/site-config/client";
 import { rgbChannelsToHex, themePrimaryHex } from "@/lib/theme";
 import type { SiteSettingsRow } from "@/lib/types/database";
 import { saveIdentitySettings } from "@/app/profil/(admin)/setting/actions";
@@ -26,9 +25,11 @@ import { useSettingsSectionForm } from "./use-settings-section-form";
  */
 export function IdentitySection({
   settings,
+  siteUrl,
   onDirtyChange,
 }: {
   settings: SiteSettingsRow;
+  siteUrl: string;
   onDirtyChange?: (dirty: boolean) => void;
 }) {
   const { formRef, dirty, handleSubmit, pending, fieldErrors } =
@@ -39,7 +40,6 @@ export function IdentitySection({
       { onDirtyChange },
     );
   const labels = getContentLabels(settings);
-  const siteUrl = getSiteOrigin(settings);
   const [preview, setPreview] = useState({
     siteName: settings.site_name,
     tagline: settings.tagline ?? "",

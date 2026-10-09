@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { MessageSquareText, Play } from "lucide-react";
 import { requireFeature } from "@/lib/auth";
@@ -15,6 +14,7 @@ import {
 } from "@/components/admin/confirmed-action-button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { MediaPreview } from "@/components/ui/media-preview";
 import { Pagination } from "@/components/public/pagination";
 import { banCommentIp, deleteComment } from "./actions";
 
@@ -51,14 +51,14 @@ export default async function CommentsPage({
                 className="bg-surface-2 relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl"
                 title={comment.media?.title ?? "Buka pin"}
               >
-                {comment.media?.preview_url ? (
-                  <Image
-                    src={comment.media.preview_url}
+                {comment.media ? (
+                  <MediaPreview
+                    media={comment.media}
                     alt={comment.media.title ?? "Pin"}
-                    fill
                     sizes="56px"
+                    seed={comment.media.id}
+                    // Signed URL inbox berumur pendek: jangan disimpan cache optimizer.
                     unoptimized={comment.media.status !== "approved"}
-                    className="object-cover"
                   />
                 ) : (
                   <Play className="text-muted h-4 w-4" aria-hidden="true" />

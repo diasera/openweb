@@ -20,12 +20,14 @@ export function MessageBoard({
   actionHref,
   showComposer = true,
   emptyDescription = "Belum ada pesan anonim. Jadilah yang pertama mengirim.",
+  composerSuccessNote,
   variant = "section",
 }: {
   messages: PublicMessage[];
   actionHref?: string;
   showComposer?: boolean;
   emptyDescription?: string;
+  composerSuccessNote?: string;
   variant?: "section" | "page";
 }) {
   return (
@@ -37,7 +39,7 @@ export function MessageBoard({
       )}
       {showComposer && (
         <div className="mb-4">
-          <MessageComposer />
+          <MessageComposer successNote={composerSuccessNote} />
         </div>
       )}
       {messages.length > 0 ? (

@@ -184,6 +184,21 @@ assert.deepEqual(visitors, [
   { visitor_id: "old-on", ip_address: null },
 ]);
 await rejects("anon", "select public.apply_data_retention(180)", /permission denied/);
+
+// Retensi push: info perangkat lama dianonimkan; langganan lama tanpa pengunjung dihapus.
+await db.exec(`
+  insert into public.push_subscriptions (visitor_id, endpoint, p256dh, auth, user_agent, created_at) values
+    ('old-on', 'https://push.example/a', 'k', 'a', 'UA', now() - interval '200 days'),
+    ('gone', 'https://push.example/b', 'k', 'a', 'UA', now() - interval '200 days'),
+    ('new', 'https://push.example/c', 'k', 'a', 'UA', now());
+  select public.apply_data_retention(180);`);
+const subscriptions = await rows(
+  "select endpoint, user_agent from public.push_subscriptions order by endpoint",
+);
+assert.deepEqual(subscriptions, [
+  { endpoint: "https://push.example/a", user_agent: null },
+  { endpoint: "https://push.example/c", user_agent: "UA" },
+]);
 await assert.rejects(rows("select public.apply_data_retention(1)"), /invalid retention days/);
 
 // Hapus album tidak menghapus media.
