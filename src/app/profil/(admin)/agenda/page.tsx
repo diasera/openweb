@@ -95,7 +95,7 @@ export default async function AgendaAdminPage({
                         href={eventPagePath(event.id)}
                         target="_blank"
                         label="Lihat di halaman Agenda"
-                        icon={ExternalLink}
+                        icon={<ExternalLink />}
                       />
                     )}
                     <EventDialog

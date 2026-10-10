@@ -12,6 +12,7 @@ import {
   VIDEO_STORAGE_MIME_TYPES,
   type MediaFormatKind,
 } from "@/lib/media-formats/registry";
+import type { SkeletonLayoutId } from "@/lib/navigation/app-routes";
 
 // Nama cookie
 export const SESSION_COOKIE = "kelas_session"; // sesi owner/admin (signed, HttpOnly)
@@ -45,26 +46,28 @@ export type AdminFeature = (typeof ADMIN_FEATURES)[number];
 
 /**
  * Metadata dan alamat tiap fitur admin. `stats` hidup langsung di Admin Home;
- * fitur lain membuka child view di bawah /profil.
+ * fitur lain membuka child view di bawah /profil. `skeleton` = kerangka yang
+ * tampil saat halaman fitur dimuat.
  */
 export const ADMIN_FEATURE_META: Record<
   AdminFeature,
-  { label: string; ownerOnly: boolean; href: string }
+  { label: string; ownerOnly: boolean; href: string; skeleton: SkeletonLayoutId }
 > = {
-  stats: { label: "Ringkasan", ownerOnly: false, href: "/profil" },
-  pesan: { label: "Pesan", ownerOnly: false, href: "/profil/pesan" },
-  media: { label: "Media", ownerOnly: false, href: "/profil/media" },
-  anggota: { label: "Anggota", ownerOnly: false, href: "/profil/anggota" },
-  blog: { label: "Blog", ownerOnly: false, href: "/profil/blog" },
-  agenda: { label: "Agenda", ownerOnly: false, href: "/profil/agenda" },
-  music: { label: "Musik", ownerOnly: false, href: "/profil/music" },
+  stats: { label: "Ringkasan", ownerOnly: false, href: "/profil", skeleton: "hub" },
+  pesan: { label: "Pesan", ownerOnly: false, href: "/profil/pesan", skeleton: "admin-list" },
+  media: { label: "Media", ownerOnly: false, href: "/profil/media", skeleton: "admin-grid" },
+  anggota: { label: "Anggota", ownerOnly: false, href: "/profil/anggota", skeleton: "admin-list" },
+  blog: { label: "Blog", ownerOnly: false, href: "/profil/blog", skeleton: "admin-list" },
+  agenda: { label: "Agenda", ownerOnly: false, href: "/profil/agenda", skeleton: "admin-list" },
+  music: { label: "Musik", ownerOnly: false, href: "/profil/music", skeleton: "admin-list" },
   pengunjung: {
     label: "Pengunjung",
     ownerOnly: false,
     href: "/profil/pengunjung",
+    skeleton: "admin-list",
   },
-  admin: { label: "Admin", ownerOnly: true, href: "/profil/admin" },
-  setting: { label: "Pengaturan", ownerOnly: true, href: "/profil/setting" },
+  admin: { label: "Admin", ownerOnly: true, href: "/profil/admin", skeleton: "admin-list" },
+  setting: { label: "Pengaturan", ownerOnly: true, href: "/profil/setting", skeleton: "admin-form" },
 };
 
 export const ADMIN_AUTH_PATHS = {
@@ -74,6 +77,11 @@ export const ADMIN_AUTH_PATHS = {
 
 export function adminFeatureHref(feature: AdminFeature): string {
   return ADMIN_FEATURE_META[feature].href;
+}
+
+/** Tab filter tertentu pada daftar admin (?status=…), sama dengan href AdminTabs. */
+export function adminFilterHref(feature: AdminFeature, status: string): string {
+  return `${adminFeatureHref(feature)}?status=${encodeURIComponent(status)}`;
 }
 
 const ADMIN_CHILD_FEATURES = ADMIN_FEATURES.filter(
@@ -107,6 +115,8 @@ export function isAdminAuthRoute(pathname: string): boolean {
 export interface AdminRouteNavigation {
   title: string;
   backHref: string;
+  /** Kerangka pemuatan child view ini. */
+  skeleton: SkeletonLayoutId;
 }
 
 /** Sub-halaman moderasi di bawah fitur Media (bukan fitur izin tersendiri). */
@@ -115,9 +125,27 @@ export const MEDIA_ADMIN_SECTIONS = {
   komentar: { href: "/profil/media/komentar", title: "Komentar" },
 } as const;
 
+/*
+ * Satu editor per jenis konten, satu kali klik membuka semuanya:
+ * - Edit postingan — pin Media: media (edit foto item ke-n, tambah, hapus,
+ *                    urutkan, sampul) + teks, album, sorotan, tanggal.
+ * - Edit artikel   — artikel blog: tulisan, status, cover, SEO.
+ */
+
+/** Editor "Edit postingan" sebuah pin (media + detail). */
+export function adminMediaEditHref(mediaId: string): string {
+  return `${ADMIN_FEATURE_META.media.href}/${mediaId}/edit`;
+}
+
+/** Editor artikel blog; tanpa id = tulis artikel baru. */
+export function adminBlogEditorHref(postId?: string): string {
+  return `${ADMIN_FEATURE_META.blog.href}/${postId ?? "new"}`;
+}
+
 /**
- * Sumber tunggal judul dan hierarki child view admin untuk Dynamic Island.
- * Route auth sengaja tidak termasuk karena tampil sebagai alur modal terpisah.
+ * Sumber tunggal judul, hierarki, dan kerangka pemuatan child view admin
+ * (Dynamic Island + RouteSkeleton). Route auth sengaja tidak termasuk karena
+ * tampil sebagai alur modal terpisah.
  */
 export function getAdminRouteNavigation(
   pathname: string,
@@ -127,24 +155,24 @@ export function getAdminRouteNavigation(
   );
   if (!feature) return null;
 
-  if (pathname === "/profil/blog/new") {
-    return { title: "Tulis Artikel", backHref: "/profil/blog" };
+  if (pathname === adminBlogEditorHref()) {
+    return { title: "Tulis Artikel", backHref: adminFeatureHref("blog"), skeleton: "admin-editor" };
   }
   if (feature === "blog" && pathname !== adminFeatureHref("blog")) {
-    return { title: "Edit Artikel", backHref: "/profil/blog" };
+    return { title: "Edit Artikel", backHref: adminFeatureHref("blog"), skeleton: "admin-editor" };
   }
   if (feature === "media" && pathname !== adminFeatureHref("media")) {
     const section = Object.values(MEDIA_ADMIN_SECTIONS).find((item) =>
       matchesPath(pathname, item.href),
     );
-    if (section) return { title: section.title, backHref: "/profil/media" };
-    return { title: "Edit Foto", backHref: "/profil/media" };
+    if (section) {
+      return { title: section.title, backHref: adminFeatureHref("media"), skeleton: "admin-list" };
+    }
+    return { title: "Edit Postingan", backHref: adminFeatureHref("media"), skeleton: "admin-editor" };
   }
 
-  return {
-    title: ADMIN_FEATURE_META[feature].label,
-    backHref: "/profil",
-  };
+  const meta = ADMIN_FEATURE_META[feature];
+  return { title: meta.label, backHref: "/profil", skeleton: meta.skeleton };
 }
 
 // Fitur yang boleh diberikan owner ke admin biasa (owner-only dikecualikan).

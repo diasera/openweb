@@ -5,6 +5,7 @@ import { Bookmark } from "lucide-react";
 import { Masonry } from "@/components/ui/masonry";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionHeader } from "@/components/ui/section-header";
+import { SkeletonMasonry, SkeletonScreen } from "@/components/ui/skeleton";
 import { buttonClass } from "@/components/ui/button";
 import { MediaCard } from "@/components/public/media-card";
 import { PostRow } from "@/components/public/post-row";
@@ -136,15 +137,9 @@ export function SavedBrowser() {
   }
   if (!current?.data) {
     return (
-      <Masonry aria-busy="true">
-        {Array.from({ length: 6 }, (_, index) => (
-          <div
-            key={index}
-            className="bg-surface-2 animate-pulse rounded-pin"
-            style={{ aspectRatio: index % 2 ? "3 / 4" : "1 / 1" }}
-          />
-        ))}
-      </Masonry>
+      <SkeletonScreen label="Memuat koleksi tersimpan">
+        <SkeletonMasonry count={6} />
+      </SkeletonScreen>
     );
   }
 

@@ -44,6 +44,21 @@ export function composeMediaSlides(
   ];
 }
 
+/**
+ * Item yang sudah tersimpan di sebuah pin, untuk editor "Edit postingan" admin.
+ * `url` kanonis menjadi identitas item saat susunan disimpan; `readUrl` yang
+ * dibuka browser (signed URL inbox bila pin belum terbit).
+ */
+export interface StoredMediaSource {
+  url: string;
+  readUrl: string;
+  type: MediaSlide["type"];
+  mimeType: string | null;
+  thumbnailUrl: string | null;
+  width: number | null;
+  height: number | null;
+}
+
 /** Gambar diam yang mewakili slide (poster untuk video). */
 export function slidePreviewUrl(slide: Pick<MediaSlide, "type" | "url" | "thumbnail_url">) {
   return slide.type === "video" ? slide.thumbnail_url : slide.url;

@@ -3,13 +3,13 @@
 import { useEffect, useState, type DragEvent } from "react";
 import {
   ImagePlus,
-  LoaderCircle,
   Pencil,
   RefreshCw,
   RotateCcw,
   Trash2,
 } from "lucide-react";
 import { PhotoEditor } from "@/components/media-editor";
+import { SkeletonOverlay } from "@/components/ui/skeleton";
 import { notifyFormChange } from "@/lib/hooks/use-form-dirty";
 import { useImageDraft } from "@/lib/hooks/use-image-draft";
 import {
@@ -195,17 +195,7 @@ export function ImageField({
           </label>
         )}
 
-        {preparing && (
-          <span
-            className="bg-surface/70 absolute inset-0 grid place-items-center backdrop-blur-sm"
-            role="status"
-          >
-            <span className="text-muted flex items-center gap-2 text-caption1 font-semibold">
-              <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-              Menyiapkan gambar…
-            </span>
-          </span>
-        )}
+        {preparing && <SkeletonOverlay label="Menyiapkan gambar…" />}
 
         {draft.edited && (
           <span className="bg-success absolute left-2 top-2 rounded-full px-2 py-0.5 text-caption2 font-semibold text-white">

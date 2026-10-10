@@ -1,4 +1,5 @@
-import type { ComponentPropsWithRef } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
+import { LoaderCircle } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -37,6 +38,14 @@ const SIZES: Record<Size, string> = {
 export interface ButtonProps extends ComponentPropsWithRef<"button"> {
   variant?: Variant;
   size?: Size;
+  /** Ikon di depan label; diganti spinner selama `pending`. */
+  icon?: ReactNode;
+  /**
+   * Aksi sedang berjalan (simpan, kirim, masuk): tombol terkunci, spinner
+   * tampil di slot ikon, dan aria-busy terpasang — satu sumber untuk semua
+   * tombol, tidak ditulis ulang per form.
+   */
+  pending?: boolean;
 }
 
 /** Gaya tombol reusable untuk Link agar tidak membuat elemen interaktif bersarang. */
@@ -60,13 +69,22 @@ export function Button({
   className,
   variant = "primary",
   size = "md",
+  icon,
+  pending = false,
+  disabled,
+  children,
   ...props
 }: ButtonProps) {
   return (
     <button
       type="button"
       className={buttonClass({ className, variant, size })}
+      disabled={disabled || pending}
+      aria-busy={pending || undefined}
       {...props}
-    />
+    >
+      {pending ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : icon}
+      {children}
+    </button>
   );
 }

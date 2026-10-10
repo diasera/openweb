@@ -1,6 +1,6 @@
 import "server-only";
 import { createAdminSupabase } from "@/lib/supabase/admin";
-import { STORAGE_BUCKETS } from "@/lib/constants";
+import { STORAGE_BUCKETS, UPLOAD_LIMITS } from "@/lib/constants";
 import {
   getStoragePublicUrl,
   getSignedReadUrls,
@@ -8,16 +8,17 @@ import {
   removeStorageObject,
 } from "@/lib/storage";
 import { checkedDatabaseCall, checkedMutation } from "@/lib/database/mutation";
-import { isSchemaOutdatedError } from "@/lib/database/errors";
+import { isSchemaOutdatedError, SCHEMA_OUTDATED_MESSAGE } from "@/lib/database/errors";
+import type { MediaDetails } from "./metadata-schema";
 import type {
   MediaRow,
+  MediaSlideRow,
   MediaStatus,
   MediaSource,
   MediaType,
 } from "@/lib/types/database";
 import type { ActionResult } from "@/lib/action-result";
-import { syncMemberMentions } from "@/lib/members/mentions";
-import { mediaMentionValues } from "@/lib/members/mention-values";
+import { syncMediaMentions } from "@/lib/members/mentions";
 
 /**
  * Invarian moderasi: byte media berada di bucket publik `media` HANYA saat
@@ -187,17 +188,13 @@ export async function saveMediaRecord(params: {
       return { error: inserted.error };
     }
   }
-  if (params.source === "admin") {
-    await syncMemberMentions(
-      { mediaId: saved.data.id },
-      mediaMentionValues({
-        title: params.title,
-        category: params.category,
-        caption: params.caption,
-        uploader_name: params.uploaderName,
-      }),
-    );
-  }
+  await syncMediaMentions(saved.data.id, {
+    source: params.source,
+    title: params.title,
+    category: params.category,
+    caption: params.caption,
+    uploader_name: params.uploaderName,
+  });
   return {};
 }
 
@@ -278,135 +275,163 @@ export async function removeMediaPathIfUnused(path: string): Promise<void> {
   );
 }
 
-/**
- * Ganti objek foto dengan optimistic guard pada URL lama. Kolom status dan
- * metadata moderasi sengaja tidak ikut di-update agar proses edit tetap netral.
- */
-export async function replaceMediaPhoto(params: {
-  id: string;
-  path: string;
-  mimeType: string;
-  width: number;
-  height: number;
-}): Promise<ActionResult> {
+/** Satu slot pada susunan baru: item lama (URL kanonis) atau unggahan baru. */
+export type MediaItemPlan =
+  | { keep: string }
+  | { upload: MediaRecordItem };
+
+type StoredMediaItem = Pick<
+  MediaSlideRow,
+  "type" | "url" | "mime_type" | "thumbnail_url" | "width" | "height"
+>;
+
+const STALE_MEDIA_MESSAGE =
+  "Media sudah berubah di sesi lain. Muat ulang sebelum menyimpan lagi.";
+
+/** Sampul + slide berurutan; `null` bila tidak bisa dibaca dengan pasti. */
+async function loadMediaItems(mediaId: string) {
   const sb = createAdminSupabase();
-  const nextUrl = getStoragePublicUrl(STORAGE_BUCKETS.media, params.path);
-  const current = await checkedMutation(
-    "media-upload.load-photo-replacement",
-    "Gagal membaca media yang akan diedit.",
+  const [cover, slides] = await Promise.all([
     sb
       .from("media")
-      .select("id, type, status, url, mime_type, thumbnail_url, width, height")
-      .eq("id", params.id)
+      .select("status, source, type, url, mime_type, thumbnail_url, width, height")
+      .eq("id", mediaId)
       .maybeSingle(),
-    { notFoundMessage: "Media tidak ditemukan." },
-  );
-
-  if (!current.ok || current.data.type !== "photo") {
-    await removeMediaObjectIfUnused(nextUrl);
-    return current.ok
-      ? { error: "Hanya foto yang dapat diedit." }
-      : { error: current.error };
-  }
-
-  if (current.data.url === nextUrl) {
-    return { error: "Tiket hasil edit ini sudah digunakan." };
-  }
-
-  const replacementReferenced = await mediaObjectReferenced(nextUrl);
-  if (replacementReferenced === null) {
-    return { error: "Gagal memeriksa hasil edit. Silakan coba lagi." };
-  }
-  if (replacementReferenced) {
-    return { error: "Tiket hasil edit ini sudah digunakan." };
-  }
-
-  // Hasil edit mengikuti visibilitas media aslinya agar invarian tetap utuh.
-  if (
-    current.data.status === "approved" &&
-    !(await setMediaObjectPublic(nextUrl, true))
-  ) {
-    await removeMediaObjectIfUnused(nextUrl);
-    return { error: "Gagal memublikasikan hasil edit. Coba lagi." };
-  }
-
-  const replaced = await checkedMutation(
-    "media-upload.replace-photo",
-    "Gagal menyimpan hasil edit media.",
     sb
-      .from("media")
-      .update({
-        url: nextUrl,
-        mime_type: params.mimeType,
-        thumbnail_url: null,
-        width: params.width,
-        height: params.height,
-      })
-      .eq("id", params.id)
-      .eq("type", "photo")
-      .eq("url", current.data.url)
-      .select("id")
-      .maybeSingle(),
-    {
-      notFoundMessage:
-        "Media sudah berubah di sesi lain. Muat ulang sebelum menyimpan lagi.",
-    },
-  );
-
-  if (!replaced.ok) {
-    await removeMediaObjectIfUnused(nextUrl);
-    return { error: replaced.error };
+      .from("media_slides")
+      .select("type, url, mime_type, thumbnail_url, width, height")
+      .eq("media_id", mediaId)
+      .order("position", { ascending: true }),
+  ]);
+  if (cover.error || (slides.error && !isSchemaOutdatedError(slides.error))) {
+    console.error("[media-upload:load-items] gagal membaca susunan pin", {
+      code: cover.error?.code ?? slides.error?.code,
+      message: cover.error?.message ?? slides.error?.message,
+    });
+    return null;
   }
-
-  const rollbackReplacement = async () => {
-    const rolledBack = await checkedMutation(
-      "media-upload.rollback-photo-replacement",
-      "Gagal membatalkan penggantian media yang bentrok.",
-      sb
-        .from("media")
-        .update({
-          url: current.data.url,
-          mime_type: current.data.mime_type,
-          thumbnail_url: current.data.thumbnail_url,
-          width: current.data.width,
-          height: current.data.height,
-        })
-        .eq("id", params.id)
-        .eq("url", nextUrl)
-        .select("id")
-        .maybeSingle(),
-    );
-    if (rolledBack.ok) await removeMediaObjectIfUnused(nextUrl);
-    return rolledBack.ok;
+  if (!cover.data) return { found: false as const };
+  const { status, source, ...coverItem } = cover.data;
+  return {
+    found: true as const,
+    status,
+    source,
+    items: [coverItem, ...(slides.data ?? [])] as StoredMediaItem[],
   };
+}
 
-  // Menutup race ketika satu tiket dicoba bersamaan pada dua media berbeda.
-  const { data: replacementReferences, error: referencesError } = await sb
-    .from("media")
-    .select("id")
-    .eq("url", nextUrl)
-    .limit(2);
+/** Kegagalan RPC update_media_post → pesan untuk admin. */
+function updatePostErrorMessage(error: { code?: string; message?: string }): string {
+  if (isSchemaOutdatedError(error)) return SCHEMA_OUTDATED_MESSAGE;
+  if (error.code === "23503") return "Album tidak ditemukan. Muat ulang lalu pilih lagi.";
+  return "Gagal menyimpan postingan.";
+}
+
+/**
+ * "Edit postingan": simpan seluruh isi pin dalam satu transaksi — susunan item
+ * (urutkan, jadikan sampul, tambah, hapus, ganti foto hasil editor) bila
+ * `items` diisi, serta detail teks/album/sorotan/tanggal. `expected` adalah
+ * URL yang dilihat editor (optimistic lock). Invarian moderasi tetap: objek
+ * baru ikut visibilitas pin, objek yang tidak lagi dipakai dibersihkan
+ * setelah DB menunjuk susunan baru. Status moderasi tidak berubah.
+ */
+export async function updateMediaPost(params: {
+  id: string;
+  expected: readonly string[];
+  /** `null` = susunan media tidak berubah (hanya detail). */
+  items: readonly MediaItemPlan[] | null;
+  details: MediaDetails;
+}): Promise<ActionResult> {
+  const plan = params.items ?? [];
+  const uploads = plan.flatMap((item) => ("upload" in item ? [item.upload] : []));
+  const newUrls = uploads.map((item) => getStoragePublicUrl(STORAGE_BUCKETS.media, item.path));
+  const discardUploads = () => Promise.all(newUrls.map(removeMediaObjectIfUnused));
+
+  const current = await loadMediaItems(params.id);
+  if (!current?.found) {
+    await discardUploads();
+    return { error: current ? "Postingan tidak ditemukan." : "Gagal membaca postingan. Coba lagi." };
+  }
+  const currentUrls = current.items.map((item) => item.url);
   if (
-    referencesError ||
-    replacementReferences.length !== 1 ||
-    replacementReferences[0]?.id !== params.id
+    currentUrls.length !== params.expected.length ||
+    currentUrls.some((url, index) => url !== params.expected[index])
   ) {
-    const rolledBack = await rollbackReplacement();
-    if (!rolledBack) {
-      console.error("[media-upload:replace-photo] rollback konflik gagal", {
-        id: params.id,
-        code: referencesError?.code,
-        message: referencesError?.message,
-      });
-    }
+    await discardUploads();
+    return { error: STALE_MEDIA_MESSAGE };
+  }
+
+  const byUrl = new Map(current.items.map((item) => [item.url, item]));
+  const kept = plan.flatMap((item) => ("keep" in item ? [item.keep] : []));
+  if (
+    params.items &&
+    (plan.length === 0 ||
+      plan.length > UPLOAD_LIMITS.mediaPerPost ||
+      new Set(kept).size !== kept.length ||
+      kept.some((url) => !byUrl.has(url)))
+  ) {
+    await discardUploads();
+    return { error: "Susunan media tidak valid. Muat ulang lalu coba lagi." };
+  }
+
+  // Tiket yang sudah pernah dipakai (replay) tidak boleh mengambil alih objek.
+  const referenced = await Promise.all(newUrls.map(mediaObjectReferenced));
+  if (referenced.some((value) => value !== false)) {
     return {
-      error: referencesError
-        ? "Gagal memastikan hasil edit tersimpan dengan aman."
-        : "Tiket hasil edit dipakai oleh permintaan lain.",
+      error: referenced.includes(null)
+        ? "Gagal memeriksa unggahan baru. Silakan coba lagi."
+        : "Tiket unggahan ini sudah digunakan.",
     };
   }
+  // Item baru mengikuti visibilitas pin agar invarian moderasi tetap utuh.
+  if (
+    current.status === "approved" &&
+    newUrls.length > 0 &&
+    !(await setMediaObjectsPublic(newUrls, true))
+  ) {
+    await discardUploads();
+    return { error: "Gagal memublikasikan media baru. Coba lagi." };
+  }
 
-  // DB sudah menunjuk objek baru; pembersihan objek lama sekarang aman dilakukan.
-  await removeMediaObjectIfUnused(current.data.url);
+  let uploadIndex = 0;
+  const nextItems: StoredMediaItem[] | null = params.items
+    ? plan.map((item) => {
+        if ("keep" in item) return byUrl.get(item.keep)!;
+        const url = newUrls[uploadIndex++];
+        return {
+          type: item.upload.mediaType,
+          url,
+          mime_type: item.upload.mimeType,
+          thumbnail_url: null,
+          width: item.upload.width,
+          height: item.upload.height,
+        };
+      })
+    : null;
+
+  const { data: saved, error } = await createAdminSupabase().rpc("update_media_post", {
+    p_media_id: params.id,
+    p_expected: currentUrls,
+    p_items: nextItems,
+    p_details: params.details,
+  });
+  if (error || !saved) {
+    await discardUploads();
+    if (error) {
+      console.error("[media-upload:update-post]", { code: error.code, message: error.message });
+      return { error: updatePostErrorMessage(error) };
+    }
+    return { error: STALE_MEDIA_MESSAGE };
+  }
+
+  // DB sudah menunjuk susunan baru; objek yang dibuang kini aman dibersihkan.
+  if (params.items) {
+    const keptSet = new Set(kept);
+    await Promise.all(
+      currentUrls.filter((url) => !keptSet.has(url)).map(removeMediaObjectIfUnused),
+    );
+  }
+  await syncMediaMentions(params.id, { ...params.details, source: current.source });
   return {};
 }
+

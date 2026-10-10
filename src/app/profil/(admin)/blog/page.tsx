@@ -8,7 +8,7 @@ import {
   type BlogFilter,
 } from "@/lib/admin/blog";
 import { isOneOf } from "@/lib/admin/guard";
-import { adminFeatureHref } from "@/lib/constants";
+import { adminBlogEditorHref, adminFeatureHref } from "@/lib/constants";
 import { buildAdminPageMetadata } from "@/lib/seo";
 import type { PostStatus } from "@/lib/types/database";
 import { parsePageParam } from "@/lib/utils/url";
@@ -41,7 +41,7 @@ const STATUS: Record<PostStatus, { label: string; tone: BadgeTone }> = {
 
 function NewPostLink({ className }: { className?: string }) {
   return (
-    <Link href={`${BASE_PATH}/new`} className={buttonClass({ className })}>
+    <Link href={adminBlogEditorHref()} className={buttonClass({ className })}>
       <Plus className="size-4" aria-hidden="true" /> Tulis artikel
     </Link>
   );
@@ -126,11 +126,11 @@ export default async function BlogAdminPage({
                       href={`/blog/${post.slug}`}
                       target="_blank"
                       label="Buka artikel"
-                      icon={ExternalLink}
+                      icon={<ExternalLink />}
                     />
                   )}
                   <PostStatusAction id={post.id} status={post.status} />
-                  <IconLink href={`${BASE_PATH}/${post.id}`} label="Edit" icon={Pencil} />
+                  <IconLink href={adminBlogEditorHref(post.id)} label="Edit artikel" icon={<Pencil />} />
                   <DeleteAction
                     action={deletePost}
                     id={post.id}

@@ -13,7 +13,9 @@ import type { ReactNode } from "react";
 import { logoutAction } from "@/lib/auth/actions";
 import {
   ADMIN_FEATURE_META,
+  adminBlogEditorHref,
   adminFeatureHref,
+  adminFilterHref,
   type AdminFeature,
 } from "@/lib/constants";
 import type { AdminDashboardData } from "@/lib/admin/dashboard";
@@ -124,7 +126,7 @@ export function AdminDashboard({
   const attention = [
     has("media") && stats.mediaPending > 0
       ? {
-          href: adminFeatureHref("media"),
+          href: adminFilterHref("media", "pending"),
           count: stats.mediaPending,
           label: "kiriman menunggu ditinjau",
           feature: "media" as const,
@@ -132,7 +134,7 @@ export function AdminDashboard({
       : null,
     has("pesan") && stats.messagesUnread > 0
       ? {
-          href: adminFeatureHref("pesan"),
+          href: adminFilterHref("pesan", "unread"),
           count: stats.messagesUnread,
           label: "pesan belum dibaca",
           feature: "pesan" as const,
@@ -223,7 +225,7 @@ export function AdminDashboard({
               Lihat situs
             </QuickAction>
             {has("blog") && (
-              <QuickAction href="/profil/blog/new" icon={<PenLine className="size-4" aria-hidden="true" />}>
+              <QuickAction href={adminBlogEditorHref()} icon={<PenLine className="size-4" aria-hidden="true" />}>
                 Tulis artikel
               </QuickAction>
             )}
@@ -353,14 +355,14 @@ export function AdminDashboard({
                   id="admin-queue"
                   eyebrow="Moderasi"
                   title="Kiriman terbaru"
-                  actionHref={`${adminFeatureHref("media")}?status=pending`}
+                  actionHref={adminFilterHref("media", "pending")}
                   actionLabel="Tinjau"
                 />
                 <div className="grid grid-cols-3 gap-2">
                   {queue.map((item, index) => (
                     <MotionLink
                       key={item.id}
-                      href={`${adminFeatureHref("media")}?status=pending`}
+                      href={adminFilterHref("media", "pending")}
                       title={item.title || item.caption || "Kiriman"}
                       className="group animate-rise motion-pressable bg-surface-2 relative aspect-square overflow-hidden rounded-2xl"
                       style={{ animationDelay: `${index * 45}ms` }}

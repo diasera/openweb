@@ -6,7 +6,7 @@ import { RelativeTime } from "@/components/ui/relative-time";
 import { cardClass } from "@/components/ui/card";
 import type { AdminMediaItem } from "@/lib/admin/media";
 import type { AlbumOption } from "@/lib/admin/albums";
-import type { MediaStatus } from "@/lib/types/database";
+import { adminMediaEditHref } from "@/lib/constants";
 import { cn } from "@/lib/utils/cn";
 import {
   approveMedia,
@@ -23,18 +23,15 @@ import {
   IconLink,
 } from "../admin-actions";
 import { MediaAlbumSelect } from "./media-album-select";
-
-const STATUS: Record<MediaStatus, { label: string; className: string }> = {
-  pending: { label: "Menunggu", className: "bg-tone-orange text-white" },
-  approved: { label: "Terbit", className: "bg-tone-green text-white" },
-  rejected: { label: "Ditolak", className: "bg-black/55 text-white" },
-};
+import { MEDIA_STATUS } from "./media-status";
 
 /**
  * Kartu moderasi satu pin: carousel penuh (moderator wajib bisa melihat
  * SETIAP slide, termasuk video, sebelum menyetujui), status di atas media,
  * keterangan, album, lalu aksi. Kiriman yang menunggu mendapat tombol
  * Setujui/Tolak besar; aksi lain berupa ikon dengan label aksesibel.
+ * Satu pensil "Edit postingan" membuka semuanya sekaligus: media (edit foto
+ * item ke-n, tambah, urutkan, sampul) beserta teks, album, dan sorotan.
  */
 export function MediaModerationCard({
   media,
@@ -45,7 +42,7 @@ export function MediaModerationCard({
 }) {
   // Signed URL inbox berumur pendek: jangan disimpan cache optimizer Next.
   const signedPreview = media.status !== "approved";
-  const status = STATUS[media.status];
+  const status = MEDIA_STATUS[media.status];
   const label = media.title || media.caption || "Pratinjau media";
 
   return (
@@ -126,7 +123,7 @@ export function MediaModerationCard({
           {media.status === "rejected" && (
             <IconAction
               label="Setujui"
-              icon={Check}
+              icon={<Check />}
               tone="success"
               action={() => approveMedia(media.id)}
               successMessage="Media disetujui"
@@ -136,7 +133,7 @@ export function MediaModerationCard({
             <>
               <IconAction
                 label={media.is_pinned ? "Lepas dari sorotan" : "Jadikan sorotan beranda"}
-                icon={media.is_pinned ? StarOff : Star}
+                icon={media.is_pinned ? <StarOff /> : <Star />}
                 tone={media.is_pinned ? "primary" : "neutral"}
                 pressed={media.is_pinned}
                 action={() => togglePinMedia(media.id, !media.is_pinned)}
@@ -144,7 +141,7 @@ export function MediaModerationCard({
               />
               <IconAction
                 label="Tolak"
-                icon={X}
+                icon={<X />}
                 action={() => rejectMedia(media.id)}
                 successMessage="Media ditolak"
                 confirm={{
@@ -155,13 +152,11 @@ export function MediaModerationCard({
               />
             </>
           )}
-          {media.type === "photo" && (
-            <IconLink
-              href={`/profil/media/${media.id}/edit`}
-              label="Edit foto"
-              icon={Pencil}
-            />
-          )}
+          <IconLink
+            href={adminMediaEditHref(media.id)}
+            label="Edit postingan (media, teks, album)"
+            icon={<Pencil />}
+          />
           <span className="flex-1" />
           {media.has_ip && (
             <BanIpAction

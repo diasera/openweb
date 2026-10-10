@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, LoaderCircle, Send } from "lucide-react";
+import { Bell, Send } from "lucide-react";
 import { sendNotification } from "@/app/profil/(admin)/pengunjung/actions";
 import { Button } from "@/components/ui/button";
 import { useAdminFormAction } from "../use-admin-form-action";
@@ -52,12 +52,12 @@ export function NotificationComposer() {
           placeholder="/blog/… atau https://…"
           hint="Dibuka saat notifikasi diketuk."
         />
-        <Button type="submit" disabled={pending} className="motion-sheen relative overflow-hidden">
-          {pending ? (
-            <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-          ) : (
-            <Send className="size-4" aria-hidden="true" />
-          )}
+        <Button
+          type="submit"
+          pending={pending}
+          icon={<Send className="size-4" aria-hidden="true" />}
+          className="motion-sheen relative overflow-hidden"
+        >
           {pending ? "Mengirim…" : "Kirim notifikasi"}
         </Button>
       </div>

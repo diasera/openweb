@@ -6,7 +6,6 @@ import {
   CircleAlert,
   ImagePlus,
   Camera,
-  LoaderCircle,
   Play,
   Plus,
   RotateCcw,
@@ -15,6 +14,7 @@ import {
   WandSparkles,
 } from "lucide-react";
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -23,11 +23,14 @@ import {
   type PointerEvent,
   type Ref,
 } from "react";
+import { PhotoEditor } from "@/components/media-editor";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { MediaCarousel } from "@/components/ui/media-carousel";
 import { MediaPreview } from "@/components/ui/media-preview";
-import { PHOTO_EDITOR_HELP } from "@/lib/constants";
+import { SkeletonOverlay } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/toast";
+import { MEDIA_UPLOAD_ACCEPT, PHOTO_EDITOR_HELP } from "@/lib/constants";
 import type { MediaDraft, MediaDrafts } from "@/lib/hooks/use-media-drafts";
 import { MEDIA_ASPECT_LIMITS, mediaDisplayAspectRatio } from "@/lib/media/display";
 import type { MediaSlide } from "@/lib/media/slides";
@@ -44,7 +47,8 @@ function draftSlide(draft: MediaDraft): MediaSlide {
     type: draft.isVideo ? "video" : "photo",
     url: draft.preview,
     mime_type: null,
-    thumbnail_url: null,
+    // Poster video lama tetap dipakai; file baru memakai frame pertamanya.
+    thumbnail_url: draft.stored && !draft.isEdited ? draft.stored.thumbnailUrl : null,
     width: draft.dims?.width ?? null,
     height: draft.dims?.height ?? null,
   };
@@ -57,34 +61,132 @@ function filesFromDrop(event: DragEvent) {
 }
 
 /**
- * Bagian media Buat Pin ala Instagram: pilih banyak foto/video, pratinjau
- * carousel persis seperti yang akan tampil, lalu urutkan lewat filmstrip.
+ * Tambah file ke carousel (picker, seret, kamera, share target): item baru
+ * langsung aktif, kelebihan dari batas per pin diberitahukan lewat toast.
+ */
+export function useAddMediaFiles(
+  drafts: MediaDrafts,
+  onActiveIndexChange: (index: number) => void,
+) {
+  const { toast } = useToast();
+  const { add, max } = drafts;
+  const count = drafts.items.length;
+  return useCallback(
+    (files: File[]) => {
+      if (files.length === 0) return;
+      const { added, skipped } = add(files);
+      if (added > 0) onActiveIndexChange(count);
+      if (skipped > 0) {
+        toast.info(`Maksimal ${max} item per pin`, {
+          description: `${skipped} file tidak ditambahkan.`,
+        });
+      }
+    },
+    [add, count, max, onActiveIndexChange, toast],
+  );
+}
+
+/**
+ * PhotoEditor untuk satu draft carousel: membuka berkas asli (bukan hasil
+ * edit sebelumnya) beserta resep terakhir, lalu menerapkan hasil ke draft.
+ */
+export function DraftPhotoEditor({
+  drafts,
+  editingId,
+  onClose,
+  returnFocus,
+  appliedDescription,
+}: {
+  drafts: MediaDrafts;
+  editingId: string | null;
+  onClose: () => void;
+  returnFocus: () => HTMLElement | null;
+  /** Keterangan toast setelah hasil edit diterapkan. */
+  appliedDescription: string;
+}) {
+  const { toast } = useToast();
+  const editing = drafts.items.find((draft) => draft.id === editingId) ?? null;
+  return (
+    <PhotoEditor
+      open={Boolean(editing)}
+      file={editing ? (editing.originalFile ?? editing.file) : null}
+      sourceDimensions={editing ? (editing.originalDims ?? editing.dims) : null}
+      initialRecipe={editing?.editRecipe}
+      initialAspect={editing?.editAspect}
+      returnFocus={returnFocus}
+      onCancel={onClose}
+      onSave={(result) => {
+        if (!editing || !drafts.applyEdited(editing.id, result)) {
+          toast.error("Hasil edit tidak dapat digunakan.");
+          return;
+        }
+        onClose();
+        toast.success("Hasil edit diterapkan", { description: appliedDescription });
+      }}
+    />
+  );
+}
+
+/**
+ * Bagian media ala Instagram untuk Buat Pin dan Edit postingan admin: pilih
+ * banyak foto/video, pratinjau carousel persis seperti yang akan tampil,
+ * edit foto per item, lalu urutkan/jadikan sampul/hapus lewat filmstrip.
  */
 export function MediaComposer({
   drafts,
   activeIndex,
   onActiveIndexChange,
-  onPickGallery,
-  onPickCamera,
   onFiles,
   onEdit,
   editButtonRef,
   uploadProgress,
   disabled,
+  editedNote = "Hasil edit dipakai saat pin dibagikan.",
 }: {
   drafts: MediaDrafts;
   activeIndex: number;
   onActiveIndexChange: (index: number) => void;
-  onPickGallery: () => void;
-  onPickCamera: () => void;
   onFiles: (files: File[]) => void;
   onEdit: (id: string) => void;
   editButtonRef: Ref<HTMLButtonElement>;
   /** Persen unggah per draft saat pin sedang dikirim. */
   uploadProgress: Readonly<Record<string, number>>;
   disabled: boolean;
+  /** Kapan hasil edit foto berlaku (dibagikan / disimpan). */
+  editedNote?: string;
 }) {
   const [dragOver, setDragOver] = useState(false);
+  const galleryRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const onPickGallery = () => galleryRef.current?.click();
+  const onPickCamera = () => cameraRef.current?.click();
+  // Input tersembunyi milik composer: induk cukup menerima `onFiles`.
+  const pickers = (
+    <>
+      <input
+        ref={galleryRef}
+        type="file"
+        multiple
+        accept={MEDIA_UPLOAD_ACCEPT}
+        className="hidden"
+        onChange={(event) => {
+          onFiles([...(event.currentTarget.files ?? [])]);
+          event.currentTarget.value = "";
+        }}
+      />
+      <input
+        ref={cameraRef}
+        type="file"
+        accept={MEDIA_UPLOAD_ACCEPT}
+        capture="environment"
+        className="hidden"
+        onChange={(event) => {
+          onFiles([...(event.currentTarget.files ?? [])]);
+          event.currentTarget.value = "";
+        }}
+      />
+    </>
+  );
   const dropHandlers = {
     onDragOver: (event: DragEvent) => {
       if (disabled || drafts.full || !event.dataTransfer.types.includes("Files")) return;
@@ -110,6 +212,7 @@ export function MediaComposer({
           "rounded-ios-lg border-border flex w-full flex-col items-center justify-center gap-5 border border-dashed px-6 py-10 text-center",
         )}
       >
+        {pickers}
         <div className={styles.stack} aria-hidden="true">
           <span className={styles.stackCard} />
           <span className={styles.stackCard} />
@@ -157,6 +260,7 @@ export function MediaComposer({
 
   return (
     <div {...dropHandlers} className="space-y-3">
+      {pickers}
       <div className="relative">
         <MediaCarousel
           slides={slides}
@@ -178,15 +282,7 @@ export function MediaComposer({
           </span>
         )}
         {active?.status === "preparing" && (
-          <div
-            role="status"
-            className="bg-surface-2/70 pointer-events-none absolute inset-0 z-10 grid place-items-center rounded-ios-lg backdrop-blur-sm"
-          >
-            <span className="flex flex-col items-center gap-2 text-footnote font-medium">
-              <LoaderCircle className="size-6 animate-spin" aria-hidden="true" />
-              Menyiapkan media…
-            </span>
-          </div>
+          <SkeletonOverlay label="Menyiapkan media…" className="pointer-events-none rounded-ios-lg" />
         )}
         {active?.status === "error" && (
           <div
@@ -220,6 +316,7 @@ export function MediaComposer({
           total={drafts.items.length}
           disabled={disabled}
           editButtonRef={editButtonRef}
+          editedNote={editedNote}
           onEdit={() => onEdit(active.id)}
           onRestore={() => drafts.restoreOriginal(active.id)}
           onMove={(to) => {
@@ -405,11 +502,7 @@ function Filmstrip({
               <span className="absolute left-1 top-1 grid size-4.5 place-items-center rounded-full bg-black/55 text-caption2 font-bold text-white">
                 {index + 1}
               </span>
-              {draft.status === "preparing" && (
-                <span className="absolute inset-0 grid place-items-center bg-black/30 text-white">
-                  <LoaderCircle className="size-5 animate-spin" aria-hidden="true" />
-                </span>
-              )}
+              {draft.status === "preparing" && <SkeletonOverlay />}
               {draft.status === "error" && (
                 <span className="bg-danger/80 absolute inset-0 grid place-items-center text-white">
                   <CircleAlert className="size-5" aria-hidden="true" />
@@ -492,6 +585,7 @@ function DraftActions({
   total,
   disabled,
   editButtonRef,
+  editedNote,
   onEdit,
   onRestore,
   onMove,
@@ -502,6 +596,7 @@ function DraftActions({
   total: number;
   disabled: boolean;
   editButtonRef: Ref<HTMLButtonElement>;
+  editedNote: string;
   onEdit: () => void;
   onRestore: () => void;
   onMove: (to: number) => void;
@@ -575,9 +670,7 @@ function DraftActions({
         <p className="text-muted px-1 text-caption1">{PHOTO_EDITOR_HELP}</p>
       )}
       {draft.isEdited && (
-        <p className="text-success px-1 text-caption1 font-medium">
-          Hasil edit dipakai saat pin dibagikan.
-        </p>
+        <p className="text-success px-1 text-caption1 font-medium">{editedNote}</p>
       )}
     </div>
   );

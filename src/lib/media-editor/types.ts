@@ -138,10 +138,14 @@ export const DEFAULT_PHOTO_RECIPE: PhotoEditRecipe = {
 
 export const EDITABLE_PHOTO_MIME_TYPES = EDITABLE_IMAGE_MIME_TYPES;
 
+/** MIME yang bisa dibuka editor; dipakai juga untuk foto yang sudah tersimpan. */
+export function canEditPhotoMime(mimeType: string | null | undefined): boolean {
+  return Boolean(
+    mimeType && (EDITABLE_PHOTO_MIME_TYPES as readonly string[]).includes(mimeType),
+  );
+}
+
 /** GIF/video tidak diraster diam-diam menjadi satu frame. */
 export function canEditPhoto(file: File | null): boolean {
-  return Boolean(
-    file &&
-      (EDITABLE_PHOTO_MIME_TYPES as readonly string[]).includes(file.type),
-  );
+  return canEditPhotoMime(file?.type);
 }

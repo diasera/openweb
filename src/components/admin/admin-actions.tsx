@@ -8,7 +8,6 @@ import {
   ShieldCheck,
   Trash2,
   TriangleAlert,
-  type LucideIcon,
 } from "lucide-react";
 import { Button, type ButtonProps } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -24,10 +23,14 @@ const TONES: Record<ActionTone, string> = {
   primary: "text-primary-readable hover:bg-primary/10",
 };
 
-/** Satu bentuk tombol ikon admin (44px sentuh) untuk aksi, tautan, dan pemicu dialog. */
+/**
+ * Satu bentuk tombol ikon admin (44px sentuh) untuk aksi, tautan, dan pemicu
+ * dialog. Ukuran ikon diatur di sini (`[&_svg]`), jadi pemanggil cukup
+ * mengirim elemen polos seperti `<Pin />`.
+ */
 export function actionIconClass(tone: ActionTone = "neutral", className?: string) {
   return cn(
-    "motion-pressable grid size-10 shrink-0 place-items-center rounded-xl transition-colors disabled:pointer-events-none disabled:opacity-40",
+    "motion-pressable grid size-10 shrink-0 place-items-center rounded-xl transition-colors disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-4.5",
     TONES[tone],
     className,
   );
@@ -127,10 +130,18 @@ function useConfirmedRun({
   };
 }
 
+/**
+ * Ikon dikirim sebagai ELEMEN (`<Pin />`), bukan komponen (`Pin`): kedua
+ * komponen di bawah adalah Client Component yang dipakai langsung oleh
+ * halaman admin (Server Component), dan RSC hanya bisa menyerialkan elemen —
+ * fungsi/komponen ikon akan membuat halaman gagal dirender.
+ */
+type IconElement = ReactNode;
+
 /** Tombol ikon aksi admin: label aksesibel, nada warna, spinner saat pending. */
 export function IconAction({
   label,
-  icon: Icon,
+  icon,
   tone = "neutral",
   pressed,
   disabled,
@@ -138,7 +149,7 @@ export function IconAction({
   ...run
 }: ActionRunProps & {
   label: string;
-  icon: LucideIcon;
+  icon: IconElement;
   tone?: ActionTone;
   pressed?: boolean;
   disabled?: boolean;
@@ -158,9 +169,11 @@ export function IconAction({
         className={actionIconClass(tone, className)}
       >
         {pending ? (
-          <LoaderCircle className="size-4.5 animate-spin" aria-hidden="true" />
+          <LoaderCircle className="animate-spin" aria-hidden="true" />
         ) : (
-          <Icon className="size-4.5" aria-hidden="true" />
+          <span aria-hidden="true" className="contents">
+            {icon}
+          </span>
         )}
       </button>
       {sheet}
@@ -171,13 +184,13 @@ export function IconAction({
 /** Tautan berbentuk tombol ikon (edit, buka publik) dengan gaya yang sama. */
 export function IconLink({
   label,
-  icon: Icon,
+  icon,
   tone = "neutral",
   className,
   ...props
 }: Omit<ComponentProps<typeof Link>, "children" | "className"> & {
   label: string;
-  icon: LucideIcon;
+  icon: IconElement;
   tone?: ActionTone;
   className?: string;
 }) {
@@ -188,7 +201,9 @@ export function IconLink({
       className={actionIconClass(tone, className)}
       {...props}
     >
-      <Icon className="size-4.5" aria-hidden="true" />
+      <span aria-hidden="true" className="contents">
+        {icon}
+      </span>
     </Link>
   );
 }
@@ -214,8 +229,7 @@ export function AdminActionButton({
   });
   return (
     <>
-      <Button {...buttonProps} type="button" disabled={disabled || pending} onClick={trigger}>
-        {pending && <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />}
+      <Button {...buttonProps} type="button" disabled={disabled} pending={pending} onClick={trigger}>
         {children}
       </Button>
       {sheet}
@@ -240,7 +254,7 @@ export function DeleteAction({
   return (
     <IconAction
       label="Hapus"
-      icon={Trash2}
+      icon={<Trash2 />}
       tone="danger"
       action={() => action(id)}
       successMessage={successMessage}
@@ -265,7 +279,7 @@ export function BanIpAction({
   return (
     <IconAction
       label={blocked ? "Buka blokir IP" : "Blokir IP"}
-      icon={blocked ? ShieldCheck : Ban}
+      icon={blocked ? <ShieldCheck /> : <Ban />}
       tone={blocked ? "success" : "danger"}
       pressed={blocked}
       action={() => action(id)}

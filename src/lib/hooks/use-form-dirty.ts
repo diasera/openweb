@@ -15,6 +15,19 @@ export function notifyFormChange(element: Element | null | undefined) {
   element?.dispatchEvent(new Event(FORM_CHANGE_EVENT, { bubbles: true }));
 }
 
+/** Minta konfirmasi browser sebelum menutup/memuat ulang selama `active`. */
+export function useUnsavedChangesGuard(active: boolean) {
+  useEffect(() => {
+    if (!active) return;
+    const guard = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", guard);
+    return () => window.removeEventListener("beforeunload", guard);
+  }, [active]);
+}
+
 /**
  * Pelacak perubahan form yang belum disimpan: dipakai untuk chip "belum
  * disimpan" dan guard beforeunload agar perubahan tidak hilang diam-diam.
@@ -34,15 +47,7 @@ export function useFormDirty(formRef: RefObject<HTMLFormElement | null>) {
     };
   }, [formRef]);
 
-  useEffect(() => {
-    if (!dirty) return;
-    const guard = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", guard);
-    return () => window.removeEventListener("beforeunload", guard);
-  }, [dirty]);
+  useUnsavedChangesGuard(dirty);
 
   return { dirty, setDirty };
 }

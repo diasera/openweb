@@ -35,6 +35,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { PhotoEditor } from "@/components/media-editor";
+import { SkeletonEditor, SkeletonScreen } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import { requestJson } from "@/lib/api/client";
 import { IMAGE_UPLOAD_ACCEPT } from "@/lib/constants";
@@ -67,8 +68,7 @@ function safeLinkHref(value: string): string | null {
  * pada tiap transaksi, jadi status dibaca lewat useEditorState: memindah
  * kursor ke teks tebal/judul langsung memperbarui tombol yang aktif.
  */
-function toolbarState(editor: Editor | null) {
-  if (!editor) return null;
+function toolbarState(editor: Editor) {
   return {
     heading1: editor.isActive("heading", { level: 1 }),
     heading2: editor.isActive("heading", { level: 2 }),
@@ -158,14 +158,23 @@ export function RichEditor({
     onUpdate: ({ editor: current }) =>
       onChange(current.getHTML(), JSON.stringify(current.getJSON())),
   });
-  const active = useEditorState({
+  const watched = useEditorState({
     editor,
-    selector: ({ editor: current }) => toolbarState(current),
+    selector: ({ editor: current }) => (current ? toolbarState(current) : null),
   });
 
-  if (!editor || !active) {
-    return <div className="motion-skeleton min-h-[26rem] rounded-card" aria-hidden="true" />;
+  if (!editor) {
+    return (
+      <SkeletonScreen label="Menyiapkan editor">
+        <SkeletonEditor />
+      </SkeletonScreen>
+    );
   }
+  // useEditorState memotret `editor: null` saat render pertama dan baru
+  // membaca instance sesudah transaksi pertama (watch() tidak memberi tahu
+  // subscriber). Dulu editor menunggu status itu → skeleton selamanya, editor
+  // tak pernah tampil. Status awal kini dibaca langsung dari instance.
+  const active = watched ?? toolbarState(editor);
   const activeEditor = editor;
   const chain = () => activeEditor.chain().focus();
 
@@ -236,7 +245,7 @@ export function RichEditor({
       {/* overflow-clip (bukan hidden): tidak membuat wadah gulir, jadi
           toolbar sticky tetap menempel saat halaman digulir. */}
       <div className="border-border bg-surface shadow-soft overflow-clip rounded-card border">
-        <div className="glass-material sticky top-[calc(3.75rem+var(--safe-top))] z-10 border-x-0 border-t-0 lg:top-[calc(4.25rem+var(--safe-top))]">
+        <div className="glass-material sticky-below-island z-10 border-x-0 border-t-0 [--sticky-gap:0.25rem]">
           <div
             role="toolbar"
             aria-label="Format artikel"

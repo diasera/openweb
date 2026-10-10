@@ -2,7 +2,7 @@ import "server-only";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { textMentionsMember } from "./name-match";
 import { isMissingRelationError } from "@/lib/database/errors";
-import type { MemberMentionRow } from "@/lib/types/database";
+import type { MediaRow, MemberMentionRow } from "@/lib/types/database";
 import { blogMentionValues, mediaMentionValues } from "./mention-values";
 
 type MentionTarget =
@@ -139,6 +139,20 @@ export async function syncMemberMentions(
     })),
     "sync",
   );
+}
+
+/**
+ * Tag anggota sebuah pin dari teks detailnya — saat pin dibuat dan saat
+ * "Edit postingan" disimpan. Hanya pin admin yang menandai anggota (sama
+ * dengan rebuild & pemindaian cadangan di activity.ts): teks kiriman publik
+ * tidak boleh memasukkan konten ke riwayat profil seseorang.
+ */
+export async function syncMediaMentions(
+  mediaId: string,
+  media: Pick<MediaRow, "source" | "title" | "category" | "caption" | "uploader_name">,
+): Promise<void> {
+  if (media.source !== "admin") return;
+  await syncMemberMentions({ mediaId }, mediaMentionValues(media));
 }
 
 /** Nama anggota baru/diubah perlu dicocokkan kembali dengan konten lama. */

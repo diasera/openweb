@@ -6,9 +6,15 @@ import { useToast } from "@/components/ui/toast";
 import { MusicBars } from "./music-bars";
 import { useMusic } from "./music-provider";
 
-export function MusicQuickButton() {
+/**
+ * Tombol musik island. `onlyWhilePlaying` dipakai saat island sedang memuat
+ * aksi halaman (prioritas edit): tombol hanya muncul ketika lagu diputar.
+ */
+export function MusicQuickButton({ onlyWhilePlaying = false }: { onlyWhilePlaying?: boolean }) {
   const music = useMusic();
   const { toast } = useToast();
+
+  if (onlyWhilePlaying && !music.isPlaying) return null;
 
   return (
     <IconButton

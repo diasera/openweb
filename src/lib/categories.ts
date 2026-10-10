@@ -19,6 +19,21 @@ export const BLOG_CATEGORIES = [
   "Tips & Panduan",
 ] as const;
 
+/**
+ * Opsi pilihan kategori untuk form edit: daftar baku, ditambah kategori lama
+ * tersimpan yang sudah tidak ada di daftar agar tidak hilang diam-diam.
+ */
+export function categoryOptions(
+  categories: readonly string[],
+  current: string | null | undefined,
+): Array<{ value: string; label: string }> {
+  const list = current && !categories.includes(current) ? [current, ...categories] : categories;
+  return [
+    { value: "", label: "— Tanpa kategori —" },
+    ...list.map((category) => ({ value: category, label: category })),
+  ];
+}
+
 const PRIMARY_TEXT = "rgb(var(--primary-readable))";
 const toneText = (tone: string) => `rgb(var(--tone-${tone}-text))`;
 

@@ -10,7 +10,7 @@ export function PostStatusAction({ id, status }: { id: string; status: PostStatu
   return status === "published" ? (
     <IconAction
       label="Arsipkan"
-      icon={Archive}
+      icon={<Archive />}
       action={() => setPostStatus(id, "archived")}
       successMessage="Artikel diarsipkan"
       confirm={{
@@ -23,7 +23,7 @@ export function PostStatusAction({ id, status }: { id: string; status: PostStatu
   ) : (
     <IconAction
       label="Terbitkan"
-      icon={Send}
+      icon={<Send />}
       tone="primary"
       action={() => setPostStatus(id, "published")}
       successMessage="Artikel diterbitkan"

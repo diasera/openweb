@@ -8,7 +8,6 @@ import {
   AudioLines,
   Eye,
   EyeOff,
-  LoaderCircle,
   Music2,
   Upload,
 } from "lucide-react";
@@ -33,6 +32,7 @@ import { cn } from "@/lib/utils/cn";
 import { AdminList, AdminRow, StatusBadge } from "../admin-list";
 import { DeleteAction, IconAction } from "../admin-actions";
 import { TextField } from "../form-controls";
+import { TrackDialog } from "./track-dialog";
 
 /** Judul awal dari nama berkas: "01 - lagu_kita.mp3" -> "01 - lagu kita". */
 function titleFromFile(file: File) {
@@ -41,7 +41,8 @@ function titleFromFile(file: File) {
 
 /**
  * Playlist website: unggah audio langsung ke Storage (signed URL/TUS, tidak
- * lewat server aplikasi) dengan progres, lalu kelola urutan dan visibilitas.
+ * lewat server aplikasi) dengan progres, lalu kelola judul/artis, urutan,
+ * dan visibilitas.
  */
 export function MusicManager({ tracks }: { tracks: MusicTrackRow[] }) {
   const router = useRouter();
@@ -155,16 +156,13 @@ export function MusicManager({ tracks }: { tracks: MusicTrackRow[] }) {
               <div className="bg-primary h-full rounded-full transition-[width] duration-300" style={{ width: `${progress}%` }} />
             </div>
           )}
-          <Button type="submit" className="w-full sm:w-auto" disabled={uploading}>
-            {uploading ? (
-              <>
-                <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> Mengunggah {progress}%
-              </>
-            ) : (
-              <>
-                <Upload className="size-4" aria-hidden="true" /> Tambah ke playlist
-              </>
-            )}
+          <Button
+            type="submit"
+            className="w-full sm:w-auto"
+            pending={uploading}
+            icon={<Upload className="size-4" aria-hidden="true" />}
+          >
+            {uploading ? `Mengunggah ${progress}%` : "Tambah ke playlist"}
           </Button>
         </form>
       </section>
@@ -199,19 +197,20 @@ export function MusicManager({ tracks }: { tracks: MusicTrackRow[] }) {
                   <>
                     <IconAction
                       label="Geser ke atas"
-                      icon={ArrowUp}
+                      icon={<ArrowUp />}
                       disabled={index === 0}
                       action={() => moveMusicTrack(track.id, -1)}
                     />
                     <IconAction
                       label="Geser ke bawah"
-                      icon={ArrowDown}
+                      icon={<ArrowDown />}
                       disabled={index === tracks.length - 1}
                       action={() => moveMusicTrack(track.id, 1)}
                     />
+                    <TrackDialog track={track} />
                     <IconAction
                       label={track.is_active ? "Sembunyikan dari pengunjung" : "Tampilkan ke pengunjung"}
-                      icon={track.is_active ? Eye : EyeOff}
+                      icon={track.is_active ? <Eye /> : <EyeOff />}
                       tone={track.is_active ? "neutral" : "primary"}
                       action={() => toggleMusicTrack(track.id)}
                       successMessage={track.is_active ? "Lagu disembunyikan" : "Lagu ditampilkan"}

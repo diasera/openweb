@@ -26,6 +26,11 @@ const createSchema = z.object({
 
 const ticketOnlySchema = createSchema.pick({ ticket: true });
 
+/** Edit teks lagu memakai aturan judul/artis yang sama dengan unggah. */
+const updateSchema = createSchema
+  .pick({ title: true, artist: true })
+  .extend({ id: z.uuid("ID lagu tidak valid") });
+
 /** Objek audio dari tiket yang ditolak dihapus agar tidak menjadi yatim di bucket. */
 async function cleanupRejectedMusicUpload(input: unknown, adminId: string) {
   const candidate = ticketOnlySchema.safeParse(input);
@@ -103,6 +108,31 @@ export async function finalizeMusicUpload(
     await removeMusicObjectIfUnused(finalized.ticket.path);
     return { error: saved.error };
   }
+  refreshMusic();
+  return {};
+}
+
+/** Perbaiki judul/artis lagu tanpa mengunggah ulang audionya. */
+export async function updateMusicTrack(formData: FormData): Promise<ActionResult> {
+  await requireFeature("music");
+  const parsed = updateSchema.safeParse({
+    id: formData.get("id") ?? "",
+    title: formData.get("title") ?? "",
+    artist: formData.get("artist") ?? "",
+  });
+  if (!parsed.success) return { error: validationErrorMessage(parsed, "Data lagu tidak valid.") };
+  const saved = await checkedMutation(
+    "music.update",
+    "Gagal menyimpan lagu.",
+    createAdminSupabase()
+      .from("music_tracks")
+      .update({ title: parsed.data.title, artist: parsed.data.artist || null })
+      .eq("id", parsed.data.id)
+      .select("id")
+      .maybeSingle(),
+    { notFoundMessage: "Lagu tidak ditemukan. Muat ulang halaman." },
+  );
+  if (!saved.ok) return { error: saved.error };
   refreshMusic();
   return {};
 }

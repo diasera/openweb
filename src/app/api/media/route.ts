@@ -13,6 +13,7 @@ import {
   revalidateMediaPages,
 } from "@/lib/media/revalidate";
 import { saveMediaRecord } from "@/lib/media/upload";
+import { mediaMetadataFields } from "@/lib/media/metadata-schema";
 
 const dimension = z.number().int().positive().max(UPLOAD_LIMITS.mediaMaxDimension);
 
@@ -22,10 +23,10 @@ const schema = z.object({
     .array(z.object({ ticket: z.string().min(1).max(4096), width: dimension, height: dimension }))
     .min(1)
     .max(UPLOAD_LIMITS.mediaPerPost),
-  title: z.string().trim().max(120).nullable().optional(),
-  category: z.string().trim().max(40).nullable().optional(),
-  caption: z.string().trim().max(300).nullable().optional(),
-  uploader_name: z.string().trim().max(60).nullable().optional(),
+  title: mediaMetadataFields.title.nullable().optional(),
+  category: mediaMetadataFields.category.nullable().optional(),
+  caption: mediaMetadataFields.caption.nullable().optional(),
+  uploader_name: mediaMetadataFields.uploader_name.nullable().optional(),
   allow_comments: z.boolean(),
 });
 

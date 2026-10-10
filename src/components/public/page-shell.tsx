@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
-import { cn } from "@/lib/utils/cn";
 import { MotionPage } from "@/components/motion";
 import {
   IslandRegistrar,
   type IslandRouteConfig,
 } from "./dynamic-island";
+import { pageMainClass } from "./page-main";
 import { VisitorTracker } from "./visitor-tracker";
 
 /**
@@ -46,12 +46,7 @@ export function PageShell({
         }}
       />
 
-      <main
-        className={cn(
-          "mx-auto max-w-2xl px-4 pt-4 md:max-w-4xl lg:max-w-5xl lg:px-6 lg:pt-6",
-          hideTabBar ? "pb-10" : "pb-32",
-        )}
-      >
+      <main className={pageMainClass(hideTabBar)}>
         <MotionPage>{children}</MotionPage>
       </main>
 

@@ -78,7 +78,7 @@ export default async function PesanPage({
           active={filter}
           items={[
             { label: "Semua", value: "all", count: counts.all },
-            { label: "Belum dibaca", value: "unread", count: counts.unread },
+            { label: "Belum dibaca", value: "unread", count: counts.unread, alert: counts.unread > 0 },
             { label: "Di beranda", value: "pinned", count: counts.pinned },
           ]}
         />
@@ -122,7 +122,7 @@ export default async function PesanPage({
                 <>
                   <IconAction
                     label={message.is_pinned ? "Lepas dari beranda" : "Sematkan ke beranda"}
-                    icon={message.is_pinned ? PinOff : Pin}
+                    icon={message.is_pinned ? <PinOff /> : <Pin />}
                     tone={message.is_pinned ? "primary" : "neutral"}
                     pressed={message.is_pinned}
                     action={togglePinMessage.bind(null, message.id, !message.is_pinned)}
@@ -134,7 +134,7 @@ export default async function PesanPage({
                   />
                   <IconAction
                     label={message.is_read ? "Tandai belum dibaca" : "Tandai sudah dibaca"}
-                    icon={message.is_read ? Mail : MailOpen}
+                    icon={message.is_read ? <Mail /> : <MailOpen />}
                     action={setMessageRead.bind(null, message.id, !message.is_read)}
                   />
                   {message.ip_address && (

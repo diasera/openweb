@@ -533,16 +533,6 @@ html {
   animation: motion-symbol-bounce var(--motion-control) var(--motion-ease-out);
 }
 
-@keyframes motion-spinner-turn {
-  to { transform: rotate(1turn); }
-}
-
-.motion-spinner {
-  border: 2px solid rgb(var(--surface-2));
-  border-top-color: rgb(var(--primary));
-  animation: motion-spinner-turn 720ms linear infinite;
-}
-
 /* ---- Kinetic type ---------------------------------------------------------
  * Judul editorial masuk per kata: naik dari baseline sambil keluar dari blur,
  * berurutan seperti judul keynote. <KineticText> memecah teks di server dan
@@ -716,11 +706,25 @@ html {
   }
 }
 
-/* Kerangka pemuatan: pita terang bergeser di atas permukaan fill. */
-.motion-skeleton {
-  position: relative;
-  overflow: hidden;
-  background: rgb(var(--surface-2));
+/* ---- Skeleton -------------------------------------------------------------
+ * Satu-satunya gaya kerangka pemuatan (komponen di ui/skeleton.tsx).
+ * - Warna dari token --skeleton-base/--skeleton-shine (terang & gelap).
+ * - Kilau = pita pada ::after yang hanya digeser `transform`: berjalan di
+ *   compositor, tanpa repaint per frame walau puluhan tulang tampil.
+ * - Gelombang menurun: tiap baris/kartu mengisi --skeleton-delay (stagger
+ *   yang sama dengan daftar asli), tulang di dalamnya mewarisi nilainya.
+ * - .motion-skeleton-screen baru muncul setelah jeda singkat agar navigasi
+ *   yang cepat tidak berkedip kerangka.
+ * Aturan dasar berada di layer components: utilitas Tailwind (absolute,
+ * rounded-*, ukuran) tetap bisa menimpanya, tidak seperti CSS tanpa layer.
+ */
+@layer components {
+  .motion-skeleton {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    background: rgb(var(--skeleton-base));
+  }
 }
 
 .motion-skeleton::after {
@@ -728,18 +732,30 @@ html {
   position: absolute;
   inset: 0;
   background: linear-gradient(
-    90deg,
-    transparent,
-    rgb(var(--surface) / 0.65),
-    transparent
+    100deg,
+    transparent 20%,
+    rgb(var(--skeleton-shine)) 50%,
+    transparent 80%
   );
   transform: translate3d(-100%, 0, 0);
-  animation: motion-skeleton-sweep 1.4s ease-in-out infinite;
+  animation: motion-skeleton-sweep 1.6s var(--motion-ease-out) infinite;
+  animation-delay: var(--skeleton-delay, 0ms);
 }
 
 @keyframes motion-skeleton-sweep {
-  to {
+  60%,
+  100% {
     transform: translate3d(100%, 0, 0);
+  }
+}
+
+.motion-skeleton-screen {
+  animation: motion-skeleton-in 320ms var(--motion-ease-out) 140ms both;
+}
+
+@keyframes motion-skeleton-in {
+  from {
+    opacity: 0;
   }
 }
 
@@ -812,9 +828,17 @@ html {
   .motion-blur-in,
   .motion-digit,
   .motion-live-dot::after,
-  .motion-skeleton::after,
   .avatar-ring::before {
     animation: none !important;
+  }
+
+  /* Kerangka tetap tampil sebagai bentuk diam; hanya kilau yang berhenti. */
+  .motion-skeleton::after {
+    display: none;
+  }
+
+  .motion-skeleton-screen {
+    animation-duration: 1ms !important;
   }
 
   .motion-sheen::after {
@@ -833,11 +857,5 @@ html {
   ::view-transition-old(*),
   ::view-transition-new(*) {
     animation: none !important;
-  }
-
-  .motion-spinner {
-    animation: none !important;
-    border-color: rgb(var(--surface-2));
-    border-top-color: rgb(var(--primary));
   }
 }

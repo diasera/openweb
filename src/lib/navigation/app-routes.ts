@@ -6,6 +6,29 @@
 
 export type AppTabId = "home" | "gallery" | "blog" | "profile";
 
+/**
+ * Bentuk kerangka pemuatan per jenis halaman (komposisinya di
+ * components/ui/skeleton-layouts.tsx). Route publik & admin cukup memilih id.
+ */
+export type SkeletonLayoutId =
+  | "home"
+  | "grid"
+  | "cards"
+  | "people"
+  | "list"
+  | "board"
+  | "article"
+  | "pin"
+  | "profile"
+  | "hub"
+  | "form"
+  | "page"
+  | "auth"
+  | "admin-list"
+  | "admin-grid"
+  | "admin-editor"
+  | "admin-form";
+
 interface AppNavigationContext {
   siteName: string;
   logoUrl?: string | null;
@@ -50,6 +73,8 @@ interface AppRouteDefinition {
   match: "exact" | "children";
   chrome: RouteChromeDefaults;
   motion: AppRouteMotion;
+  /** Kerangka yang tampil selama halaman ini dimuat. */
+  skeleton: SkeletonLayoutId;
   tab?: RouteTabDefaults;
 }
 
@@ -87,6 +112,7 @@ const APP_ROUTE_REGISTRY: readonly AppRouteDefinition[] = [
       notificationPromptVisible: true,
     },
     motion: { level: 0 },
+    skeleton: "home",
     tab: { id: "home", label: "Beranda", activeOnChildren: false },
   },
   {
@@ -99,6 +125,7 @@ const APP_ROUTE_REGISTRY: readonly AppRouteDefinition[] = [
       notificationPromptVisible: true,
     },
     motion: { level: 0 },
+    skeleton: "grid",
     tab: { id: "gallery", label: "Galeri", activeOnChildren: true },
   },
   {
@@ -111,6 +138,7 @@ const APP_ROUTE_REGISTRY: readonly AppRouteDefinition[] = [
       notificationPromptVisible: true,
     },
     motion: { level: 0 },
+    skeleton: "list",
     tab: { id: "blog", label: "Blog", activeOnChildren: true },
   },
   {
@@ -123,6 +151,7 @@ const APP_ROUTE_REGISTRY: readonly AppRouteDefinition[] = [
       notificationPromptVisible: true,
     },
     motion: { level: 0 },
+    skeleton: "hub",
     tab: { id: "profile", label: "Profil", activeOnChildren: true },
   },
   {
@@ -140,6 +169,7 @@ const APP_ROUTE_REGISTRY: readonly AppRouteDefinition[] = [
       notificationPromptVisible: false,
     },
     motion: { level: 1, parent: "/", presentation: true },
+    skeleton: "form",
   },
   {
     id: "members",
@@ -155,6 +185,7 @@ const APP_ROUTE_REGISTRY: readonly AppRouteDefinition[] = [
       notificationPromptVisible: true,
     },
     motion: { level: 1, parent: "/" },
+    skeleton: "people",
   },
   {
     id: "messages",
@@ -166,6 +197,7 @@ const APP_ROUTE_REGISTRY: readonly AppRouteDefinition[] = [
       notificationPromptVisible: true,
     },
     motion: { level: 1, parent: "/" },
+    skeleton: "board",
   },
   {
     id: "notifications",
@@ -177,6 +209,7 @@ const APP_ROUTE_REGISTRY: readonly AppRouteDefinition[] = [
       notificationPromptVisible: true,
     },
     motion: { level: 1, parent: "/" },
+    skeleton: "list",
   },
   {
     id: "agenda",
@@ -188,6 +221,7 @@ const APP_ROUTE_REGISTRY: readonly AppRouteDefinition[] = [
       notificationPromptVisible: true,
     },
     motion: { level: 1, parent: "/" },
+    skeleton: "list",
   },
   {
     id: "albums",
@@ -199,6 +233,7 @@ const APP_ROUTE_REGISTRY: readonly AppRouteDefinition[] = [
       notificationPromptVisible: true,
     },
     motion: { level: 1, parent: "/galeri" },
+    skeleton: "cards",
   },
   {
     id: "album-detail",
@@ -210,6 +245,7 @@ const APP_ROUTE_REGISTRY: readonly AppRouteDefinition[] = [
       notificationPromptVisible: true,
     },
     motion: { level: 2, parent: "/album" },
+    skeleton: "grid",
   },
   {
     id: "saved",
@@ -221,6 +257,7 @@ const APP_ROUTE_REGISTRY: readonly AppRouteDefinition[] = [
       notificationPromptVisible: true,
     },
     motion: { level: 1, parent: "/profil" },
+    skeleton: "grid",
   },
   {
     id: "about",
@@ -232,6 +269,7 @@ const APP_ROUTE_REGISTRY: readonly AppRouteDefinition[] = [
       notificationPromptVisible: true,
     },
     motion: { level: 1, parent: "/profil" },
+    skeleton: "page",
   },
   {
     id: "privacy",
@@ -243,6 +281,7 @@ const APP_ROUTE_REGISTRY: readonly AppRouteDefinition[] = [
       notificationPromptVisible: false,
     },
     motion: { level: 1, parent: "/profil" },
+    skeleton: "page",
   },
   {
     id: "blog-detail",
@@ -254,6 +293,7 @@ const APP_ROUTE_REGISTRY: readonly AppRouteDefinition[] = [
       notificationPromptVisible: true,
     },
     motion: { level: 2, parent: "/blog" },
+    skeleton: "article",
   },
   {
     id: "pin-detail",
@@ -265,6 +305,7 @@ const APP_ROUTE_REGISTRY: readonly AppRouteDefinition[] = [
       notificationPromptVisible: true,
     },
     motion: { level: 2, parent: "/galeri" },
+    skeleton: "pin",
   },
   {
     id: "member-profile",
@@ -276,6 +317,7 @@ const APP_ROUTE_REGISTRY: readonly AppRouteDefinition[] = [
       notificationPromptVisible: true,
     },
     motion: { level: 2, parent: "/anggota" },
+    skeleton: "profile",
   },
 ];
 
@@ -305,6 +347,11 @@ function resolveAppRoute(
   return (
     APP_ROUTE_REGISTRY.find((route) => matchesRoute(normalized, route)) ?? null
   );
+}
+
+/** Halaman tak dikenal memakai kerangka teks netral. */
+export function resolveAppRouteSkeleton(pathname: string): SkeletonLayoutId {
+  return resolveAppRoute(pathname)?.skeleton ?? "page";
 }
 
 export function resolveAppRouteMotion(

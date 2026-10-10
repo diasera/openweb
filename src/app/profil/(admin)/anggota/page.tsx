@@ -76,7 +76,7 @@ export default async function AnggotaPage() {
                     href={memberProfilePath(member)}
                     target="_blank"
                     label="Buka profil publik"
-                    icon={ExternalLink}
+                    icon={<ExternalLink />}
                   />
                   <MemberDialog member={member} labels={labels} />
                   <DeleteAction

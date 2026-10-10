@@ -430,6 +430,21 @@ export interface Database {
         Args: { p_days: number };
         Returns: undefined;
       };
+      update_media_post: {
+        Args: {
+          p_media_id: string;
+          p_expected: string[];
+          /** null = susunan item tidak berubah. */
+          p_items: Array<
+            Pick<MediaSlideRow, "type" | "url" | "mime_type" | "thumbnail_url" | "width" | "height">
+          > | null;
+          p_details: Pick<
+            MediaRow,
+            "title" | "category" | "caption" | "uploader_name" | "allow_comments" | "album_id" | "is_pinned"
+          > & { created_at: string | null };
+        };
+        Returns: boolean;
+      };
     };
     Enums: {
       media_status: MediaStatus;

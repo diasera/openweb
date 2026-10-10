@@ -79,7 +79,14 @@ Apple atau Pinterest.
   variabel, OFL) lewat `next/font/local` untuk semua judul; teks isi tetap
   memakai font sistem. Build tidak membutuhkan akses Google Fonts.
 - `src/components/public/dynamic-island/` adalah satu-satunya pemilik visual
-  Dynamic Island; feedback fitur masuk melalui kanal yang sama.
+  Dynamic Island; feedback fitur masuk melalui kanal yang sama. Island juga
+  memegang aksi halaman dengan sistem prioritas: selama editor (artikel,
+  Edit postingan, Pengaturan) punya perubahan, ia memanggil
+  `useIslandActions({ actions })` dan island hanya memuat Kembali · judul ·
+  tombol utama (· musik bila lagu sedang diputar). Setelah tersimpan aksi
+  dilepas dan island kembali normal sendiri. Tidak ada bar kaca kedua di atas
+  atau di bawah halaman. Tombolnya `src/components/admin/island-save.tsx`;
+  Ctrl/⌘+S memakai `useSaveShortcut`.
 - `src/lib/data/` memusatkan pembacaan data publik dan fallback demo.
 - `src/lib/database/` memusatkan kontrak mutasi dan pesan error database.
 - `src/lib/media-formats/` memusatkan format ingest, MIME storage, signature,
@@ -101,6 +108,14 @@ Apple atau Pinterest.
   `.edge-fade-x` untuk rail, `.motion-live-dot`, `.motion-digit` (hitung
   mundur), `.motion-sheen`, `.motion-skeleton`, dan `.motion-ring-spin`.
   Semuanya CSS murni (transform/opacity), tanpa library animasi JS.
+- Loading konten selalu berupa skeleton yang meniru halaman aslinya, dari
+  satu otak: gaya `.motion-skeleton` (token `--skeleton-base/-shine`),
+  blok di `src/components/ui/skeleton.tsx`, dan komposisi per jenis halaman
+  di `skeleton-layouts.tsx`. Route cukup menyebut `skeleton: "…"` di
+  registry (`src/lib/navigation/app-routes.ts`, `ADMIN_FEATURE_META`);
+  `RouteSkeleton` di `loading.tsx` root & admin memilih bentuknya. Proses
+  pratinjau (HEIC, unduh foto asli) memakai `SkeletonOverlay`. Indikator
+  aksi di tombol datang dari `Button` (`icon` + `pending`).
 - `src/components/admin/` adalah kit admin bersama: `AdminPage` (kerangka
   halaman), `AdminTabs` (filter URL), `AdminList`/`AdminRow`/`StatusBadge`,
   `admin-actions.tsx` (aksi ikon, sheet konfirmasi, hapus, blokir IP),
@@ -126,8 +141,23 @@ Apple atau Pinterest.
 - `src/lib/utils/storage.ts` adalah satu daftar key `localStorage` beserta
   pembaca/penulis yang aman (mode privat, kuota penuh, JSON rusak).
 - `src/lib/media/revalidate.ts` adalah satu daftar halaman yang menampilkan
-  media; moderasi, unggah, dan edit foto memakainya agar tidak ada halaman
-  ber-ISR yang tertinggal basi.
+  media; moderasi, unggah, dan edit postingan memakainya agar tidak
+  ada halaman ber-ISR yang tertinggal basi.
+- Satu editor per jenis konten, satu klik membuka semuanya (alamatnya di
+  `src/lib/constants.ts`): **Edit postingan** (pensil di kartu Media — media:
+  edit foto item ke-n, tambah foto/video, hapus, urutkan, jadikan sampul;
+  plus judul, caption, kategori, pengunggah, tanggal momen, komentar, album,
+  sorotan) dan **Edit artikel** (tulisan, status Draf/Terbit/Arsip, cover,
+  SEO). Batas & validasi teks pin ada di `src/lib/media/metadata.ts` +
+  `metadata-schema.ts` (`mediaDetailsSchema`), dipakai form unggah publik,
+  API unggah, dan Edit postingan.
+- Buat Pin dan Edit postingan memakai satu komposer carousel
+  (`src/components/public/media-composer.tsx`, termasuk picker file dan
+  `DraftPhotoEditor`), satu state draft (`useMediaDrafts`, bisa diisi item
+  tersimpan) dan satu pipeline unggah (`useDraftUploads`). Simpan Edit
+  postingan mengirim susunan media (bila berubah) + detail ke
+  `/api/media/[id]/edit`; database menulis semuanya atomik lewat RPC
+  `update_media_post` dengan pengecekan "masih sama dengan yang dibuka".
 - `src/lib/seo/feed.ts` adalah satu sumber isi `/feed.xml` dan `/feed.json`.
 - `src/components/admin/use-admin-action.ts` memusatkan pending, konfirmasi,
   dan toast untuk aksi admin; `useFormDirty` (`src/lib/hooks/use-form-dirty.ts`)

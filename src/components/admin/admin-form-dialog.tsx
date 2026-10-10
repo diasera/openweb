@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { CircleAlert, LoaderCircle, Pencil, Plus } from "lucide-react";
+import { CircleAlert, Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import type { ActionResult } from "@/lib/action-result";
@@ -123,8 +123,7 @@ export function AdminFormDialog({
             >
               Batal
             </Button>
-            <Button type="submit" disabled={pending}>
-              {pending && <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />}
+            <Button type="submit" pending={pending}>
               {pending ? "Menyimpan…" : submitLabel}
             </Button>
           </div>

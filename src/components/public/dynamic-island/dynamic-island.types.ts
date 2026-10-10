@@ -5,14 +5,26 @@ import type { EventRow } from "@/lib/types/database";
 /** Isi dasar island yang mengikuti halaman publik aktif. */
 export type IslandRouteConfig =
   | { variant: "main"; siteName: string; logoUrl?: string | null }
-  | {
+  | ({
       variant: "sub";
       title: string;
       right?: ReactNode;
       backHref?: string;
       close?: boolean;
-    }
+    } & Partial<IslandPageActions>)
   | { variant: "title"; title: string; right?: ReactNode };
+
+/**
+ * Aksi milik halaman yang sedang tampil (mis. Simpan di editor). Island
+ * multifungsi dengan prioritas: selama aksi terpasang island hanya memuat
+ * Kembali, judul, aksi ini, dan tombol musik bila lagu sedang diputar —
+ * aksi kanan bawaan route (mis. sakelar tema) disembunyikan. Halaman
+ * memasangnya hanya saat ada yang perlu disimpan, jadi island kembali
+ * normal sendiri setelah tersimpan.
+ */
+export interface IslandPageActions {
+  actions: ReactNode;
+}
 
 /** Identitas situs untuk quick panel hasil tap island. */
 export interface IslandBrand {

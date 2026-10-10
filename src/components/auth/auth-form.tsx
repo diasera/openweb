@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { CircleAlert, LoaderCircle } from "lucide-react";
+import { CircleAlert } from "lucide-react";
 import type { AuthState } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
@@ -45,17 +45,10 @@ export function AuthForm({
       <Button
         type="submit"
         size="lg"
-        disabled={pending}
+        pending={pending}
         className="motion-sheen relative w-full overflow-hidden"
       >
-        {pending ? (
-          <>
-            <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-            {pendingLabel}
-          </>
-        ) : (
-          submitLabel
-        )}
+        {pending ? pendingLabel : submitLabel}
       </Button>
     </form>
   );

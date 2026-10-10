@@ -105,8 +105,11 @@ export function RouteView({
   }
 
   if (config.variant === "sub") {
+    // Prioritas edit: Kembali · judul · aksi halaman (· musik bila diputar).
+    // Judul rata kiri agar tombol tidak berebut tempat di tengah island.
+    const hasActions = Boolean(config.actions);
     return (
-      <div className="flex h-full items-center gap-2 pl-1.5 pr-2">
+      <div className="flex h-full items-center gap-2 pl-1.5 pr-1.5">
         <IconButton
           onClick={() => goBack(config.backHref ?? "/")}
           aria-label={config.close ? "Tutup" : "Kembali"}
@@ -121,13 +124,20 @@ export function RouteView({
         <ExpandTrigger
           onExpand={onExpand}
           label={expandLabel(config.title)}
-          className="font-display block min-w-0 flex-1 truncate text-center text-subhead font-bold"
+          className={cn(
+            "font-display block min-w-0 flex-1 truncate text-subhead font-bold",
+            hasActions ? "text-left" : "text-center",
+          )}
         >
           {config.title}
         </ExpandTrigger>
         <div className="flex min-w-9 shrink-0 items-center justify-end gap-1">
-          {config.right}
-          <MusicQuickButton />
+          {hasActions ? (
+            <span className="animate-control-pop flex items-center gap-1">{config.actions}</span>
+          ) : (
+            config.right
+          )}
+          <MusicQuickButton onlyWhilePlaying={hasActions} />
         </div>
       </div>
     );

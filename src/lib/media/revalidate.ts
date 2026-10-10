@@ -9,8 +9,8 @@ export function revalidateMediaAdminPages() {
 }
 
 /**
- * Daftar tunggal halaman yang menampilkan media. Dipakai moderasi, unggah, dan
- * edit foto: halaman publik ber-ISR 30–60 detik, jadi halaman yang terlewat
+ * Daftar tunggal halaman yang menampilkan media. Dipakai moderasi, unggah,
+ * dan edit postingan: halaman publik ber-ISR 30–60 detik, jadi halaman yang terlewat
  * tetap menayangkan pin yang sudah ditolak/dihapus (gambarnya pun sudah
  * kembali ke inbox privat sehingga tampil rusak).
  */

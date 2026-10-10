@@ -163,7 +163,7 @@ export async function finalizeStoredUploads<TGuardFailure = never>(
   return { ok: true, uploads };
 }
 
-/** Finalisasi satu file (musik, edit foto) memakai otak batch yang sama. */
+/** Finalisasi satu file (musik) memakai otak batch yang sama. */
 export async function finalizeStoredUpload<TGuardFailure = never>(
   input: StoredUploadFinalizationInput<TGuardFailure>,
 ): Promise<StoredUploadFinalizationResult<TGuardFailure>> {

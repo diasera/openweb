@@ -6,6 +6,7 @@ import {
   composeMediaSlides,
   PUBLIC_MEDIA_SLIDE_COLUMNS,
   type MediaSlide,
+  type StoredMediaSource,
 } from "@/lib/media/slides";
 import type { MediaRow, MediaSlideRow, MediaStatus } from "@/lib/types/database";
 import { isUuid } from "@/lib/utils/id";
@@ -47,15 +48,31 @@ async function getAdminSlides(
   return bySlide;
 }
 
-/** Data minimum yang diperlukan halaman edit foto admin. */
+/** Kolom detail yang dapat diubah di halaman "Edit postingan". */
+const EDITABLE_MEDIA_COLUMNS =
+  "id, title, caption, category, uploader_name, allow_comments, album_id, is_pinned, status, source, created_at, type, url, mime_type, thumbnail_url, width, height" as const;
+
+/** Data halaman "Edit postingan": seluruh detail pin + seluruh item berurutan. */
 export type AdminEditableMedia = Pick<
   MediaRow,
-  "id" | "type" | "url" | "title" | "status" | "width" | "height"
->;
+  | "id"
+  | "title"
+  | "caption"
+  | "category"
+  | "uploader_name"
+  | "allow_comments"
+  | "album_id"
+  | "is_pinned"
+  | "status"
+  | "source"
+  | "created_at"
+> & {
+  items: StoredMediaSource[];
+};
 
 /** Media untuk moderasi profil admin, berhalaman (semua kolom, service role). */
 export async function getAdminMedia(
-  filter: MediaFilter = "pending",
+  filter: MediaFilter = "all",
   page = 1,
 ): Promise<Paged<AdminMediaItem>> {
   const sb = createAdminSupabase();
@@ -112,8 +129,11 @@ export async function getMediaStatusCounts(): Promise<Record<MediaFilter, number
 }
 
 /**
- * Ambil satu media tanpa metadata moderasi. `url` diganti URL yang bisa dibaca
- * editor (signed bila objek masih di inbox privat).
+ * Ambil satu pin beserta detail dan SELURUH itemnya (sampul + slide) untuk
+ * "Edit postingan". `url` tetap kanonis (identitas saat disimpan); `readUrl`
+ * bisa dibuka editor (signed bila objek masih di inbox privat). Slide yang
+ * gagal dibaca membuat halaman gagal: editor tidak boleh menyimpan susunan
+ * yang tidak lengkap.
  */
 export async function getAdminEditableMedia(
   id: string,
@@ -122,7 +142,7 @@ export async function getAdminEditableMedia(
   if (!isUuid(id)) return null;
   const { data, error } = await createAdminSupabase()
     .from("media")
-    .select("id, type, url, title, status, width, height")
+    .select(EDITABLE_MEDIA_COLUMNS)
     .eq("id", id)
     .maybeSingle();
 
@@ -134,6 +154,30 @@ export async function getAdminEditableMedia(
     return null;
   }
   if (!data) return null;
-  const readable = await readableMediaUrls([data]);
-  return { ...data, url: readable.get(data.url) ?? data.url };
+  const slides = composeMediaSlides(data, (await getAdminSlides([id])).get(id) ?? []);
+  const readable = await readableMediaUrls(
+    slides.map((slide) => ({ url: slide.url, status: data.status })),
+  );
+  return {
+    id: data.id,
+    title: data.title,
+    caption: data.caption,
+    category: data.category,
+    uploader_name: data.uploader_name,
+    allow_comments: data.allow_comments,
+    album_id: data.album_id,
+    is_pinned: data.is_pinned,
+    status: data.status,
+    source: data.source,
+    created_at: data.created_at,
+    items: slides.map((slide) => ({
+      url: slide.url,
+      readUrl: readable.get(slide.url) ?? slide.url,
+      type: slide.type,
+      mimeType: slide.mime_type,
+      thumbnailUrl: slide.thumbnail_url,
+      width: slide.width,
+      height: slide.height,
+    })),
+  };
 }

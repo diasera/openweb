@@ -178,6 +178,61 @@ const [{ orphanSlides }] = await rows(
 );
 assert.equal(orphanSlides, 0, "hapus pin menghapus slide-nya");
 
+// Edit postingan: susunan item + detail diganti atomik, optimistic lock pada URL lama.
+const [{ id: carouselId }] = await rows("select id from public.media where url = 'https://x/media/a.jpg'");
+const item = (type, url, mime = null) => ({ type, url, mime_type: mime, thumbnail_url: null, width: 4, height: 3 });
+const details = (extra = {}) => ({
+  title: "Kemah Bakti", category: null, caption: "Api unggun", uploader_name: null,
+  allow_comments: true, album_id: null, is_pinned: false, created_at: null, ...extra,
+});
+const updatePost = (expected, items, extra) =>
+  rows("select public.update_media_post($1, $2, $3::jsonb, $4::jsonb) as ok", [
+    carouselId, expected, items === null ? null : JSON.stringify(items), JSON.stringify(details(extra)),
+  ]);
+const carousel = async () => {
+  const [cover] = await rows("select type, url from public.media where id = $1", [carouselId]);
+  const rest = await rows("select url from public.media_slides where media_id = $1 order by position", [carouselId]);
+  return [cover.type, cover.url, ...rest.map((r) => r.url)];
+};
+const original = ["https://x/media/a.jpg", "https://x/media/a-2.mp4"];
+const [stale] = await updatePost(["https://x/media/old.jpg"], [item("photo", "https://x/media/a.jpg")], { title: "Basi" });
+assert.equal(stale.ok, false, "susunan basi ditolak");
+assert.deepEqual(await carousel(), ["photo", ...original]);
+assert.equal((await rows("select title from public.media where id = $1", [carouselId]))[0].title, "Kemah Bakti", "detail ikut ditolak");
+const [swapped] = await updatePost(
+  original,
+  [item("video", "https://x/media/a-2.mp4", "video/mp4"), item("photo", "https://x/media/a.jpg"), item("photo", "https://x/media/a-3.jpg")],
+  { caption: "Api unggun malam", is_pinned: true },
+);
+assert.equal(swapped.ok, true);
+assert.deepEqual(
+  await carousel(),
+  ["video", "https://x/media/a-2.mp4", "https://x/media/a.jpg", "https://x/media/a-3.jpg"],
+  "slide bisa menjadi sampul dan item baru ditambahkan",
+);
+const [saved] = await rows("select caption, is_pinned from public.media where id = $1", [carouselId]);
+assert.deepEqual(saved, { caption: "Api unggun malam", is_pinned: true }, "detail tersimpan bersama susunan");
+await updatePost(
+  ["https://x/media/a-2.mp4", "https://x/media/a.jpg", "https://x/media/a-3.jpg"],
+  [item("photo", "https://x/media/a.jpg"), item("video", "https://x/media/a-2.mp4", "video/mp4")],
+);
+assert.deepEqual(await carousel(), ["photo", ...original], "item dihapus");
+const [textOnly] = await updatePost(original, null, { title: "Kemah Bakti 2024" });
+assert.equal(textOnly.ok, true);
+assert.deepEqual(await carousel(), ["photo", ...original], "items null = susunan tidak disentuh");
+await db.exec(`update public.media set status = 'pending' where id = '${carouselId}'`);
+await updatePost(original, null, { is_pinned: true });
+assert.equal((await rows("select is_pinned from public.media where id = $1", [carouselId]))[0].is_pinned, false, "pin belum terbit tidak bisa jadi sorotan");
+await db.exec(`update public.media set status = 'approved', title = 'Kemah Bakti' where id = '${carouselId}'`);
+await assert.rejects(updatePost(original, []), /media items required/);
+await assert.rejects(
+  updatePost(original, [item("photo", "https://x/media/b.jpg")]),
+  /already referenced|media_url_unique_idx/,
+  "objek milik pin lain tidak bisa dipinjam",
+);
+assert.deepEqual(await carousel(), ["photo", ...original], "gagal = tidak berubah");
+await rejects("anon", `select public.update_media_post('${carouselId}', '{}', null, '{}')`, /permission denied/);
+
 // Referensi gambar artikel (untuk pembersihan storage).
 const inUse = await asRole(
   "service_role",

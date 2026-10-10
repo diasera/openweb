@@ -24,6 +24,8 @@ import type {
   IslandNotice,
   IslandNoticeInput,
   IslandNoticePatch,
+  IslandPageActions,
+  IslandRouteConfig,
   PageChromeConfig,
   PageChromeRegistration,
 } from "./dynamic-island/dynamic-island.types";
@@ -45,7 +47,11 @@ function resolveChromeConfig(
   const adminNavigation = getAdminRouteNavigation(pathname);
   if (adminNavigation) {
     return {
-      island: { variant: "sub", ...adminNavigation },
+      island: {
+        variant: "sub",
+        title: adminNavigation.title,
+        backHref: adminNavigation.backHref,
+      },
       tabBarVisible: true,
       notificationPromptVisible: false,
       profileTabLabel: "Admin",
@@ -61,6 +67,14 @@ function resolveChromeConfig(
 
 function isAppChromeRoute(pathname: string) {
   return !isAdminAuthRoute(pathname);
+}
+
+/** Aksi halaman hanya menempel pada island bertombol Kembali (child view). */
+function withPageActions(
+  island: IslandRouteConfig,
+  actions: IslandPageActions | null,
+): IslandRouteConfig {
+  return actions && island.variant === "sub" ? { ...island, ...actions } : island;
 }
 
 /**
@@ -88,8 +102,13 @@ export function AppChromeProvider({
     pathname: string;
     config: PageChromeRegistration;
   } | null>(null);
+  const [pageActions, setPageActions] = useState<{
+    pathname: string;
+    actions: IslandPageActions;
+  } | null>(null);
   const [notice, setNotice] = useState<IslandNotice | null>(null);
   const owner = useRef(0);
+  const actionsOwner = useRef(0);
   const noticeCounter = useRef(0);
   const activeNoticeId = useRef<string | null>(null);
   const dismissTimer = useRef<{
@@ -128,6 +147,17 @@ export function AppChromeProvider({
     [],
   );
 
+  const registerActions = useCallback(
+    (registeredPathname: string, actions: IslandPageActions) => {
+      const id = ++actionsOwner.current;
+      setPageActions({ pathname: registeredPathname, actions });
+      return () => {
+        if (actionsOwner.current === id) setPageActions(null);
+      };
+    },
+    [],
+  );
+
   const showNotice = useCallback(
     (input: IslandNoticeInput) => {
       const id = `island-notice-${++noticeCounter.current}`;
@@ -161,8 +191,8 @@ export function AppChromeProvider({
   }, []);
 
   const context = useMemo(
-    () => ({ registerPage, showNotice, updateNotice, dismissNotice }),
-    [dismissNotice, registerPage, showNotice, updateNotice],
+    () => ({ registerPage, registerActions, showNotice, updateNotice, dismissNotice }),
+    [dismissNotice, registerActions, registerPage, showNotice, updateNotice],
   );
   const fallback = resolveChromeConfig(pathname, siteName, logoUrl, memberLabel);
   const page: PageChromeConfig =
@@ -185,7 +215,10 @@ export function AppChromeProvider({
       <ToastProvider showNotice={showNotice} dismissNotice={dismissNotice}>
         {visible && (
           <DynamicIslandViewport
-            route={page.island}
+            route={withPageActions(
+              page.island,
+              pageActions?.pathname === pathname ? pageActions.actions : null,
+            )}
             notice={notice}
             brand={{ siteName, logoUrl, tagline }}
             event={nextEvent}

@@ -255,25 +255,33 @@ export function SwitchField({
   );
 }
 
-/** Kartu pilihan centang (izin fitur, opsi publikasi). */
+/**
+ * Kartu pilihan: centang (izin fitur) atau pilih-satu `type="radio"`
+ * (status artikel). Nilai dibaca dari FormData seperti input biasa.
+ */
 export function ChoiceChip({
   name,
   label,
   description,
   defaultChecked,
   icon,
+  type = "checkbox",
+  value,
 }: {
   name: string;
   label: string;
   description?: string;
   defaultChecked?: boolean;
   icon?: ReactNode;
+  type?: "checkbox" | "radio";
+  value?: string;
 }) {
   return (
     <label className="border-border hover:bg-surface-2/60 has-checked:border-primary/50 has-checked:bg-primary/6 group/choice flex cursor-pointer items-center gap-2.5 rounded-2xl border p-3 transition-colors">
       <input
-        type="checkbox"
+        type={type}
         name={name}
+        value={value}
         defaultChecked={defaultChecked}
         className="peer sr-only"
       />
@@ -290,7 +298,10 @@ export function ChoiceChip({
       </span>
       <span
         aria-hidden="true"
-        className="border-border bg-surface group-has-checked/choice:bg-primary group-has-checked/choice:border-primary grid size-5 shrink-0 place-items-center rounded-md border text-white transition-colors peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary-readable"
+        className={cn(
+          "border-border bg-surface group-has-checked/choice:bg-primary group-has-checked/choice:border-primary grid size-5 shrink-0 place-items-center border text-white transition-colors peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary-readable",
+          type === "radio" ? "rounded-full" : "rounded-md",
+        )}
       >
         <Check className="size-3.5 opacity-0 transition-opacity group-has-checked/choice:opacity-100" />
       </span>

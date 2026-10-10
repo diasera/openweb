@@ -277,6 +277,22 @@
   padding-bottom: calc(1rem + var(--safe-bottom));
 }
 
+/*
+ * Offset sticky bersama untuk kontrol halaman yang menempel di bawah Dynamic
+ * Island (jarak + tinggi collapsed di dynamic-island.module.css:
+ * 0.6875+2.75rem, lg 1+3rem). Aksi simpan/terbitkan TIDAK dibuat bar sendiri:
+ * didaftarkan ke island lewat useIslandActions. Kontrol yang menyatu dengan
+ * kartunya (toolbar editor) boleh merapat lewat `[--sticky-gap:…]`.
+ */
+@utility sticky-below-island {
+  --island-clearance: calc(3.4375rem + var(--safe-top));
+  position: sticky;
+  top: calc(var(--island-clearance) + var(--sticky-gap, 0.75rem));
+  @media (min-width: 1024px) {
+    --island-clearance: calc(4rem + var(--safe-top));
+  }
+}
+
 @utility safe-inline {
   /* Jaga chrome mengambang dari sensor housing saat iPhone diputar landscape. */
   padding-left: 0.5rem;
@@ -498,6 +514,11 @@
   --primary-foreground: 255 255 255;
   --accent: 230 0 35;
   --role: 122 90 54; /* tan tag "jabatan" (chip Ketua), AA di atas tint 15% */
+  /* Kerangka pemuatan (.motion-skeleton): dasar transparan agar kontrasnya
+     sama di latar halaman, kartu, maupun kaca island; kilau = pita terang.
+     Permukaan gelap khusus (editor foto) cukup menimpa dua token ini. */
+  --skeleton-base: 0 0 0 / 0.075;
+  --skeleton-shine: 255 255 255 / 0.65;
 
   /* Warna sistem iOS 26 dari HIG Color. Fill = "Default"; `-text` = varian
      "Increased contrast" yang digelapkan sampai >= 4.5:1 di atas bg, fill,
@@ -560,6 +581,8 @@
   --bg: 10 10 12; /* nyaris hitam, netral */
   --surface: 28 28 30; /* iOS secondarySystemGroupedBackground #1C1C1E */
   --surface-2: 44 44 46; /* iOS tertiary fill #2C2C2E */
+  --skeleton-base: 255 255 255 / 0.1;
+  --skeleton-shine: 255 255 255 / 0.07;
   --surface-elevated: 50 50 54; /* sedikit LEBIH TERANG dari surface = "terangkat" ala iOS dark */
   --border: 56 56 60; /* iOS separator dark #38383A */
   --foreground: 245 245 247;

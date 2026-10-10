@@ -22,7 +22,8 @@ import { MediaModerationCard } from "@/components/admin/media/media-moderation-c
 export const metadata = buildAdminPageMetadata("Media");
 
 const BASE_PATH = adminFeatureHref("media");
-const FILTERS = ["pending", "approved", "rejected", "all"] as const satisfies readonly MediaFilter[];
+// Urutan tab = urutan semua daftar admin: Semua dulu (default), lalu status.
+const FILTERS = ["all", "approved", "rejected", "pending"] as const satisfies readonly MediaFilter[];
 const EMPTY_COPY: Record<MediaFilter, string> = {
   pending: "Tidak ada kiriman yang menunggu. Semua sudah ditinjau.",
   approved: "Belum ada media yang terbit.",
@@ -37,7 +38,7 @@ export default async function MediaPage({
 }) {
   await requireFeature("media");
   const { status, page } = await searchParams;
-  const filter: MediaFilter = isOneOf(status, FILTERS) ? status : "pending";
+  const filter: MediaFilter = isOneOf(status, FILTERS) ? status : "all";
   const [result, counts, albums] = await Promise.all([
     getAdminMedia(filter, parsePageParam(page)),
     getMediaStatusCounts(),
@@ -70,10 +71,10 @@ export default async function MediaPage({
           basePath={BASE_PATH}
           active={filter}
           items={[
-            { label: "Menunggu", value: "pending", count: counts.pending },
+            { label: "Semua", value: "all", count: counts.all },
             { label: "Terbit", value: "approved", count: counts.approved },
             { label: "Ditolak", value: "rejected", count: counts.rejected },
-            { label: "Semua", value: "all", count: counts.all },
+            { label: "Menunggu", value: "pending", count: counts.pending, alert: counts.pending > 0 },
           ]}
         />
       }
@@ -100,7 +101,7 @@ export default async function MediaPage({
         basePath={BASE_PATH}
         current={result.page}
         total={result.totalPages}
-        query={{ status: filter }}
+        query={{ status: filter === "all" ? undefined : filter }}
       />
     </AdminPage>
   );

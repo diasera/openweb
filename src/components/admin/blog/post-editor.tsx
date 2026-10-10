@@ -1,49 +1,81 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft,
+  Archive,
   ExternalLink,
   FileText,
-  LoaderCircle,
+  Globe,
   Save,
   Send,
   Settings2,
+  type LucideIcon,
 } from "lucide-react";
 import { savePost } from "@/app/profil/(admin)/blog/actions";
-import { Button, buttonClass } from "@/components/ui/button";
+import { useIslandActions } from "@/components/public/dynamic-island";
+import { buttonClass } from "@/components/ui/button";
+import { RelativeTime } from "@/components/ui/relative-time";
 import { useToast } from "@/components/ui/toast";
-import { BLOG_CATEGORIES } from "@/lib/categories";
-import { adminFeatureHref } from "@/lib/constants";
+import { BLOG_CATEGORIES, categoryOptions } from "@/lib/categories";
+import { adminBlogEditorHref } from "@/lib/constants";
 import { useFormDirty } from "@/lib/hooks/use-form-dirty";
 import { hasPreparingImageDraft } from "@/lib/hooks/use-image-draft";
+import { useSaveShortcut } from "@/lib/hooks/use-save-shortcut";
 import type { BlogPostRow, PostStatus } from "@/lib/types/database";
 import { slugify } from "@/lib/utils/slug";
-import { StatusBadge } from "../admin-list";
-import { FormSection, SelectField, TextAreaField, TextField } from "../form-controls";
+import { ChoiceChip, FormSection, SelectField, TextAreaField, TextField } from "../form-controls";
 import { ImageField } from "../image-field";
+import { IslandSaveButton } from "../island-save";
 import { SerpPreview } from "../serp-preview";
 import { useAdminAction } from "../use-admin-action";
 import { RichEditor } from "./rich-editor";
 
-const BLOG_ADMIN_HREF = adminFeatureHref("blog");
-const STATUS_LABEL: Record<PostStatus, string> = {
-  draft: "Draf",
-  published: "Terbit",
-  archived: "Arsip",
-};
+const STATUS_CHOICES: ReadonlyArray<{ value: PostStatus; label: string; description: string }> = [
+  { value: "draft", label: "Draf", description: "Hanya terlihat di admin." },
+  { value: "published", label: "Terbit", description: "Tampil di blog, sitemap, dan feed RSS." },
+  { value: "archived", label: "Arsip", description: "Disembunyikan dari publik, bisa diterbitkan lagi." },
+];
+
+interface PrimaryAction {
+  label: string;
+  busy: string;
+  success: string;
+  icon: LucideIcon;
+}
+
+/**
+ * Satu tombol utama di island, labelnya mengikuti status yang dipilih:
+ * menerbitkan, memperbarui artikel terbit, mengarsipkan, atau menyimpan draf.
+ */
+function primaryAction(saved: PostStatus | null, next: PostStatus): PrimaryAction {
+  if (next === "published") {
+    return saved === "published"
+      ? { label: "Perbarui", busy: "Memperbarui…", success: "Artikel diperbarui", icon: Send }
+      : { label: "Terbitkan", busy: "Menerbitkan…", success: "Artikel diterbitkan", icon: Send };
+  }
+  if (next === "archived" && saved !== "archived") {
+    return { label: "Arsipkan", busy: "Mengarsipkan…", success: "Artikel diarsipkan", icon: Archive };
+  }
+  return {
+    label: "Simpan",
+    busy: "Menyimpan…",
+    success: next === "draft" ? "Draf tersimpan" : "Artikel tersimpan",
+    icon: Save,
+  };
+}
 
 function excerptFromHtml(html: string) {
   return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160);
 }
 
 /**
- * Editor artikel: judul besar + editor kaya sebagai fokus utama, pengaturan
- * (cover, kategori, tag, ringkasan, pratinjau Google) di kolom samping.
- * Bilah aksi menempel, menandai perubahan yang belum disimpan, dan Ctrl/⌘+S
- * menyimpan tanpa mengubah status. Setelah simpan, editor tetap terbuka.
+ * Editor artikel: judul besar + editor kaya sebagai fokus utama; publikasi
+ * (status Draf/Terbit/Arsip), cover, kategori, tag, ringkasan, dan pratinjau
+ * Google di kolom samping. Dynamic Island hanya memuat Kembali, judul, dan
+ * SATU tombol utama selama ada perubahan (prioritas edit). Ctrl/⌘+S
+ * menyimpan dengan status terpilih. Setelah simpan, editor tetap terbuka.
  */
 export function PostEditor({
   post,
@@ -62,17 +94,15 @@ export function PostEditor({
   const formRef = useRef<HTMLFormElement>(null);
   const { dirty, setDirty } = useFormDirty(formRef);
   const { pending, run } = useAdminAction();
-  const [savingStatus, setSavingStatus] = useState<PostStatus | null>(null);
+  const savedStatus = post?.status ?? null;
+  const [status, setStatus] = useState<PostStatus>(post?.status ?? "draft");
   const [html, setHtml] = useState(post?.content_html ?? "");
   const [json, setJson] = useState(post?.content_json ? JSON.stringify(post.content_json) : "");
   const [title, setTitle] = useState(post?.title ?? "");
   const [excerpt, setExcerpt] = useState(post?.excerpt ?? "");
-  const status = post?.status ?? "draft";
-  const categories = post?.category && !(BLOG_CATEGORIES as readonly string[]).includes(post.category)
-    ? [post.category, ...BLOG_CATEGORIES]
-    : BLOG_CATEGORIES;
+  const action = primaryAction(savedStatus, status);
 
-  function save(nextStatus: PostStatus) {
+  function save() {
     const form = formRef.current;
     if (!form || pending) return;
     if (hasPreparingImageDraft(form)) {
@@ -85,10 +115,9 @@ export function PostEditor({
       form.querySelector<HTMLInputElement>("[name=title]")?.focus();
       return;
     }
-    formData.set("status", nextStatus);
+    formData.set("status", status);
     formData.set("content_html", html);
     formData.set("content_json", json);
-    setSavingStatus(nextStatus);
     let savedId: string | undefined;
     run(
       async () => {
@@ -97,39 +126,18 @@ export function PostEditor({
         return result;
       },
       {
-        successMessage:
-          nextStatus === "published"
-            ? status === "published"
-              ? "Artikel diperbarui"
-              : "Artikel diterbitkan"
-            : nextStatus === "archived"
-              ? "Artikel diarsipkan"
-              : "Draf tersimpan",
+        successMessage: action.success,
         errorMessage: "Koneksi terputus saat menyimpan artikel. Coba lagi.",
         onSuccess: () => {
           setDirty(false);
-          if (!post && savedId) router.replace(`${BLOG_ADMIN_HREF}/${savedId}`);
+          if (!post && savedId) router.replace(adminBlogEditorHref(savedId));
           else router.refresh();
         },
       },
     );
   }
 
-  // Ctrl/⌘+S menyimpan dengan status saat ini (draf tetap draf, terbit tetap terbit).
-  const saveRef = useRef(save);
-  useEffect(() => {
-    saveRef.current = save;
-  });
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
-        event.preventDefault();
-        saveRef.current(status === "archived" ? "draft" : status);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [status]);
+  useSaveShortcut(save);
 
   // Judul tumbuh mengikuti isinya; `field-sizing` belum ada di semua browser.
   const titleRef = useRef<HTMLTextAreaElement>(null);
@@ -142,76 +150,41 @@ export function PostEditor({
   useEffect(fitTitle, []);
 
   const slug = slugify(title || "artikel");
-  const busyLabel = (target: PostStatus, idle: string, busy: string) =>
-    pending && savingStatus === target ? busy : idle;
+  const Icon = action.icon;
+
+  // Prioritas island: tombol utama hanya selama ada yang perlu disimpan
+  // (artikel baru selalu belum tersimpan); sesudahnya island kembali normal.
+  useIslandActions(
+    dirty || !post || pending
+      ? {
+          actions: (
+            <IslandSaveButton
+              pending={pending}
+              onClick={save}
+              title={`${action.label} (Ctrl/⌘ S)`}
+              icon={<Icon className="size-4" aria-hidden="true" />}
+            >
+              {pending ? action.busy : action.label}
+            </IslandSaveButton>
+          ),
+        }
+      : null,
+  );
 
   return (
     <form
       ref={formRef}
       onSubmit={(event) => {
         event.preventDefault();
-        save(status === "published" ? "published" : "draft");
+        save();
       }}
       className="space-y-5"
     >
       {post && <input type="hidden" name="id" value={post.id} />}
 
-      {/* ---- Bilah aksi menempel ----------------------------------------- */}
-      <div className="glass-material sticky top-[calc(4.25rem+var(--safe-top))] z-20 -mx-1 flex items-center gap-2 rounded-full p-1.5 shadow-[var(--shadow-glass)] lg:top-[calc(4.75rem+var(--safe-top))]">
-        <Link
-          href={BLOG_ADMIN_HREF}
-          aria-label="Kembali ke daftar artikel"
-          className="hover:bg-surface-2 grid size-9 shrink-0 place-items-center rounded-full transition-colors"
-        >
-          <ArrowLeft className="size-4.5" aria-hidden="true" />
-        </Link>
-        <StatusBadge tone={status === "published" ? "success" : "neutral"}>
-          {STATUS_LABEL[status]}
-        </StatusBadge>
-        {dirty && (
-          <span className="text-muted hidden items-center gap-1.5 text-caption1 font-medium sm:inline-flex">
-            <span className="bg-warning size-1.5 rounded-full" aria-hidden="true" />
-            Belum disimpan
-          </span>
-        )}
-        <span className="flex-1" />
-        {post?.status === "published" && (
-          <Link
-            href={`/blog/${post.slug}`}
-            target="_blank"
-            className={buttonClass({ variant: "ghost", size: "sm", className: "hidden sm:inline-flex" })}
-          >
-            <ExternalLink className="size-4" aria-hidden="true" /> Lihat
-          </Link>
-        )}
-        {status !== "published" && (
-          <Button variant="secondary" size="sm" disabled={pending} onClick={() => save("draft")}>
-            {pending && savingStatus === "draft" ? (
-              <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-            ) : (
-              <Save className="size-4" aria-hidden="true" />
-            )}
-            {busyLabel("draft", "Simpan draf", "Menyimpan…")}
-          </Button>
-        )}
-        <Button
-          size="sm"
-          disabled={pending}
-          onClick={() => save("published")}
-          className="motion-sheen relative overflow-hidden"
-        >
-          {pending && savingStatus === "published" ? (
-            <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-          ) : (
-            <Send className="size-4" aria-hidden="true" />
-          )}
-          {status === "published"
-            ? busyLabel("published", "Perbarui", "Memperbarui…")
-            : busyLabel("published", "Terbitkan", "Menerbitkan…")}
-        </Button>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+      {/* grid-cols-1 = minmax(0,1fr): tanpa itu kolom implisit "auto" melebar
+          mengikuti konten terlebar dan halaman bergulir menyamping di ponsel. */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         {/* ---- Tulisan ---------------------------------------------------- */}
         <div className="min-w-0 space-y-4">
           <textarea
@@ -238,12 +211,55 @@ export function PostEditor({
             onChange={(nextHtml, nextJson) => {
               setHtml(nextHtml);
               setJson(nextJson);
+              // Format lewat toolbar (tebal, judul, gambar) tidak memicu event
+              // `input` native, jadi perubahannya ditandai dari sini.
+              setDirty(true);
             }}
           />
         </div>
 
-        {/* ---- Pengaturan artikel ------------------------------------------ */}
-        <div className="space-y-4 lg:sticky lg:top-[calc(8.5rem+var(--safe-top))]">
+        {/* ---- Publikasi & pengaturan artikel ------------------------------ */}
+        <div className="space-y-4 lg:sticky-below-island">
+          <FormSection title="Publikasi" icon={<Globe className="size-5" />}>
+            <div
+              role="radiogroup"
+              aria-label="Status artikel"
+              className="space-y-2"
+              onChange={(event: ChangeEvent<HTMLDivElement>) => {
+                const input = event.target as unknown as HTMLInputElement;
+                if (input.name === "status") setStatus(input.value as PostStatus);
+              }}
+            >
+              {STATUS_CHOICES.map((choice) => (
+                <ChoiceChip
+                  key={choice.value}
+                  type="radio"
+                  name="status"
+                  value={choice.value}
+                  label={choice.label}
+                  description={choice.description}
+                  defaultChecked={status === choice.value}
+                />
+              ))}
+            </div>
+            {post && (
+              <div className="text-muted flex flex-wrap items-center gap-x-2 gap-y-1 text-caption1">
+                <span>
+                  Diperbarui <RelativeTime iso={post.updated_at} />
+                </span>
+                {post.status === "published" && (
+                  <Link
+                    href={`/blog/${post.slug}`}
+                    target="_blank"
+                    className={buttonClass({ variant: "ghost", size: "sm", className: "ml-auto -my-1 h-8" })}
+                  >
+                    <ExternalLink className="size-3.5" aria-hidden="true" /> Lihat di situs
+                  </Link>
+                )}
+              </div>
+            )}
+          </FormSection>
+
           <FormSection title="Pengaturan" icon={<Settings2 className="size-5" />}>
             <ImageField
               name="cover"
@@ -259,10 +275,7 @@ export function PostEditor({
               id="category"
               name="category"
               defaultValue={post?.category ?? ""}
-              options={[
-                { value: "", label: "— Tanpa kategori —" },
-                ...categories.map((category) => ({ value: category, label: category })),
-              ]}
+              options={categoryOptions(BLOG_CATEGORIES, post?.category)}
             />
             <TextField
               label="Tag"

@@ -11,8 +11,8 @@ import {
 } from "@/lib/security/rate-limit";
 import type { AdminAccount, MediaType } from "@/lib/types/database";
 import {
-  finalizeStoredUpload,
   finalizeStoredUploads,
+  type FinalizedStoredUpload,
 } from "@/lib/uploads/finalize";
 import {
   verifyUploadTicket,
@@ -30,7 +30,8 @@ type CreateFinalizeInput = {
 type EditFinalizeInput = {
   mode: "edit";
   request: Request;
-  token: string;
+  /** Item baru (tambahan atau hasil edit foto) untuk pin yang sudah ada. */
+  tokens: readonly string[];
   admin: AdminAccount;
 };
 
@@ -71,8 +72,8 @@ type EditFinalizeResult =
   | CommonFailure
   | {
       ok: true;
-      ticket: UploadTicketPayload;
-      mimeType: string;
+      /** Urutan sama dengan `tokens`; kosong bila editor hanya mengatur ulang. */
+      items: FinalizedMediaItem[];
     };
 
 type RejectedFinalizeContext =
@@ -113,6 +114,31 @@ function rejectedTokens(input: unknown): string[] {
 
 async function cleanupTicket(ticket: UploadTicketPayload): Promise<void> {
   await removeMediaPathIfUnused(ticket.path);
+}
+
+/** Satu pin maksimal `mediaPerPost` item dan seluruh tiketnya satu pemilik. */
+function acceptMediaBatch(tickets: UploadTicketPayload[]): boolean {
+  return (
+    tickets.length <= UPLOAD_LIMITS.mediaPerPost &&
+    tickets.every(
+      (ticket) =>
+        ticket.source === tickets[0].source &&
+        ticket.adminId === tickets[0].adminId,
+    )
+  );
+}
+
+function toMediaItems(uploads: readonly FinalizedStoredUpload[]): FinalizedMediaItem[] {
+  return uploads.map((upload) => {
+    if (!upload.policy.mediaType) {
+      throw new Error("Tipe finalisasi media tidak valid.");
+    }
+    return {
+      ticket: upload.ticket,
+      mediaType: upload.policy.mediaType as MediaType,
+      mimeType: upload.mimeType,
+    };
+  });
 }
 
 async function adminRateLimitResponse(
@@ -172,15 +198,18 @@ export async function finalizeMediaUpload(
   input: CreateFinalizeInput | EditFinalizeInput,
 ): Promise<CreateFinalizeResult | EditFinalizeResult> {
   if (input.mode === "edit") {
-    const finalized = await finalizeStoredUpload<GuardResponse>({
-      token: input.token,
+    // Hanya mengurutkan/menghapus: tidak ada byte baru yang perlu diverifikasi.
+    if (input.tokens.length === 0) return { ok: true, items: [] };
+    const finalized = await finalizeStoredUploads<GuardResponse>({
+      tokens: input.tokens,
       kind: "media",
       bucket: STORAGE_BUCKETS.mediaInbox,
       acceptTicket: (ticket) =>
         ticket.source === "admin" &&
         ticket.adminId === input.admin.id &&
         canAccess(input.admin, "media"),
-      acceptDescriptor: (policy) => policy.mediaType === "photo",
+      acceptBatch: acceptMediaBatch,
+      acceptDescriptor: (policy) => Boolean(policy.mediaType),
       cleanup: cleanupTicket,
       guard: {
         phase: "before-descriptor",
@@ -193,11 +222,7 @@ export async function finalizeMediaUpload(
         ? { ok: false, reason: "guard", response: finalized.guard.response }
         : finalized;
     }
-    return {
-      ok: true,
-      ticket: finalized.ticket,
-      mimeType: finalized.mimeType,
-    };
+    return { ok: true, items: toMediaItems(finalized.uploads) };
   }
 
   type CreateGuardFailure =
@@ -211,13 +236,7 @@ export async function finalizeMediaUpload(
     kind: "media",
     bucket: STORAGE_BUCKETS.mediaInbox,
     // Satu pin = satu pemilik: tiket publik dan admin tidak boleh dicampur.
-    acceptBatch: (tickets) =>
-      tickets.length <= UPLOAD_LIMITS.mediaPerPost &&
-      tickets.every(
-        (ticket) =>
-          ticket.source === tickets[0].source &&
-          ticket.adminId === tickets[0].adminId,
-      ),
+    acceptBatch: acceptMediaBatch,
     acceptDescriptor: (policy) => Boolean(policy.mediaType),
     cleanup: cleanupTicket,
     guard: {
@@ -268,16 +287,7 @@ export async function finalizeMediaUpload(
   if (!context) {
     throw new Error("Konteks finalisasi media tidak valid.");
   }
-  const items = finalized.uploads.map((upload) => {
-    if (!upload.policy.mediaType) {
-      throw new Error("Tipe finalisasi media tidak valid.");
-    }
-    return {
-      ticket: upload.ticket,
-      mediaType: upload.policy.mediaType as MediaType,
-      mimeType: upload.mimeType,
-    };
-  });
+  const items = toMediaItems(finalized.uploads);
   return {
     ok: true,
     items,

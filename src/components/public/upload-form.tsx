@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CircleCheck, MessageCircle } from "lucide-react";
-import { PhotoEditor } from "@/components/media-editor";
 import { Button } from "@/components/ui/button";
 import {
   GroupedField,
@@ -14,20 +13,17 @@ import { MenuGroup } from "@/components/ui/menu-row";
 import { ToggleRow } from "@/components/ui/toggle-row";
 import { useToast } from "@/components/ui/toast";
 import { MEDIA_CATEGORIES } from "@/lib/categories";
+import { MEDIA_METADATA_LIMITS } from "@/lib/media/metadata";
 import { isRetryableApiError, postJson } from "@/lib/api/client";
-import { MEDIA_UPLOAD_ACCEPT, UPLOAD_LIMITS } from "@/lib/constants";
+import { UPLOAD_LIMITS } from "@/lib/constants";
+import { useDraftUploads } from "@/lib/hooks/use-draft-uploads";
 import { useMediaDrafts } from "@/lib/hooks/use-media-drafts";
 import { SHARE_TARGET, takeSharedFiles } from "@/lib/share-target";
-import { requestSignedUpload, uploadFileDirectly } from "@/lib/uploads/client";
-import type { SignedUpload } from "@/lib/uploads/types";
-import { mapWithConcurrency } from "@/lib/utils/concurrency";
 import { cn } from "@/lib/utils/cn";
-import { MediaComposer } from "./media-composer";
+import { DraftPhotoEditor, MediaComposer, useAddMediaFiles } from "./media-composer";
 import styles from "./media-composer.module.css";
 
-/** Unggahan paralel per pin: cepat tanpa membuat koneksi seluler tersendat. */
-const UPLOAD_CONCURRENCY = 3;
-const CAPTION_MAX = 300;
+const CAPTION_MAX = MEDIA_METADATA_LIMITS.caption;
 
 type SubmitState = "idle" | "uploading" | "saving" | "sent" | "error";
 
@@ -40,8 +36,6 @@ export function UploadForm() {
   const router = useRouter();
   const { toast } = useToast();
   const drafts = useMediaDrafts(UPLOAD_LIMITS.mediaPerPost);
-  const galleryRef = useRef<HTMLInputElement>(null);
-  const cameraRef = useRef<HTMLInputElement>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -50,30 +44,10 @@ export function UploadForm() {
   const [captionLength, setCaptionLength] = useState(0);
   const [state, setState] = useState<SubmitState>("idle");
   const [note, setNote] = useState("");
-  const [itemProgress, setItemProgress] = useState<Record<string, number>>({});
-  const [overallProgress, setOverallProgress] = useState(0);
-  // Byte yang sudah terkirim tetap berlaku (tiket 2 jam): kirim ulang hanya
-  // mengunggah file yang belum selesai, lalu mengulang finalisasi.
-  const uploadedRef = useRef(new Map<File, SignedUpload>());
+  const uploads = useDraftUploads();
   const busy = state === "uploading" || state === "saving";
-  const editing = drafts.items.find((draft) => draft.id === editingId) ?? null;
   const getEditButton = useCallback(() => editButtonRef.current, []);
-  const { add } = drafts;
-
-  const addFiles = useCallback(
-    (files: File[]) => {
-      if (files.length === 0) return;
-      const firstNewIndex = drafts.items.length;
-      const { added, skipped } = add(files);
-      if (added > 0) setActiveIndex(firstNewIndex);
-      if (skipped > 0) {
-        toast.info(`Maksimal ${UPLOAD_LIMITS.mediaPerPost} item per pin`, {
-          description: `${skipped} file tidak ditambahkan.`,
-        });
-      }
-    },
-    [add, drafts.items.length, toast],
-  );
+  const addFiles = useAddMediaFiles(drafts, setActiveIndex);
 
   // Dibuka dari menu "Bagikan" galeri HP (Web Share Target): pakai file titipan SW.
   useEffect(() => {
@@ -120,34 +94,12 @@ export function UploadForm() {
     const items = drafts.items.flatMap((draft) =>
       draft.file && draft.dims ? [{ id: draft.id, file: draft.file, dims: draft.dims }] : [],
     );
-    const totalBytes = items.reduce((sum, item) => sum + item.file.size, 0) || 1;
-    const sent = new Map(items.map((item) => [item.id, 0]));
-    const report = (id: string, bytes: number, percentage: number) => {
-      sent.set(id, bytes);
-      setItemProgress((current) => ({ ...current, [id]: percentage }));
-      const total = [...sent.values()].reduce((sum, value) => sum + value, 0);
-      setOverallProgress(Math.min(100, Math.round((total / totalBytes) * 100)));
-    };
 
     setState("uploading");
     setNote("");
-    setOverallProgress(0);
-    setItemProgress({});
     let finalizing = false;
     try {
-      const signed = await mapWithConcurrency(items, UPLOAD_CONCURRENCY, async (item) => {
-        const cached = uploadedRef.current.get(item.file);
-        if (cached) {
-          report(item.id, item.file.size, 100);
-          return cached;
-        }
-        const upload = await requestSignedUpload("media", item.file);
-        await uploadFileDirectly(item.file, upload, ({ sent: bytes, percentage }) => {
-          report(item.id, bytes, percentage);
-        });
-        uploadedRef.current.set(item.file, upload);
-        return upload;
-      });
+      const signed = await uploads.uploadAll(items);
 
       setState("saving");
       finalizing = true;
@@ -167,7 +119,7 @@ export function UploadForm() {
         },
         "Gagal mengunggah",
       );
-      uploadedRef.current.clear();
+      uploads.forget();
       setState("sent");
       if (data.approved) {
         setNote("Berhasil diunggah dan langsung tampil.");
@@ -185,15 +137,15 @@ export function UploadForm() {
     } catch (error) {
       // Server membersihkan seluruh tiket saat finalisasi ditolak permanen;
       // gangguan unggah/kuota tetap menyimpan file yang sudah terkirim.
-      if (finalizing && !isRetryableApiError(error)) uploadedRef.current.clear();
-      setItemProgress({});
+      if (finalizing && !isRetryableApiError(error)) uploads.forget();
+      uploads.clearProgress();
       fail(error instanceof Error ? error.message : "Gagal mengunggah");
     }
   }
 
   const submitLabel =
     state === "uploading"
-      ? `Mengunggah ${overallProgress}%…`
+      ? `Mengunggah ${uploads.overallProgress}%…`
       : state === "saving"
         ? "Menyimpan pin…"
         : state === "sent"
@@ -205,39 +157,14 @@ export function UploadForm() {
   return (
     <>
       <form onSubmit={onSubmit} className="space-y-6 pb-4">
-        <input
-          ref={galleryRef}
-          type="file"
-          multiple
-          accept={MEDIA_UPLOAD_ACCEPT}
-          className="hidden"
-          onChange={(event) => {
-            addFiles([...(event.currentTarget.files ?? [])]);
-            event.currentTarget.value = "";
-          }}
-        />
-        <input
-          ref={cameraRef}
-          type="file"
-          accept={MEDIA_UPLOAD_ACCEPT}
-          capture="environment"
-          className="hidden"
-          onChange={(event) => {
-            addFiles([...(event.currentTarget.files ?? [])]);
-            event.currentTarget.value = "";
-          }}
-        />
-
         <MediaComposer
           drafts={drafts}
           activeIndex={activeIndex}
           onActiveIndexChange={setActiveIndex}
-          onPickGallery={() => galleryRef.current?.click()}
-          onPickCamera={() => cameraRef.current?.click()}
           onFiles={addFiles}
           onEdit={setEditingId}
           editButtonRef={editButtonRef}
-          uploadProgress={itemProgress}
+          uploadProgress={uploads.itemProgress}
           disabled={busy || state === "sent"}
         />
 
@@ -248,7 +175,7 @@ export function UploadForm() {
               <input
                 id="title"
                 name="title"
-                maxLength={120}
+                maxLength={MEDIA_METADATA_LIMITS.title}
                 disabled={busy}
                 placeholder="Beri judul yang menarik…"
                 className={groupedInputClass}
@@ -283,7 +210,7 @@ export function UploadForm() {
               <input
                 id="uploader_name"
                 name="uploader_name"
-                maxLength={60}
+                maxLength={MEDIA_METADATA_LIMITS.uploaderName}
                 disabled={busy}
                 placeholder="Nama kamu / Anonim"
                 className={groupedInputClass}
@@ -352,7 +279,7 @@ export function UploadForm() {
               <span
                 aria-hidden="true"
                 className={cn(styles.submitFill, "absolute inset-0 bg-white/20")}
-                style={{ transform: `scaleX(${state === "saving" ? 1 : overallProgress / 100})` }}
+                style={{ transform: `scaleX(${state === "saving" ? 1 : uploads.overallProgress / 100})` }}
               />
             )}
             <span className="relative flex items-center gap-2" aria-live="polite">
@@ -365,24 +292,12 @@ export function UploadForm() {
         </div>
       </form>
 
-      <PhotoEditor
-        open={Boolean(editing)}
-        file={editing ? (editing.originalFile ?? editing.file) : null}
-        sourceDimensions={editing ? (editing.originalDims ?? editing.dims) : null}
-        initialRecipe={editing?.editRecipe}
-        initialAspect={editing?.editAspect}
+      <DraftPhotoEditor
+        drafts={drafts}
+        editingId={editingId}
+        onClose={() => setEditingId(null)}
         returnFocus={getEditButton}
-        onCancel={() => setEditingId(null)}
-        onSave={(result) => {
-          if (!editing || !drafts.applyEdited(editing.id, result)) {
-            toast.error("Hasil edit tidak dapat digunakan.");
-            return;
-          }
-          setEditingId(null);
-          toast.success("Hasil edit diterapkan", {
-            description: "Foto asli masih bisa dipulihkan sebelum pin dibagikan.",
-          });
-        }}
+        appliedDescription="Foto asli masih bisa dipulihkan sebelum pin dibagikan."
       />
     </>
   );

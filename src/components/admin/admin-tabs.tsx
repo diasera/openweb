@@ -6,6 +6,8 @@ export interface AdminTabItem {
   label: string;
   value: string;
   count?: number;
+  /** Butuh perhatian (mis. kiriman menunggu): lencana jumlah berwarna jingga. */
+  alert?: boolean;
 }
 
 /**
@@ -62,7 +64,11 @@ export function AdminTabs({
                   <span
                     className={cn(
                       "min-w-5 rounded-full px-1.5 text-center text-caption2 font-semibold tabular-nums",
-                      isActive ? "bg-primary/12 text-primary-readable" : "bg-surface/80",
+                      item.alert
+                        ? "bg-tone-orange text-white"
+                        : isActive
+                          ? "bg-primary/12 text-primary-readable"
+                          : "bg-surface/80",
                     )}
                   >
                     {item.count}

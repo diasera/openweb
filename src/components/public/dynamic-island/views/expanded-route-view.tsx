@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Bell, LoaderCircle, Search, type LucideIcon } from "lucide-react";
+import { Bell, Search, type LucideIcon } from "lucide-react";
 import { ThemeToggle } from "@/components/public/theme-toggle";
 import { MusicQuickButton } from "@/components/public/music";
 import { SiteLogo } from "@/components/public/site-logo";
@@ -12,6 +12,7 @@ import {
 } from "@/components/public/destination-icons";
 import { MotionLink } from "@/components/motion";
 import { iconButtonClass } from "@/components/ui/icon-button";
+import { Skeleton, SkeletonScreen, skeletonWave } from "@/components/ui/skeleton";
 import { ApiError, requestJson } from "@/lib/api/client";
 import { APP_TAB_ROUTES } from "@/lib/navigation/app-routes";
 import { cn } from "@/lib/utils/cn";
@@ -60,11 +61,15 @@ export function ExpandedRouteView({
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SiteSearchResult[]>([]);
-  const [searching, setSearching] = useState(false);
+  // Kata kunci yang hasilnya sedang ditampilkan. Selama berbeda dengan input
+  // (debounce + request), panel menunjukkan kerangka — tidak pernah sempat
+  // menampilkan "Tidak ada hasil" sebelum pencarian benar-benar berjalan.
+  const [resultsFor, setResultsFor] = useState("");
   const [searchError, setSearchError] = useState<string | null>(null);
 
   const trimmed = query.trim();
   const spotlightActive = trimmed.length >= 2;
+  const searching = spotlightActive && resultsFor !== trimmed;
   // Saat kata kunci terlalu pendek, hasil lama disembunyikan lewat derive —
   // tidak perlu setState sinkron di effect.
   const visibleResults = spotlightActive ? results : [];
@@ -78,8 +83,6 @@ export function ExpandedRouteView({
     if (!spotlightActive) return;
     const controller = new AbortController();
     const timer = setTimeout(async () => {
-      setSearching(true);
-      setSearchError(null);
       try {
         const data = await requestJson<{ results?: SiteSearchResult[] }>(
           `/api/search?q=${encodeURIComponent(trimmed)}`,
@@ -89,6 +92,7 @@ export function ExpandedRouteView({
         // requestJson menelan galat body (abort di tengah unduhan → `{}`).
         if (controller.signal.aborted) return;
         setResults(data.results ?? []);
+        setSearchError(null);
       } catch (error) {
         if (controller.signal.aborted) return;
         // 429/503 bukan "tidak ada hasil": tampilkan alasannya apa adanya.
@@ -98,9 +102,8 @@ export function ExpandedRouteView({
             ? error.message
             : "Tidak dapat terhubung. Periksa koneksi lalu coba lagi.",
         );
-      } finally {
-        setSearching(false);
       }
+      setResultsFor(trimmed);
     }, 250);
     return () => {
       clearTimeout(timer);
@@ -162,9 +165,6 @@ export function ExpandedRouteView({
           enterKeyHint="go"
           className={styles.panelSearchInput}
         />
-        {searching && (
-          <LoaderCircle className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
-        )}
       </form>
 
       <div className={styles.panelBody}>
@@ -173,8 +173,23 @@ export function ExpandedRouteView({
         )}
 
         {spotlightActive ? (
-          <div className={styles.panelResults} aria-live="polite">
-            {!searching && searchError ? (
+          <div
+            className={cn(
+              styles.panelResults,
+              "transition-opacity",
+              // Hasil lama diredupkan selama kata kunci baru dicari.
+              searching && visibleResults.length > 0 && "opacity-60",
+            )}
+            aria-live="polite"
+            aria-busy={searching}
+          >
+            {searching && visibleResults.length === 0 ? (
+              <SkeletonScreen label="Mencari…" className="space-y-1.5">
+                {[0, 1, 2].map((index) => (
+                  <Skeleton key={index} className="h-[3.1rem] rounded-2xl" style={skeletonWave(index)} />
+                ))}
+              </SkeletonScreen>
+            ) : !searching && searchError ? (
               <p className="text-danger px-2 py-3 text-center text-sm">
                 {searchError}
               </p>

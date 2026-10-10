@@ -12,14 +12,16 @@ import { ThemeToggle } from "@/components/public/theme-toggle";
  */
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const navigation = getAdminRouteNavigation(pathname) ?? {
-    title: "Admin",
-    backHref: "/profil",
-  };
+  const navigation = getAdminRouteNavigation(pathname);
 
   return (
     <PageShell
-      header={{ variant: "sub", ...navigation, right: <ThemeToggle /> }}
+      header={{
+        variant: "sub",
+        title: navigation?.title ?? "Admin",
+        backHref: navigation?.backHref ?? "/profil",
+        right: <ThemeToggle />,
+      }}
       profileTabLabel="Admin"
       showNotificationPrompt={false}
       trackVisitor={false}

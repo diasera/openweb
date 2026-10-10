@@ -69,7 +69,7 @@ export default async function AlbumAdminPage() {
                     href={`/album/${album.slug}`}
                     target="_blank"
                     label="Buka album publik"
-                    icon={ExternalLink}
+                    icon={<ExternalLink />}
                   />
                   <AlbumDialog album={album} events={eventOptions} />
                   <DeleteAction

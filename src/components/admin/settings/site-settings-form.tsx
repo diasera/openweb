@@ -38,7 +38,7 @@ export function SiteSettingsForm({
 
   return (
     <div className="space-y-5">
-      <div className="sticky top-[calc(4.25rem+var(--safe-top))] z-30 lg:top-[calc(4.75rem+var(--safe-top))]">
+      <div className="sticky-below-island z-30">
         <AdminTabs
           basePath={TAB_PATH}
           param="tab"

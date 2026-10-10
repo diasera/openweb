@@ -509,6 +509,95 @@ drop trigger if exists trg_media_slides_object_url on public.media_slides;
 create trigger trg_media_slides_object_url before insert or update of url on public.media_slides
   for each row execute function public.guard_media_object_url();
 
+-- Pendahulu update_media_post (hanya susunan item) sempat dirilis singkat.
+drop function if exists public.replace_media_items(uuid, text[], jsonb);
+
+-- "Edit postingan" admin: SATU transaksi untuk seluruh isi pin — susunan item
+-- (urutkan, jadikan sampul, tambah, hapus, ganti foto) beserta detailnya
+-- (teks, kategori, pengunggah, komentar, album, sorotan, tanggal momen).
+-- `p_expected` = URL sampul lalu slide yang dilihat editor; berbeda dengan isi
+-- sekarang berarti pin diubah sesi lain → false tanpa perubahan apa pun.
+-- `p_items` null = susunan tetap; selain itu berurutan, item pertama menjadi
+-- sampul: [{type,url,mime_type,thumbnail_url,width,height}, …]. Slide dihapus
+-- dulu agar URL boleh berpindah slot tanpa memicu guard di atas. Sorotan
+-- hanya bertahan pada pin yang sudah terbit.
+create or replace function public.update_media_post(
+  p_media_id uuid,
+  p_expected text[],
+  p_items jsonb,
+  p_details jsonb
+)
+returns boolean
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_current text[];
+  v_cover jsonb := p_items -> 0;
+begin
+  if jsonb_typeof(p_details) is distinct from 'object' then
+    raise exception using errcode = '22023', message = 'media details required';
+  end if;
+  if p_items is not null and (jsonb_typeof(p_items) <> 'array' or v_cover is null) then
+    raise exception using errcode = '22023', message = 'media items required';
+  end if;
+
+  perform 1 from public.media where id = p_media_id for update;
+  if not found then
+    return false;
+  end if;
+  select array[m.url] || coalesce(
+           (select array_agg(s.url order by s.position)
+              from public.media_slides s where s.media_id = m.id),
+           '{}'::text[])
+    into v_current
+    from public.media m where m.id = p_media_id;
+  if v_current is distinct from p_expected then
+    return false;
+  end if;
+
+  if p_items is not null then
+    delete from public.media_slides where media_id = p_media_id;
+    update public.media set
+      type = (v_cover ->> 'type')::public.media_type,
+      url = v_cover ->> 'url',
+      mime_type = v_cover ->> 'mime_type',
+      thumbnail_url = v_cover ->> 'thumbnail_url',
+      width = (v_cover ->> 'width')::integer,
+      height = (v_cover ->> 'height')::integer
+    where id = p_media_id;
+    insert into public.media_slides
+      (media_id, position, type, url, mime_type, thumbnail_url, width, height)
+    select p_media_id,
+           (item.ordinality - 1)::smallint,
+           (item.value ->> 'type')::public.media_type,
+           item.value ->> 'url',
+           item.value ->> 'mime_type',
+           item.value ->> 'thumbnail_url',
+           (item.value ->> 'width')::integer,
+           (item.value ->> 'height')::integer
+      from jsonb_array_elements(p_items) with ordinality as item(value, ordinality)
+     where item.ordinality > 1;
+  end if;
+
+  update public.media set
+    title = p_details ->> 'title',
+    category = p_details ->> 'category',
+    caption = p_details ->> 'caption',
+    uploader_name = p_details ->> 'uploader_name',
+    allow_comments = coalesce((p_details ->> 'allow_comments')::boolean, allow_comments),
+    album_id = (p_details ->> 'album_id')::uuid,
+    is_pinned = status = 'approved'
+      and coalesce((p_details ->> 'is_pinned')::boolean, is_pinned),
+    created_at = coalesce((p_details ->> 'created_at')::timestamptz, created_at)
+  where id = p_media_id;
+  return true;
+end;
+$$;
+revoke all on function public.update_media_post(uuid, text[], jsonb, jsonb)
+  from public, anon, authenticated;
+grant execute on function public.update_media_post(uuid, text[], jsonb, jsonb) to service_role;
+
 -- ---- comments (komentar pada pin/media) ----------------------------------
 create table if not exists public.comments (
   id uuid primary key default gen_random_uuid(),

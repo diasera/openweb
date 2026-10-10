@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   canEditPhoto,
+  canEditPhotoMime,
   createBoundedImagePreview,
   EDITOR_PREVIEW_MAX_DIMENSION,
   readPhotoDimensions,
@@ -11,9 +12,11 @@ import {
 } from "@/lib/media-editor";
 import {
   preparePublicMediaFile,
+  prepareRemoteImage,
   probePlayableMedia,
 } from "@/lib/media-formats";
 import { loadImageElement } from "@/lib/media/image-element";
+import type { StoredMediaSource } from "@/lib/media/slides";
 import { descriptorFromFile, validateUploadDescriptor } from "@/lib/uploads/policy";
 import { mapWithConcurrency } from "@/lib/utils/concurrency";
 
@@ -25,6 +28,8 @@ const PREPARE_CONCURRENCY = 2;
 export interface MediaDraft {
   id: string;
   status: "preparing" | "ready" | "error";
+  /** Item lama pin (Edit postingan); `null` untuk file yang baru dipilih. Berkasnya baru diunduh saat diedit. */
+  stored: StoredMediaSource | null;
   /** File hasil normalisasi sebelum diedit; sumber editor dan "Pulihkan". */
   originalFile: File | null;
   originalDims: MediaDims | null;
@@ -113,6 +118,7 @@ function emptyDraft(id: string): MediaDraft {
   return {
     id,
     status: "preparing",
+    stored: null,
     originalFile: null,
     originalDims: null,
     file: null,
@@ -128,14 +134,36 @@ function emptyDraft(id: string): MediaDraft {
   };
 }
 
+/** Draft siap pakai dari item tersimpan; preview langsung memakai URL-nya. */
+function storedDraft(stored: StoredMediaSource): MediaDraft {
+  const dims =
+    stored.width && stored.height ? { width: stored.width, height: stored.height } : null;
+  return {
+    ...emptyDraft(crypto.randomUUID()),
+    status: "ready",
+    stored,
+    originalDims: dims,
+    dims,
+    preview: stored.readUrl,
+    isVideo: stored.type === "video",
+    canEdit: stored.type === "photo" && canEditPhotoMime(stored.mimeType),
+  };
+}
+
+/** Preview milik draft yang dibuat lewat createObjectURL (bukan URL storage). */
+function revokePreview(url: string) {
+  if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+}
+
 /**
- * State machine banyak media untuk Buat Pin (carousel): tiap draft punya file
- * asli immutable, file aktif yang bisa diganti hasil editor, preview Object
- * URL yang selalu dibersihkan, serta urutan yang bisa diatur ulang.
+ * State machine banyak media untuk Buat Pin dan Edit postingan (carousel): tiap
+ * draft punya file asli immutable, file aktif yang bisa diganti hasil editor,
+ * preview Object URL yang selalu dibersihkan, serta urutan yang bisa diatur
+ * ulang. `initial` mengisi item lama sebuah pin; berkasnya diunduh saat diedit.
  */
-export function useMediaDrafts(max: number) {
-  const [items, setItems] = useState<MediaDraft[]>([]);
-  const itemsRef = useRef<MediaDraft[]>([]);
+export function useMediaDrafts(max: number, initial: readonly StoredMediaSource[] = []) {
+  const [items, setItems] = useState<MediaDraft[]>(() => initial.map(storedDraft));
+  const itemsRef = useRef<MediaDraft[]>(items);
   const controllersRef = useRef(new Map<string, AbortController>());
 
   const commit = useCallback((next: (current: MediaDraft[]) => MediaDraft[]) => {
@@ -149,7 +177,7 @@ export function useMediaDrafts(max: number) {
         current.map((draft) => {
           if (draft.id !== id) return draft;
           if (update.preview !== undefined && draft.preview && draft.preview !== update.preview) {
-            URL.revokeObjectURL(draft.preview);
+            revokePreview(draft.preview);
           }
           return { ...draft, ...update };
         }),
@@ -161,7 +189,7 @@ export function useMediaDrafts(max: number) {
   const release = useCallback((draft: MediaDraft) => {
     controllersRef.current.get(draft.id)?.abort();
     controllersRef.current.delete(draft.id);
-    if (draft.preview) URL.revokeObjectURL(draft.preview);
+    if (draft.preview) revokePreview(draft.preview);
   }, []);
 
   useEffect(
@@ -285,11 +313,72 @@ export function useMediaDrafts(max: number) {
   const restoreOriginal = useCallback(
     (id: string) => {
       const draft = itemsRef.current.find((item) => item.id === id);
-      if (!draft?.originalFile) return;
+      if (!draft) return;
+      if (draft.stored) {
+        // Item lama kembali menunjuk berkas tersimpan: tidak ada yang diunggah.
+        controllersRef.current.get(id)?.abort();
+        const stored = storedDraft(draft.stored);
+        patch(id, {
+          status: "ready",
+          file: null,
+          dims: stored.dims,
+          preview: stored.preview,
+          isEdited: false,
+          editRecipe: null,
+          editAspect: null,
+          notice: null,
+          error: null,
+        });
+        return;
+      }
+      if (!draft.originalFile) return;
       patch(id, { isEdited: false, editRecipe: null, editAspect: null });
       void prepareDraft(id, draft.originalFile, draft.originalDims);
     },
     [patch, prepareDraft],
+  );
+
+  /**
+   * Pastikan draft punya berkas asli untuk PhotoEditor. Item tersimpan
+   * diunduh sekali (signed URL bila pin belum terbit). Mengembalikan pesan
+   * galat, atau `null` bila editor siap dibuka.
+   */
+  const prepareEdit = useCallback(
+    async (id: string): Promise<string | null> => {
+      const draft = itemsRef.current.find((item) => item.id === id);
+      if (!draft) return "Item tidak ditemukan.";
+      if (draft.originalFile || !draft.stored) {
+        return draft.originalFile ?? draft.file ? null : "Media belum siap diedit.";
+      }
+      controllersRef.current.get(id)?.abort();
+      const controller = new AbortController();
+      controllersRef.current.set(id, controller);
+      patch(id, { status: "preparing", error: null });
+      try {
+        const prepared = await prepareRemoteImage(draft.stored.readUrl, {
+          signal: controller.signal,
+          fallbackName: `foto-${id}`,
+          errorMessage: "Foto asli tidak dapat dimuat.",
+        });
+        if (!canEditPhoto(prepared.file) || prepared.animated) {
+          patch(id, { status: "ready", canEdit: false });
+          return "Media animasi dipertahankan seperti aslinya dan tidak dapat diedit.";
+        }
+        const dims = await readPhotoDimensions(prepared.file, controller.signal);
+        patch(id, { status: "ready", originalFile: prepared.file, originalDims: dims });
+        return null;
+      } catch (cause) {
+        // Gagal unduh tidak merusak item: berkas tersimpan tetap dipakai.
+        if (itemsRef.current.some((item) => item.id === id)) patch(id, { status: "ready" });
+        if (controller.signal.aborted) return "Persiapan editor dibatalkan.";
+        return cause instanceof Error ? cause.message : "Foto asli tidak dapat dimuat.";
+      } finally {
+        if (controllersRef.current.get(id) === controller) {
+          controllersRef.current.delete(id);
+        }
+      }
+    },
+    [patch],
   );
 
   const reset = useCallback(() => {
@@ -308,6 +397,7 @@ export function useMediaDrafts(max: number) {
     move,
     applyEdited,
     restoreOriginal,
+    prepareEdit,
     reset,
   };
 }

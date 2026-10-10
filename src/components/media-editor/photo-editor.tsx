@@ -37,6 +37,7 @@ import {
   type PhotoEditorProfile,
   type PhotoEditorProfileId,
 } from "@/lib/media-editor";
+import { SkeletonOverlay } from "@/components/ui/skeleton";
 import { CropStage } from "./crop-stage";
 import {
   PhotoEditorControls,
@@ -533,12 +534,11 @@ function PhotoEditorSession({
 
       <main className="relative min-h-0 flex-1 overflow-hidden">
         {preparing && (
-          <div className="absolute inset-0 grid place-items-center" role="status">
-            <span className="flex flex-col items-center gap-3 text-sm text-white/65">
-              <LoaderCircle className="h-7 w-7 animate-spin" />
-              Menyiapkan pratinjau ringan…
-            </span>
-          </div>
+          // Editor selalu gelap: token kerangka ditimpa ke varian gelap.
+          <SkeletonOverlay
+            label="Menyiapkan pratinjau ringan…"
+            className="m-6 rounded-3xl [--skeleton-base:255_255_255/0.06] [--skeleton-shine:255_255_255/0.08]"
+          />
         )}
         {prepareError && (
           <div className="absolute inset-0 grid place-items-center px-8 text-center">
