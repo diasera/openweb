@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
-import { MotionPage, staggerDelay } from "@/components/motion";
+import { KineticWords, MotionPage, blurDelay } from "@/components/motion";
 import { SiteLogo } from "@/components/public/site-logo";
 
 /**
  * Sheet kaca berisi form Auth: bottom sheet di ponsel, kartu melayang di
- * layar lebar. Logo memakai cincin ala story (utility avatar-ring) yang sama
- * dengan anggota inti; masuk dengan motion "present" seperti sheet iOS.
+ * layar lebar. Logo bercincin gradien yang berputar pelan, judul masuk per
+ * kata, lalu isi menyusul dari blur — masuk dengan motion "present" seperti
+ * sheet iOS.
  */
 export function AuthCard({
   siteName,
@@ -25,20 +26,20 @@ export function AuthCard({
   children: ReactNode;
 }) {
   return (
-    <MotionPage profile="present" className="w-full sm:max-w-[26rem]">
+    <MotionPage profile="present" className="w-full sm:max-w-[27rem]">
       <section
         aria-labelledby="auth-title"
-        className="sheet-panel rounded-t-ios-lg px-5 pt-6 pb-[calc(1.5rem+var(--safe-bottom))] sm:rounded-ios-lg sm:p-7"
+        className="sheet-panel rounded-t-[2rem] px-5 pt-6 pb-[calc(1.5rem+var(--safe-bottom))] sm:rounded-[2rem] sm:p-8"
       >
-        <div className="animate-rise flex items-center gap-3">
-          <span className="avatar-ring shrink-0 rounded-full p-[2.5px]">
+        <div className="motion-blur-in flex items-center gap-3">
+          <span className="avatar-ring motion-ring-spin shrink-0 rounded-full p-[2.5px]">
             <span className="bg-bg block rounded-full p-[2px]">
               <SiteLogo name={siteName} url={logoUrl} size={44} />
             </span>
           </span>
           <div className="min-w-0">
             <p className="truncate text-subhead font-semibold">{siteName}</p>
-            <p className="text-primary-readable text-caption1 font-semibold uppercase tracking-wide">
+            <p className="text-primary-readable text-caption1 font-semibold uppercase tracking-[0.14em]">
               {eyebrow}
             </p>
           </div>
@@ -46,29 +47,20 @@ export function AuthCard({
 
         <h1
           id="auth-title"
-          className="font-display animate-rise mt-6 text-large-title font-bold tracking-tight"
-          style={{ animationDelay: staggerDelay(1, 50) }}
+          className="font-display mt-6 text-large-title font-bold tracking-tight"
         >
-          {title}
+          <KineticWords text={title} />
         </h1>
-        <p
-          className="text-muted animate-rise mt-1 text-subhead"
-          style={{ animationDelay: staggerDelay(2, 50) }}
-        >
+        <p className="text-muted motion-blur-in mt-1 text-subhead" style={blurDelay(160)}>
           {subtitle}
         </p>
 
-        <div
-          className="animate-rise mt-6"
-          style={{ animationDelay: staggerDelay(3, 50) }}
-        >
+        <div className="motion-blur-in mt-6" style={blurDelay(240)}>
           {children}
         </div>
 
         {footer && (
-          <p className="text-muted mt-5 text-center text-caption1 leading-relaxed">
-            {footer}
-          </p>
+          <p className="text-muted mt-5 text-center text-caption1 leading-relaxed">{footer}</p>
         )}
       </section>
     </MotionPage>

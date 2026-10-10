@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/auth";
-import { AdminAreaShell } from "@/components/admin/admin-area-shell";
+import { AdminShell } from "@/components/admin/admin-shell";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -10,6 +10,8 @@ export const metadata: Metadata = {
 /**
  * Guard bersama seluruh child view admin. Shell hanya mendaftarkan child view
  * ke Dynamic Island/Tab Bar global; tidak membuat sidebar atau top bar kedua.
+ * Setiap Server Action tetap memanggil requireFeature/requireAdmin sendiri
+ * karena action bisa dikirim langsung tanpa melewati layout ini.
  */
 export default async function AdminLayout({
   children,
@@ -17,8 +19,5 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   await requireAdmin();
-
-  return (
-    <AdminAreaShell>{children}</AdminAreaShell>
-  );
+  return <AdminShell>{children}</AdminShell>;
 }

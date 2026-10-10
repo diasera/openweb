@@ -55,6 +55,7 @@ create table if not exists public.site_settings (
   content_labels jsonb not null default '{"memberSingular":"anggota","memberPlural":"anggota","memberIdentifier":"Nomor identitas","memberCoreGroup":"Pengurus"}'::jsonb,
   hero_badge text,
   hero_title text,
+  hero_show_title boolean not null default true,
   hero_subtitle text,
   hero_image_url text,
   hero_image_width integer,
@@ -1334,6 +1335,29 @@ begin
       when site_name <> coalesce(hero_title, site_name)
         then site_name
     end;
+  end if;
+end;
+$$;
+
+-- Sakelar judul hero di tab Beranda. Sebelumnya admin menyembunyikan judul
+-- dengan mengisi simbol (mis. ".") sehingga h1 halaman depan ikut berisi
+-- simbol itu. Saat kolom pertama kali dibuat, nilai tersebut dikonversi sekali
+-- menjadi sakelar mati + judul kosong (h1 kembali memakai nama website).
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'site_settings'
+      and column_name = 'hero_show_title'
+  ) then
+    alter table public.site_settings
+      add column hero_show_title boolean not null default true;
+    update public.site_settings
+    set hero_show_title = false, hero_title = null
+    where hero_title is not null
+      and btrim(hero_title) <> ''
+      and hero_title !~ '[[:alnum:]]';
   end if;
 end;
 $$;

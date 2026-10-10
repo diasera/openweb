@@ -11,19 +11,20 @@ import {
   optionalAdminPasswordSchema,
 } from "@/lib/auth/credentials";
 import { createAdminSupabase } from "@/lib/supabase/admin";
-import { ASSIGNABLE_FEATURES } from "@/lib/constants";
+import { adminFeatureHref, ASSIGNABLE_FEATURES } from "@/lib/constants";
 import { checkedMutation } from "@/lib/database/mutation";
+import { INVALID_INPUT, isValidId } from "@/lib/admin/guard";
 import type { AdminRow } from "@/lib/types/database";
 import {
   validationErrorMessage,
   type ActionResult,
 } from "@/lib/action-result";
 
-/** Baca centang izin dari form -> peta { fitur: boolean }. */
-function permsFromForm(fd: FormData): Record<string, boolean> {
-  const perms: Record<string, boolean> = {};
-  for (const f of ASSIGNABLE_FEATURES) perms[f] = fd.get(`perm_${f}`) === "on";
-  return perms;
+/** Centang izin dari form -> peta { fitur: boolean } (hanya fitur yang boleh diberikan). */
+function permissionsFromForm(formData: FormData): Record<string, boolean> {
+  return Object.fromEntries(
+    ASSIGNABLE_FEATURES.map((feature) => [feature, formData.get(`perm_${feature}`) === "on"]),
+  );
 }
 
 const createSchema = z.object({
@@ -38,29 +39,31 @@ const updateSchema = z.object({
   password: optionalAdminPasswordSchema,
 });
 
-export async function createAdmin(fd: FormData): Promise<ActionResult> {
-  await requireFeature("admin"); // ownerOnly -> hanya owner
+function revalidateAdmins() {
+  revalidatePath(adminFeatureHref("admin"));
+}
+
+/** Owner menambah admin baru (fitur ownerOnly: requireFeature menolak admin biasa). */
+export async function createAdmin(formData: FormData): Promise<ActionResult> {
+  await requireFeature("admin");
   const parsed = createSchema.safeParse({
-    name: fd.get("name"),
-    username: fd.get("username"),
-    password: fd.get("password"),
+    name: formData.get("name") ?? "",
+    username: formData.get("username") ?? "",
+    password: formData.get("password") ?? "",
   });
-  if (!parsed.success) {
-    return { error: validationErrorMessage(parsed) };
-  }
-  const sb = createAdminSupabase();
-  const password_hash = await hashPassword(parsed.data.password);
+  if (!parsed.success) return { error: validationErrorMessage(parsed) };
+
   const created = await checkedMutation(
     "admins.create",
     "Gagal membuat admin.",
-    sb
+    createAdminSupabase()
       .from("admins")
       .insert({
         name: parsed.data.name,
         username: parsed.data.username.toLowerCase(),
-        password_hash,
+        password_hash: await hashPassword(parsed.data.password),
         role: "admin",
-        permissions: permsFromForm(fd),
+        permissions: permissionsFromForm(formData),
         is_active: true,
       })
       .select("id")
@@ -68,37 +71,33 @@ export async function createAdmin(fd: FormData): Promise<ActionResult> {
     { duplicateMessage: "Username sudah dipakai." },
   );
   if (!created.ok) return { error: created.error };
-  revalidatePath("/profil/admin");
+  revalidateAdmins();
   return {};
 }
 
-export async function updateAdmin(fd: FormData): Promise<ActionResult> {
+export async function updateAdmin(formData: FormData): Promise<ActionResult> {
   await requireFeature("admin");
   const parsed = updateSchema.safeParse({
-    id: fd.get("id") ?? "",
-    name: fd.get("name") ?? "",
-    password: fd.get("password") ?? "",
+    id: formData.get("id") ?? "",
+    name: formData.get("name") ?? "",
+    password: formData.get("password") ?? "",
   });
-  if (!parsed.success) {
-    return { error: validationErrorMessage(parsed) };
-  }
-
-  const sb = createAdminSupabase();
+  if (!parsed.success) return { error: validationErrorMessage(parsed) };
 
   const patch: Partial<AdminRow> = {
     name: parsed.data.name,
-    permissions: permsFromForm(fd),
-    is_active: fd.get("is_active") === "on",
+    permissions: permissionsFromForm(formData),
+    is_active: formData.get("is_active") === "on",
   };
   if (parsed.data.password) {
     patch.password_hash = await hashPassword(parsed.data.password);
   }
 
-  // .eq role admin -> owner tak bisa diubah lewat sini (aman).
+  // Filter role=admin: akun owner tidak pernah bisa diubah lewat jalur ini.
   const updated = await checkedMutation(
     "admins.update",
     "Gagal memperbarui admin.",
-    sb
+    createAdminSupabase()
       .from("admins")
       .update(patch)
       .eq("id", parsed.data.id)
@@ -108,17 +107,17 @@ export async function updateAdmin(fd: FormData): Promise<ActionResult> {
     { notFoundMessage: "Admin tidak ditemukan atau akun owner dipilih." },
   );
   if (!updated.ok) return { error: updated.error };
-  revalidatePath("/profil/admin");
+  revalidateAdmins();
   return {};
 }
 
 export async function deleteAdmin(id: string): Promise<ActionResult> {
   await requireFeature("admin");
-  const sb = createAdminSupabase();
+  if (!isValidId(id)) return INVALID_INPUT;
   const deleted = await checkedMutation(
     "admins.delete",
     "Gagal menghapus admin.",
-    sb
+    createAdminSupabase()
       .from("admins")
       .delete()
       .eq("id", id)
@@ -128,6 +127,6 @@ export async function deleteAdmin(id: string): Promise<ActionResult> {
     { notFoundMessage: "Admin tidak ditemukan atau akun owner dipilih." },
   );
   if (!deleted.ok) return { error: deleted.error };
-  revalidatePath("/profil/admin");
+  revalidateAdmins();
   return {};
 }

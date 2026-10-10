@@ -1,5 +1,6 @@
 import "server-only";
 import { revalidatePath } from "next/cache";
+import { revalidateSeoIndexes } from "@/lib/seo/revalidate";
 
 /** Antrean dan daftar moderasi admin; cukup untuk kiriman yang masih pending. */
 export function revalidateMediaAdminPages() {
@@ -23,4 +24,6 @@ export function revalidateMediaPages(mediaId?: string) {
   // Riwayat aktivitas anggota memuat media yang menyebut namanya.
   revalidatePath("/profil/[slug]", "page");
   if (mediaId) revalidatePath(`/pin/${mediaId}`);
+  // Pin terbit/ditarik menambah/menghapus URL /pin/… di sitemap.
+  revalidateSeoIndexes();
 }

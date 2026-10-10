@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-/** Kunjungan pertama: bila owner belum ada -> buat di sini. Jika sudah -> login. */
+/** Kunjungan pertama: owner belum ada -> buat di sini. Sudah ada -> login. */
 export default async function SetupPage() {
   if (await ownerExists()) redirect(ADMIN_AUTH_PATHS.login);
   const settings = await getSettings();

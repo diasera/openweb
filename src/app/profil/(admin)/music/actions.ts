@@ -4,14 +4,12 @@ import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 import { requireFeature } from "@/lib/auth";
 import { createAdminSupabase } from "@/lib/supabase/admin";
-import { STORAGE_BUCKETS } from "@/lib/constants";
+import { adminFeatureHref, STORAGE_BUCKETS } from "@/lib/constants";
 import { checkedMutation } from "@/lib/database/mutation";
-import {
-  getStoragePublicUrl,
-  removeStorageObject,
-} from "@/lib/storage";
+import { getStoragePublicUrl, removeStorageObject } from "@/lib/storage";
 import { finalizeStoredUpload } from "@/lib/uploads/finalize";
 import { verifyUploadTicket } from "@/lib/uploads/ticket";
+import { INVALID_INPUT, isValidId } from "@/lib/admin/guard";
 import {
   validationErrorMessage,
   type ActionResult,
@@ -28,6 +26,7 @@ const createSchema = z.object({
 
 const ticketOnlySchema = createSchema.pick({ ticket: true });
 
+/** Objek audio dari tiket yang ditolak dihapus agar tidak menjadi yatim di bucket. */
 async function cleanupRejectedMusicUpload(input: unknown, adminId: string) {
   const candidate = ticketOnlySchema.safeParse(input);
   if (!candidate.success) return;
@@ -42,9 +41,10 @@ async function cleanupRejectedMusicUpload(input: unknown, adminId: string) {
   }
 }
 
-function refreshMusicAdmin() {
+/** Playlist dibaca root layout (pemutar global) lewat tag cache "music". */
+function refreshMusic() {
   updateTag("music");
-  revalidatePath("/profil/music");
+  revalidatePath(adminFeatureHref("music"));
   revalidatePath("/", "layout");
 }
 
@@ -61,8 +61,7 @@ export async function finalizeMusicUpload(
     token: parsed.data.ticket,
     kind: "music",
     bucket: STORAGE_BUCKETS.music,
-    acceptTicket: (ticket) =>
-      ticket.source === "admin" && ticket.adminId === admin.id,
+    acceptTicket: (ticket) => ticket.source === "admin" && ticket.adminId === admin.id,
     cleanup: async (ticket) => removeMusicObjectIfUnused(ticket.path),
   });
   if (!finalized.ok) {
@@ -70,11 +69,7 @@ export async function finalizeMusicUpload(
       return { error: "Tiket unggahan audio tidak valid." };
     }
     if (finalized.reason === "invalid-descriptor") {
-      return {
-        error: finalized.policy.ok
-          ? "File audio tidak valid."
-          : finalized.policy.error,
-      };
+      return { error: finalized.policy.ok ? "File audio tidak valid." : finalized.policy.error };
     }
     return {
       error:
@@ -84,19 +79,15 @@ export async function finalizeMusicUpload(
     };
   }
 
-  const sb = createAdminSupabase();
   const saved = await checkedMutation(
     "music.create",
     "Gagal menyimpan lagu.",
-    sb
+    createAdminSupabase()
       .from("music_tracks")
       .insert({
         title: parsed.data.title,
         artist: parsed.data.artist || null,
-        audio_url: getStoragePublicUrl(
-          finalized.ticket.bucket,
-          finalized.ticket.path,
-        ),
+        audio_url: getStoragePublicUrl(finalized.ticket.bucket, finalized.ticket.path),
         mime_type: finalized.mimeType,
         storage_path: finalized.ticket.path,
         duration_seconds: parsed.data.durationSeconds,
@@ -112,12 +103,13 @@ export async function finalizeMusicUpload(
     await removeMusicObjectIfUnused(finalized.ticket.path);
     return { error: saved.error };
   }
-  refreshMusicAdmin();
+  refreshMusic();
   return {};
 }
 
 export async function toggleMusicTrack(id: string): Promise<ActionResult> {
   await requireFeature("music");
+  if (!isValidId(id)) return INVALID_INPUT;
   const sb = createAdminSupabase();
   const current = await checkedMutation(
     "music.load-toggle",
@@ -136,15 +128,13 @@ export async function toggleMusicTrack(id: string): Promise<ActionResult> {
       .maybeSingle(),
   );
   if (!saved.ok) return { error: saved.error };
-  refreshMusicAdmin();
+  refreshMusic();
   return {};
 }
 
-export async function moveMusicTrack(
-  id: string,
-  delta: -1 | 1,
-): Promise<ActionResult> {
+export async function moveMusicTrack(id: string, delta: -1 | 1): Promise<ActionResult> {
   await requireFeature("music");
+  if (!isValidId(id) || (delta !== -1 && delta !== 1)) return INVALID_INPUT;
   const sb = createAdminSupabase();
   const { data: tracks, error } = await sb
     .from("music_tracks")
@@ -152,39 +142,30 @@ export async function moveMusicTrack(
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
   if (error) return { error: "Gagal membaca urutan lagu." };
-  const currentIndex = (tracks ?? []).findIndex((track) => track.id === id);
-  const targetIndex = currentIndex + delta;
-  if (currentIndex < 0 || targetIndex < 0 || targetIndex >= (tracks ?? []).length) {
-    return {};
-  }
   const ordered = [...(tracks ?? [])];
-  [ordered[currentIndex], ordered[targetIndex]] = [
-    ordered[targetIndex],
-    ordered[currentIndex],
-  ];
-  for (let index = 0; index < ordered.length; index += 1) {
-    const track = ordered[index];
-    // Hanya baris yang posisinya berubah. Setelah urutan pernah dinormalisasi
-    // ke 0..n-1, satu langkah geser cukup menulis dua baris, bukan seluruhnya.
-    if (!track || track.sort_order === index) continue;
+  const currentIndex = ordered.findIndex((track) => track.id === id);
+  const targetIndex = currentIndex + delta;
+  if (currentIndex < 0 || targetIndex < 0 || targetIndex >= ordered.length) return {};
+  [ordered[currentIndex], ordered[targetIndex]] = [ordered[targetIndex]!, ordered[currentIndex]!];
+
+  // Hanya baris yang posisinya berubah. Setelah urutan pernah dinormalisasi
+  // ke 0..n-1, satu langkah geser cukup menulis dua baris, bukan seluruhnya.
+  for (const [index, track] of ordered.entries()) {
+    if (track.sort_order === index) continue;
     const saved = await checkedMutation(
       "music.order",
       "Gagal mengubah urutan lagu.",
-      sb
-        .from("music_tracks")
-        .update({ sort_order: index })
-        .eq("id", track.id)
-        .select("id")
-        .maybeSingle(),
+      sb.from("music_tracks").update({ sort_order: index }).eq("id", track.id).select("id").maybeSingle(),
     );
     if (!saved.ok) return { error: saved.error };
   }
-  refreshMusicAdmin();
+  refreshMusic();
   return {};
 }
 
 export async function deleteMusicTrack(id: string): Promise<ActionResult> {
   await requireFeature("music");
+  if (!isValidId(id)) return INVALID_INPUT;
   const sb = createAdminSupabase();
   const current = await checkedMutation(
     "music.load-delete",
@@ -199,6 +180,6 @@ export async function deleteMusicTrack(id: string): Promise<ActionResult> {
   );
   if (!deleted.ok) return { error: deleted.error };
   await removeStorageObject(STORAGE_BUCKETS.music, current.data.storage_path);
-  refreshMusicAdmin();
+  refreshMusic();
   return {};
 }

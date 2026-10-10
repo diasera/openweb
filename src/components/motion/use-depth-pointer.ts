@@ -2,8 +2,11 @@
 
 import { useEffect } from "react";
 
-/** Elemen yang mengikuti pointer; sinkron dengan selector tilt di motion.css. */
-const DEPTH_TILT_SELECTOR = ".motion-card, [data-depth-tilt]";
+/**
+ * Elemen yang mengikuti pointer; sinkron dengan selector tilt dan spotlight
+ * di motion.css. [data-spotlight] hanya memakai posisi untuk cahaya tepi.
+ */
+const DEPTH_TILT_SELECTOR = ".motion-card, [data-depth-tilt], [data-spotlight]";
 
 const clamp = (value: number) => Math.max(-1, Math.min(1, value));
 

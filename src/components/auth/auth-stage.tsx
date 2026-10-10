@@ -45,20 +45,15 @@ function buildWall(media: readonly AuthWallMedia[]): WallTile[][] {
         return {
           key,
           seed: `wall-${key}`,
-          ratio: PLACEHOLDER_RATIOS[(column + row * 2) % PLACEHOLDER_RATIOS.length],
+          ratio: PLACEHOLDER_RATIOS[(column + row * 2) % PLACEHOLDER_RATIOS.length]!,
           media: PLACEHOLDER_MEDIA,
         };
       }
-      const item = stills[(column * (TILES_PER_COLUMN + 2) + row) % stills.length];
+      const item = stills[(column * (TILES_PER_COLUMN + 2) + row) % stills.length]!;
       return {
         key: `${key}-${item.id}`,
         seed: item.id,
-        ratio: mediaDisplayAspectRatio(
-          item.width,
-          item.height,
-          3 / 4,
-          MEDIA_ASPECT_LIMITS.card,
-        ),
+        ratio: mediaDisplayAspectRatio(item.width, item.height, 3 / 4, MEDIA_ASPECT_LIMITS.card),
         media: item,
       };
     }),
@@ -67,7 +62,7 @@ function buildWall(media: readonly AuthWallMedia[]): WallTile[][] {
 
 /**
  * Panggung gerbang Auth (login & setup owner): dinding pin dari karya situs
- * sendiri yang bergeser pelan, lapisan pembaca bertoken tema, lalu kartu form
+ * sendiri yang bergeser pelan, cahaya aurora bertoken tema, lalu kartu form
  * dari halaman. Chrome aplikasi (island/tab bar) sengaja tidak tampil di sini.
  */
 export function AuthStage({
@@ -112,11 +107,11 @@ export function AuthStage({
 
       <header className="safe-inline relative z-10 flex items-center justify-between gap-3 pt-[calc(0.75rem+var(--safe-top))]">
         <MotionLink
-          href="/"
+          href="/profil"
           className="glass-button inline-flex h-9 items-center gap-1.5 rounded-full pl-2.5 pr-3.5 text-footnote font-semibold"
         >
           <ArrowLeft className="size-4" aria-hidden="true" />
-          Kembali ke situs
+          Kembali
         </MotionLink>
         <ThemeToggle />
       </header>

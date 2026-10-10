@@ -30,6 +30,7 @@
     "@tiptap/react": "^3.31.4",
     "@tiptap/starter-kit": "^3.31.4",
     "clsx": "^2.1.1",
+    "framer-motion": "^14.1.0",
     "heic-to": "^1.6.5",
     "jose": "^6.2.12",
     "lucide-react": "^1.52.0",

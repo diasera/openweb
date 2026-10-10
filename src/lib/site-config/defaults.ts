@@ -72,6 +72,7 @@ export function normalizeSiteSettings(settings: SiteSettingsRow): SiteSettingsRo
     seo_indexing_enabled: legacy.seo_indexing_enabled !== false,
     google_adsense_auto_ads: legacy.google_adsense_auto_ads === true,
     hero_badge: legacy.hero_badge ?? null,
+    hero_show_title: legacy.hero_show_title !== false,
     hero_image_width: legacy.hero_image_width ?? null,
     hero_image_height: legacy.hero_image_height ?? null,
     contact_phone: legacy.contact_phone ?? null,

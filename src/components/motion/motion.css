@@ -543,6 +543,225 @@ html {
   animation: motion-spinner-turn 720ms linear infinite;
 }
 
+/* ---- Kinetic type ---------------------------------------------------------
+ * Judul editorial masuk per kata: naik dari baseline sambil keluar dari blur,
+ * berurutan seperti judul keynote. <KineticText> memecah teks di server dan
+ * mengisi --word-index; pembungkus boleh menggeser mulai lewat --words-delay.
+ * Teks asli tetap utuh di DOM (crawler/pembaca layar membaca kalimat penuh). */
+.motion-word {
+  display: inline-block;
+  animation: motion-word-in 900ms var(--motion-spring) backwards;
+  animation-delay: calc(var(--words-delay, 0ms) + var(--word-index, 0) * 70ms);
+}
+
+@keyframes motion-word-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0.55em, 0);
+    filter: blur(10px);
+  }
+  60% {
+    filter: blur(0);
+  }
+}
+
+/* Masuk lembut satu blok (subjudul, badge, CTA) dengan blur ala visionOS. */
+.motion-blur-in {
+  animation: motion-blur-in 820ms var(--motion-spring) backwards;
+  animation-delay: var(--blur-delay, 0ms);
+}
+
+@keyframes motion-blur-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.985);
+    filter: blur(8px);
+  }
+}
+
+/* ---- Spotlight ------------------------------------------------------------
+ * Cahaya tepi yang mengikuti kursor di kartu bento ([data-spotlight]). Posisi
+ * datang dari --depth-px/--depth-py milik useDepthPointer (satu listener),
+ * jadi tidak ada state React per kartu. Host wajib `relative`. */
+@media (hover: hover) and (pointer: fine) {
+  [data-spotlight]::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    padding: 1px;
+    pointer-events: none;
+    background: radial-gradient(
+      22rem circle at calc(50% + var(--depth-px, 0) * 50%)
+        calc(50% + var(--depth-py, 0) * 50%),
+      rgb(var(--primary) / 0.55),
+      rgb(var(--accent) / 0.2) 35%,
+      transparent 65%
+    );
+    /* Hanya cincin 1px yang terlihat: isi kartu tidak ikut tersorot. */
+    mask:
+      linear-gradient(#000 0 0) content-box exclude,
+      linear-gradient(#000 0 0);
+    opacity: 0;
+    transition: opacity var(--motion-control) var(--motion-ease-out);
+  }
+
+  [data-spotlight]:hover::before {
+    opacity: 1;
+  }
+}
+
+/* ---- Rail tepi pudar --------------------------------------------------------
+ * Baris gulir horizontal memudar di kedua tepi agar konten terasa berlanjut;
+ * tepi kiri baru pudar setelah digulir (scroll-driven, tanpa JS). */
+.edge-fade-x {
+  --fade-start: 0px;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--fade-start),
+    #000 calc(100% - 2.5rem),
+    transparent
+  );
+}
+
+@property --fade-start {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@supports (animation-timeline: scroll()) {
+  .edge-fade-x {
+    animation: edge-fade-start linear both;
+    animation-timeline: scroll(self inline);
+    animation-range: 0 4rem;
+  }
+
+  @keyframes edge-fade-start {
+    to {
+      --fade-start: 2.5rem;
+    }
+  }
+}
+
+/* ---- Indikator hidup --------------------------------------------------------
+ * Titik status berdenyut (Live, menunggu moderasi, acara berlangsung). Gelombang
+ * memakai pseudo-elemen yang di-scale: transform+opacity saja. */
+/* Ukuran ditentukan pemanggil (mis. `size-2`): file ini tidak ber-layer,
+ * jadi lebar/tinggi di sini akan mengalahkan utilitas Tailwind. */
+.motion-live-dot {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background: currentColor;
+}
+
+.motion-live-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  animation: motion-live-ping 1.8s var(--motion-ease-out) infinite;
+}
+
+@keyframes motion-live-ping {
+  from {
+    opacity: 0.65;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
+
+/* Digit yang berganti (hitung mundur) jatuh masuk seperti flip-clock lembut. */
+.motion-digit {
+  display: inline-block;
+  animation: motion-digit-in 420ms var(--motion-spring-snappy) backwards;
+}
+
+@keyframes motion-digit-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -45%, 0);
+    filter: blur(3px);
+  }
+}
+
+/* Kilau menyapu permukaan saat hover (tombol utama, chip hero). Host wajib
+ * `relative overflow-hidden`; pita cahaya digeser dengan translate. */
+.motion-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgb(255 255 255 / 0.38) 48%,
+    transparent 66%
+  );
+  transform: translate3d(-120%, 0, 0);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .motion-sheen:hover::after {
+    transform: translate3d(120%, 0, 0);
+    transition: transform 900ms var(--motion-ease-out);
+  }
+}
+
+/* Kerangka pemuatan: pita terang bergeser di atas permukaan fill. */
+.motion-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgb(var(--surface-2));
+}
+
+.motion-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(var(--surface) / 0.65),
+    transparent
+  );
+  transform: translate3d(-100%, 0, 0);
+  animation: motion-skeleton-sweep 1.4s ease-in-out infinite;
+}
+
+@keyframes motion-skeleton-sweep {
+  to {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+
+/* Cincin gradien berputar (avatar-ring) — hanya saat diminta, karena gerak
+ * terus-menerus di banyak avatar justru terasa ramai. */
+.motion-ring-spin .avatar-ring::before,
+.avatar-ring.motion-ring-spin::before {
+  animation: motion-ring-turn 7s linear infinite;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .group:hover .avatar-ring::before {
+    animation: motion-ring-turn 2.4s linear infinite;
+  }
+}
+
+@keyframes motion-ring-turn {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
 /* Count-up murni CSS: angka final sudah ada di HTML, animasi hanya visual. */
 @property --motion-count {
   syntax: "<integer>";
@@ -588,8 +807,18 @@ html {
   .motion-reveal,
   .motion-parallax,
   .motion-float,
-  .motion-count {
+  .motion-count,
+  .motion-word,
+  .motion-blur-in,
+  .motion-digit,
+  .motion-live-dot::after,
+  .motion-skeleton::after,
+  .avatar-ring::before {
     animation: none !important;
+  }
+
+  .motion-sheen::after {
+    display: none;
   }
 
   :is(.motion-card, [data-depth-tilt]):is(:hover, :active) {

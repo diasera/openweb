@@ -10,7 +10,7 @@ const SIZES = {
 /**
  * Plat ikon berwarna ala Pengaturan iOS dengan material gloss. Warna datang
  * dari kelas tone pemanggil (mis. `bg-tone-orange text-white`), sehingga
- * menu Profil, banner notifikasi, dan kartu admin berbagi satu bentuk.
+ * preferensi Profil, banner notifikasi, dan admin berbagi satu bentuk.
  */
 export function IconPlate({
   icon: Icon,

@@ -16,9 +16,9 @@ export interface AdminActionFeedback {
 
 /**
  * Satu pintu menjalankan Server Action admin: transition pending, galat
- * ActionResult, exception jaringan, toast, dan callback state lokal.
- * Exception WAJIB ditangkap di sini: di React 19 galat dalam transition
- * async diteruskan ke error boundary dan merobohkan seluruh halaman admin.
+ * ActionResult, exception jaringan, umpan balik Dynamic Island, dan callback
+ * state lokal. Exception WAJIB ditangkap di sini: di React 19 galat dalam
+ * transition async diteruskan ke error boundary dan merobohkan halaman admin.
  */
 export function useAdminAction() {
   const { toast } = useToast();

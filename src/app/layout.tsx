@@ -11,7 +11,9 @@ import {
   getSocialImageUrl,
   normalizeAdsenseClientId,
   normalizeAnalyticsId,
+  normalizeVerificationCode,
   OG_CARD_PATH,
+  socialImageAlt,
 } from "@/lib/seo";
 import { themeBackgroundHex, themeCss } from "@/lib/theme";
 import { getContentLabels, toDisplayLabel } from "@/lib/site-config";
@@ -46,9 +48,17 @@ export async function generateMetadata(): Promise<Metadata> {
   const description = getHomeSeoDescription(settings);
   const siteUrl = getSiteUrl(settings);
   const image = getSocialImageUrl(settings) ?? OG_CARD_PATH;
-  const images = [{ url: new URL(image, siteUrl).toString(), alt: `${siteName} — ${title}` }];
+  const images = [
+    { url: new URL(image, siteUrl).toString(), alt: socialImageAlt(settings, title) },
+  ];
   const adsenseClientId = normalizeAdsenseClientId(
     settings.google_adsense_client_id,
+  );
+  const googleVerification = normalizeVerificationCode(
+    settings.google_site_verification,
+  );
+  const bingVerification = normalizeVerificationCode(
+    settings.bing_site_verification,
   );
   return {
     metadataBase: new URL(siteUrl),
@@ -89,11 +99,11 @@ export async function generateMetadata(): Promise<Metadata> {
       },
     },
     verification:
-      settings.google_site_verification || settings.bing_site_verification
+      googleVerification || bingVerification
         ? {
-            google: settings.google_site_verification || undefined,
-            other: settings.bing_site_verification
-              ? { "msvalidate.01": [settings.bing_site_verification] }
+            google: googleVerification ?? undefined,
+            other: bingVerification
+              ? { "msvalidate.01": [bingVerification] }
               : undefined,
           }
         : undefined,

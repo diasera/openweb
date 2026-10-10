@@ -35,14 +35,19 @@ export function AuthForm({
       {error && (
         <p
           role="alert"
-          className="bg-danger/10 text-danger flex items-start gap-2 rounded-ios px-3.5 py-3 text-footnote font-medium leading-relaxed"
+          className="bg-danger/10 text-danger animate-fade-in flex items-start gap-2 rounded-2xl px-3.5 py-3 text-footnote font-medium leading-relaxed"
         >
           <CircleAlert className="mt-px size-4 shrink-0" aria-hidden="true" />
           {error}
         </p>
       )}
 
-      <Button type="submit" size="lg" disabled={pending} className="w-full">
+      <Button
+        type="submit"
+        size="lg"
+        disabled={pending}
+        className="motion-sheen relative w-full overflow-hidden"
+      >
         {pending ? (
           <>
             <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />

@@ -1,119 +1,155 @@
+import Image from "next/image";
 import Link from "next/link";
-import { Newspaper, Pencil, Plus } from "lucide-react";
+import { ExternalLink, Newspaper, Pencil, Plus } from "lucide-react";
 import { requireFeature } from "@/lib/auth";
-import { getAdminPosts, type BlogFilter } from "@/lib/admin/blog";
-import { parsePageParam } from "@/lib/utils/url";
-import { Pagination } from "@/components/public/pagination";
+import {
+  getAdminPosts,
+  getPostStatusCounts,
+  type BlogFilter,
+} from "@/lib/admin/blog";
+import { isOneOf } from "@/lib/admin/guard";
+import { adminFeatureHref } from "@/lib/constants";
 import { buildAdminPageMetadata } from "@/lib/seo";
-import { timeAgo } from "@/lib/utils/time";
-import { PageHeader } from "@/components/ui/page-header";
-import { FilterTabs } from "@/components/admin/filter-tabs";
-import { Card } from "@/components/ui/card";
-import { Chip } from "@/components/ui/chip";
+import type { PostStatus } from "@/lib/types/database";
+import { parsePageParam } from "@/lib/utils/url";
 import { buttonClass } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { DeleteButton } from "@/components/admin/confirmed-action-button";
-import { PostStatusButton } from "@/components/admin/post-actions";
+import { RelativeTime } from "@/components/ui/relative-time";
+import { Pagination } from "@/components/public/pagination";
+import { AdminPage } from "@/components/admin/admin-page";
+import { AdminTabs } from "@/components/admin/admin-tabs";
+import {
+  AdminList,
+  AdminRow,
+  LeadingIcon,
+  StatusBadge,
+  type BadgeTone,
+} from "@/components/admin/admin-list";
+import { DeleteAction, IconLink } from "@/components/admin/admin-actions";
+import { PostStatusAction } from "@/components/admin/blog/post-status-action";
 import { deletePost } from "./actions";
 
 export const metadata = buildAdminPageMetadata("Blog");
 
-const FILTERS: BlogFilter[] = ["all", "published", "draft", "archived"];
+const BASE_PATH = adminFeatureHref("blog");
+const FILTERS = ["all", "published", "draft", "archived"] as const satisfies readonly BlogFilter[];
+const STATUS: Record<PostStatus, { label: string; tone: BadgeTone }> = {
+  published: { label: "Terbit", tone: "success" },
+  draft: { label: "Draf", tone: "neutral" },
+  archived: { label: "Arsip", tone: "outline" },
+};
 
-export default async function BlogPage({
+function NewPostLink({ className }: { className?: string }) {
+  return (
+    <Link href={`${BASE_PATH}/new`} className={buttonClass({ className })}>
+      <Plus className="size-4" aria-hidden="true" /> Tulis artikel
+    </Link>
+  );
+}
+
+export default async function BlogAdminPage({
   searchParams,
 }: {
   searchParams: Promise<{ status?: string; page?: string }>;
 }) {
   await requireFeature("blog");
-  const { status, page: pageParam } = await searchParams;
-  const filter: BlogFilter = FILTERS.includes(status as BlogFilter)
-    ? (status as BlogFilter)
-    : "all";
-  const result = await getAdminPosts(filter, parsePageParam(pageParam));
-  const posts = result.rows;
+  const { status, page } = await searchParams;
+  const filter: BlogFilter = isOneOf(status, FILTERS) ? status : "all";
+  const [result, counts] = await Promise.all([
+    getAdminPosts(filter, parsePageParam(page)),
+    getPostStatusCounts(),
+  ]);
 
   return (
-    <div>
-      <PageHeader
-        title="Blog"
-        description="Tulis, edit, terbitkan, atau arsipkan artikel."
-        action={
-          <Link href="/profil/blog/new" className={buttonClass()}>
-            <Plus className="h-4 w-4" aria-hidden="true" /> Tulis artikel
-          </Link>
-        }
-      />
-
-      <FilterTabs
-        basePath="/profil/blog"
-        active={filter}
-        items={[
-          { label: "Semua", value: "all" },
-          { label: "Terbit", value: "published" },
-          { label: "Draft", value: "draft" },
-          { label: "Arsip", value: "archived" },
-        ]}
-      />
-
-      {posts.length === 0 ? (
+    <AdminPage
+      feature="blog"
+      title="Blog"
+      description="Tulis, terbitkan, dan arsipkan artikel. Artikel terbit langsung masuk sitemap dan feed RSS."
+      actions={<NewPostLink className="motion-sheen relative overflow-hidden" />}
+      toolbar={
+        <AdminTabs
+          basePath={BASE_PATH}
+          active={filter}
+          items={[
+            { label: "Semua", value: "all", count: counts.all },
+            { label: "Terbit", value: "published", count: counts.published },
+            { label: "Draf", value: "draft", count: counts.draft },
+            { label: "Arsip", value: "archived", count: counts.archived },
+          ]}
+        />
+      }
+    >
+      {result.rows.length === 0 ? (
         <EmptyState
-          icon={<Newspaper className="h-8 w-8" />}
+          icon={<Newspaper className="size-8" />}
           title="Belum ada artikel"
-          description="Mulai tulis artikel pertama untuk website."
-          action={
-            <Link href="/profil/blog/new" className={buttonClass()}>
-              Tulis artikel
-            </Link>
+          description={
+            filter === "all"
+              ? "Mulai tulis artikel pertama untuk website."
+              : "Tidak ada artikel pada filter ini."
           }
+          action={filter === "all" ? <NewPostLink /> : undefined}
         />
       ) : (
-        <div className="space-y-2">
-          {posts.map((p) => (
-            <Card key={p.id} className="flex items-center gap-3 p-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="truncate font-semibold">{p.title}</p>
-                  <Chip
-                    variant={
-                      p.status === "published"
-                        ? "primary"
-                        : p.status === "draft"
-                          ? "soft"
-                          : "outline"
-                    }
-                  >
-                    {p.status}
-                  </Chip>
-                </div>
-                <p className="text-muted truncate text-xs">
-                  Diperbarui {timeAgo(p.updated_at)}
-                </p>
-              </div>
-              <PostStatusButton id={p.id} status={p.status} />
-              <Link
-                href={`/profil/blog/${p.id}`}
-                aria-label="Edit"
-                title="Edit"
-                className="text-muted hover:bg-surface-2 grid h-9 w-9 shrink-0 place-items-center rounded-lg"
-              >
-                <Pencil className="size-4.5" />
-              </Link>
-              <DeleteButton
-                action={deletePost}
-                id={p.id}
-                message={`Hapus artikel "${p.title}"?`}
-              />
-            </Card>
+        <AdminList label="Artikel">
+          {result.rows.map((post, index) => (
+            <AdminRow
+              key={post.id}
+              index={index}
+              leading={
+                post.cover_image_url ? (
+                  <span className="bg-surface-2 relative block h-11 w-16 overflow-hidden rounded-xl">
+                    <Image src={post.cover_image_url} alt="" fill sizes="64px" className="object-cover" />
+                  </span>
+                ) : (
+                  <LeadingIcon icon={Newspaper} wide className="bg-tone-pink/12 text-tone-pink-text" />
+                )
+              }
+              title={post.title}
+              badges={
+                <>
+                  <StatusBadge tone={STATUS[post.status].tone}>{STATUS[post.status].label}</StatusBadge>
+                  {post.category && <StatusBadge>{post.category}</StatusBadge>}
+                </>
+              }
+              meta={
+                <>
+                  Diperbarui <RelativeTime iso={post.updated_at} />
+                  {post.author_name && ` · ${post.author_name}`}
+                  {post.views > 0 && ` · ${post.views}× dibaca`}
+                </>
+              }
+              actions={
+                <>
+                  {post.status === "published" && (
+                    <IconLink
+                      href={`/blog/${post.slug}`}
+                      target="_blank"
+                      label="Buka artikel"
+                      icon={ExternalLink}
+                    />
+                  )}
+                  <PostStatusAction id={post.id} status={post.status} />
+                  <IconLink href={`${BASE_PATH}/${post.id}`} label="Edit" icon={Pencil} />
+                  <DeleteAction
+                    action={deletePost}
+                    id={post.id}
+                    title={`Hapus "${post.title}"?`}
+                    message="Artikel, cover, dan gambar di dalamnya dihapus permanen."
+                    successMessage="Artikel dihapus"
+                  />
+                </>
+              }
+            />
           ))}
-        </div>
+        </AdminList>
       )}
       <Pagination
-        basePath="/profil/blog"
+        basePath={BASE_PATH}
         current={result.page}
         total={result.totalPages}
         query={{ status: filter === "all" ? undefined : filter }}
       />
-    </div>
+    </AdminPage>
   );
 }

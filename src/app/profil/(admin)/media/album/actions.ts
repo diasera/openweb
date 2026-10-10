@@ -10,8 +10,10 @@ import {
   isSchemaOutdatedError,
   SCHEMA_OUTDATED_MESSAGE,
 } from "@/lib/database/errors";
-import { MEDIA_ADMIN_SECTIONS } from "@/lib/constants";
+import { INVALID_INPUT, isValidId } from "@/lib/admin/guard";
+import { adminFeatureHref, MEDIA_ADMIN_SECTIONS } from "@/lib/constants";
 import { slugify, withPreviousSlug } from "@/lib/utils/slug";
+import { revalidateSeoIndexes } from "@/lib/seo/revalidate";
 import {
   validationErrorMessage,
   type ActionResult,
@@ -28,10 +30,11 @@ const schema = z.object({
 
 function revalidateAlbums(slugs: ReadonlyArray<string | null | undefined>) {
   revalidatePath(MEDIA_ADMIN_SECTIONS.album.href);
-  revalidatePath("/profil/media");
+  revalidatePath(adminFeatureHref("media"));
   revalidatePath("/album");
   revalidatePath("/agenda");
   for (const slug of new Set(slugs)) if (slug) revalidatePath(`/album/${slug}`);
+  revalidateSeoIndexes();
 }
 
 export async function saveAlbum(formData: FormData): Promise<ActionResult> {
@@ -63,15 +66,14 @@ export async function saveAlbum(formData: FormData): Promise<ActionResult> {
     (candidate) => sb.from("albums").select("id").eq("slug", candidate).maybeSingle(),
     current?.data.slug,
   );
-  if (!slug.ok) {
-    return { error: slug.error };
-  }
+  if (!slug.ok) return { error: slug.error };
 
   const payload = {
     title,
     slug: slug.data,
     description: description || null,
     event_id: event_id || null,
+    // URL album lama tetap hidup: slug sebelumnya dialihkan ke slug baru.
     ...(current?.data && current.data.slug !== slug.data
       ? {
           previous_slugs: withPreviousSlug(
@@ -101,15 +103,11 @@ export async function saveAlbum(formData: FormData): Promise<ActionResult> {
 
 export async function deleteAlbum(id: string): Promise<ActionResult> {
   await requireFeature("media");
+  if (!isValidId(id)) return INVALID_INPUT;
   const deleted = await checkedMutation(
     "albums.delete",
     "Gagal menghapus album.",
-    createAdminSupabase()
-      .from("albums")
-      .delete()
-      .eq("id", id)
-      .select("id, slug")
-      .maybeSingle(),
+    createAdminSupabase().from("albums").delete().eq("id", id).select("id, slug").maybeSingle(),
   );
   if (!deleted.ok) return { error: deleted.error };
   // Media tetap ada; FK `on delete set null` hanya melepas kaitan albumnya.
@@ -123,10 +121,9 @@ export async function setMediaAlbum(
   albumId: string | null,
 ): Promise<ActionResult> {
   await requireFeature("media");
-  const ids = z
-    .object({ mediaId: z.uuid(), albumId: z.uuid().nullable() })
-    .safeParse({ mediaId, albumId });
-  if (!ids.success) return { error: "Data album tidak valid." };
+  if (!isValidId(mediaId) || (albumId !== null && !isValidId(albumId))) {
+    return INVALID_INPUT;
+  }
   const sb = createAdminSupabase();
 
   let albumSlug: string | null = null;
@@ -154,8 +151,8 @@ export async function setMediaAlbum(
   const previousAlbumId = previous.data?.album_id;
   const previousSlug =
     previousAlbumId && previousAlbumId !== albumId
-      ? (await sb.from("albums").select("slug").eq("id", previousAlbumId).maybeSingle())
-          .data?.slug
+      ? (await sb.from("albums").select("slug").eq("id", previousAlbumId).maybeSingle()).data
+          ?.slug
       : null;
   revalidateAlbums([albumSlug, previousSlug]);
   revalidatePath(`/pin/${mediaId}`);

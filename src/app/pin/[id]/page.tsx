@@ -24,7 +24,7 @@ import {
   mediaDisplayAspectRatio,
 } from "@/lib/media/display";
 import { JsonLd } from "@/components/seo/json-ld";
-import { buildPageMetadata, plainText } from "@/lib/seo";
+import { buildPageMetadata, mediaTitle, plainText } from "@/lib/seo";
 import {
   breadcrumbStructuredData,
   mediaStructuredData,
@@ -44,12 +44,14 @@ export async function generateMetadata({
     getMediaById(id),
     getSettings(),
   ]);
-  const title = media?.title || plainText(media?.caption, 70) || "Media";
+  const title = media ? mediaTitle(media, settings) : "Pin tidak ditemukan";
   return buildPageMetadata(settings, {
     title,
     description:
       plainText(media?.caption, 170) ||
-      `Dokumentasi foto dan video ${settings.site_name}.`,
+      (media
+        ? `${title} — dokumentasi ${media.type === "video" ? "video" : "foto"} ${settings.site_name}.`
+        : `Dokumentasi foto dan video ${settings.site_name}.`),
     path: `/pin/${id}`,
     image: media?.thumbnail_url || (media?.type === "photo" ? media.url : null),
     noIndex: !media,
@@ -87,6 +89,7 @@ export default async function PinPage({
   ]);
   const mediaSchema = mediaStructuredData(settings, media);
   const related = pickRelatedMedia(recentMedia, media.id, media.category);
+  const title = mediaTitle(media, settings);
 
   const ratio = mediaDisplayAspectRatio(
     media.width,
@@ -103,7 +106,7 @@ export default async function PinPage({
         backHref: "/galeri",
         right: (
           <>
-            <ShareButton title={media.title ?? "Pin"} />
+            <ShareButton title={title} />
             <SaveButton kind="pin" itemId={media.id} pill />
           </>
         ),
@@ -114,10 +117,7 @@ export default async function PinPage({
           breadcrumbStructuredData(settings, [
             { name: "Beranda", path: "/" },
             { name: "Galeri", path: "/galeri" },
-            {
-              name: media.title || "Media",
-              path: `/pin/${media.id}`,
-            },
+            { name: title, path: `/pin/${media.id}` },
           ]),
           ...(mediaSchema ? [mediaSchema] : []),
         ]}
@@ -128,7 +128,7 @@ export default async function PinPage({
         <PinMedia
           mediaId={media.id}
           slides={slides}
-          label={media.title || media.caption || "Media"}
+          label={title}
           aspectRatio={ratio}
           className="rounded-ios-lg lg:sticky lg:top-24 lg:max-h-[calc(100dvh-8rem)]"
           style={{ viewTransitionName: `pin-${media.id}` }}
@@ -161,11 +161,17 @@ export default async function PinPage({
             </MotionLink>
           )}
 
-          {media.title && (
-            <h1 className="font-display mt-4 text-title1 font-bold text-balance">
-              {media.title}
-            </h1>
-          )}
+          {/* Setiap pin punya h1: judul admin bila ada, selain itu judul
+              turunan (jenis · kategori · tanggal) khusus pembaca layar/mesin pencari. */}
+          <h1
+            className={
+              media.title
+                ? "font-display mt-4 text-title1 font-bold text-balance"
+                : "sr-only"
+            }
+          >
+            {title}
+          </h1>
           {media.caption && (
             <p className="text-muted mt-2 text-subhead leading-relaxed">{media.caption}</p>
           )}

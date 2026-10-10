@@ -4,23 +4,27 @@ import { MotionLink, staggerDelay } from "@/components/motion";
 import { memberProfilePath } from "@/lib/members/slug";
 
 /**
- * Baris anggota (scroll horizontal). Setiap item punya lebar tetap; nama boleh
- * dua baris agar tetap terbaca. Avatar 44px di ponsel (HIG) lalu 54px dari sm.
- * `scroll-px-4` menyamakan titik snap dengan gutter halaman.
+ * Baris anggota (scroll horizontal) dengan tepi yang memudar. Setiap item
+ * punya lebar tetap; nama boleh dua baris agar tetap terbaca. Avatar 44px di
+ * ponsel (HIG) lalu 54px dari sm. Hover: avatar terangkat dan cincin anggota
+ * inti berputar. `scroll-px-4` menyamakan titik snap dengan gutter halaman.
  */
 export function MemberRail({ members }: { members: MemberRow[] }) {
   return (
-    <div className="motion-horizontal-scroll no-scrollbar -mx-4 flex scroll-px-4 gap-2 overflow-x-auto px-4 pb-1 sm:gap-3">
+    <div className="motion-horizontal-scroll no-scrollbar edge-fade-x -mx-4 flex scroll-px-4 gap-2 overflow-x-auto px-4 pb-2 pt-1 sm:gap-3 lg:-mx-6 lg:scroll-px-6 lg:px-6">
       {members.map((m, index) => (
         <MotionLink
           key={m.id}
           href={memberProfilePath(m)}
           prefetch={false}
           title={m.name}
-          className="animate-rise motion-pressable flex w-16 shrink-0 flex-col items-center gap-1.5 sm:w-20"
+          className="group animate-rise motion-pressable flex w-16 shrink-0 flex-col items-center gap-1.5 rounded-2xl sm:w-20"
           style={{ animationDelay: staggerDelay(index) }}
         >
-          <span style={{ viewTransitionName: `member-${m.slug}` }}>
+          <span
+            className="transition-transform duration-500 ease-(--motion-spring-snappy) group-hover:-translate-y-1"
+            style={{ viewTransitionName: `member-${m.slug}` }}
+          >
             <Avatar
               name={m.name}
               src={m.photo_url}

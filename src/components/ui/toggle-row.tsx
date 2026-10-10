@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { Switch } from "@/components/ui/switch";
 
-/** Baris dengan toggle: ikon + label + Switch. Dipakai hub Profil. */
+/** Baris dengan toggle: ikon + label + Switch. Dipakai preferensi Profil dan Buat Pin. */
 export function ToggleRow({
   icon,
   label,

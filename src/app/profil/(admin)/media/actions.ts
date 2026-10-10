@@ -9,6 +9,7 @@ import {
 } from "@/lib/media/upload";
 import { revalidateMediaPages } from "@/lib/media/revalidate";
 import { setIpBlocked } from "@/lib/admin/ip-bans";
+import { INVALID_INPUT, isValidId } from "@/lib/admin/guard";
 import { checkedMutation } from "@/lib/database/mutation";
 import type { ActionResult } from "@/lib/action-result";
 
@@ -73,31 +74,30 @@ async function reviewMedia(
 
 export async function approveMedia(id: string): Promise<ActionResult> {
   const admin = await requireFeature("media");
+  if (!isValidId(id)) return INVALID_INPUT;
   return reviewMedia(id, "approved", admin.id);
 }
 
 export async function rejectMedia(id: string): Promise<ActionResult> {
   const admin = await requireFeature("media");
+  if (!isValidId(id)) return INVALID_INPUT;
   return reviewMedia(id, "rejected", admin.id);
 }
 
-export async function togglePinMedia(
-  id: string,
-  pinned: boolean,
-): Promise<ActionResult> {
+export async function togglePinMedia(id: string, pinned: boolean): Promise<ActionResult> {
   await requireFeature("media");
-  const sb = createAdminSupabase();
+  if (!isValidId(id) || typeof pinned !== "boolean") return INVALID_INPUT;
   const saved = await checkedMutation(
     "media.pin",
-    "Gagal mengubah sematan media.",
-    sb
+    "Gagal mengubah sorotan media.",
+    createAdminSupabase()
       .from("media")
       .update({ is_pinned: pinned })
       .eq("id", id)
       .eq("status", "approved")
       .select("id")
       .maybeSingle(),
-    { notFoundMessage: "Media harus berstatus disetujui sebelum disematkan." },
+    { notFoundMessage: "Media harus disetujui sebelum dijadikan sorotan." },
   );
   if (!saved.ok) return { error: saved.error };
   revalidateMediaPages(id);
@@ -106,6 +106,7 @@ export async function togglePinMedia(
 
 export async function deleteMedia(id: string): Promise<ActionResult> {
   await requireFeature("media");
+  if (!isValidId(id)) return INVALID_INPUT;
   const sb = createAdminSupabase();
   // Slide ikut terhapus (cascade), jadi URL-nya dibaca sebelum baris hilang;
   // tanpa itu objek slide tertinggal permanen di bucket publik.
@@ -114,16 +115,11 @@ export async function deleteMedia(id: string): Promise<ActionResult> {
   const deleted = await checkedMutation(
     "media.delete",
     "Gagal menghapus media.",
-    sb
-      .from("media")
-      .delete()
-      .eq("id", id)
-      .select("id, url")
-      .maybeSingle(),
+    sb.from("media").delete().eq("id", id).select("id, url").maybeSingle(),
   );
   if (!deleted.ok) return { error: deleted.error };
 
-  // Hapus baris lebih dulu agar kegagalan DB tidak meninggalkan URL rusak.
+  // Baris dihapus lebih dulu agar kegagalan DB tidak meninggalkan URL rusak.
   // Pembersihan storage bersifat best-effort dan aman dijalankan setelahnya.
   await Promise.all(
     [deleted.data.url, ...slideUrls].filter(Boolean).map(removeMediaObject),
@@ -135,6 +131,7 @@ export async function deleteMedia(id: string): Promise<ActionResult> {
 /** Blokir IP pengunggah + tolak media terkait. */
 export async function banMediaIp(id: string): Promise<ActionResult> {
   const admin = await requireFeature("media");
+  if (!isValidId(id)) return INVALID_INPUT;
   const sb = createAdminSupabase();
   const media = await checkedMutation(
     "media.load-ip",

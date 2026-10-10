@@ -9,7 +9,7 @@
 
 .card {
   /* Kemiringan kartu besar dibuat halus agar tidak terasa berat. */
-  --depth-tilt-max: 3;
+  --depth-tilt-max: 2.5;
 }
 
 .media,
@@ -23,6 +23,20 @@
   transition-timing-function: ease-out;
 }
 
+/* Foto "mengendap" ke posisinya saat halaman dibuka (Ken Burns terbalik).
+ * Hanya scale: opacity sengaja tidak dianimasikan agar gambar LCP terlukis
+ * di frame pertama. Lapisan terpisah dari .media yang dipakai parallax. */
+.settle {
+  transform-origin: 50% 40%;
+  animation: hero-settle 1600ms var(--motion-spring) backwards;
+}
+
+@keyframes hero-settle {
+  from {
+    transform: scale(1.07);
+  }
+}
+
 @media (hover: hover) and (pointer: fine) {
   .media {
     transform: translate3d(
@@ -34,7 +48,7 @@
   }
 
   .card:hover .media {
-    --hero-zoom: 1.04;
+    --hero-zoom: 1.035;
   }
 
   .orbs {
@@ -54,7 +68,20 @@
   }
 }
 
-/* Mesh aurora bergerak pelan untuk hero tanpa foto. */
+/* Tepi spekular: sorotan tipis di tepi atas + bayangan dalam di bawah. */
+.rim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    inset 0 0 0 1px rgb(255 255 255 / 0.08),
+    inset 0 -40px 60px -40px rgb(0 0 0 / 0.25);
+}
+
+/* Mesh aurora bergerak pelan untuk hero tanpa foto (utama + aksen). */
 .blob {
   position: absolute;
   width: 70%;
@@ -79,11 +106,25 @@
   bottom: -45%;
   background: radial-gradient(
     closest-side,
-    color-mix(in oklab, rgb(var(--primary)) 40%, rgb(var(--tone-indigo))),
+    color-mix(in oklab, rgb(var(--accent)) 45%, rgb(var(--tone-indigo))),
     transparent
   );
   animation-duration: 23s;
   animation-direction: alternate-reverse;
+}
+
+.blob:nth-child(3) {
+  top: 10%;
+  left: 35%;
+  width: 45%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklab, rgb(var(--accent)) 60%, white),
+    transparent
+  );
+  opacity: 0.35;
+  animation-duration: 29s;
+  animation-delay: -8s;
 }
 
 /* Bentuk Liquid Glass di atas aurora: cincin tebal, kapsul, dan bola kecil.
@@ -162,6 +203,17 @@
   border: 1px solid rgb(255 255 255 / 0.28);
   background: rgb(255 255 255 / 0.16);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3);
+  backdrop-filter: blur(10px) saturate(160%);
+}
+
+/* Titik aksen kecil di badge: memberi warna tema tanpa mengganggu foto. */
+.badgeDot {
+  width: 0.4375rem;
+  height: 0.4375rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background: color-mix(in oklab, rgb(var(--accent)) 70%, white);
+  box-shadow: 0 0 0 3px rgb(255 255 255 / 0.18), 0 0 10px rgb(var(--accent) / 0.9);
 }
 
 @keyframes hero-blob {
@@ -236,6 +288,7 @@
   .scrollDepth .media,
   .scrollDepth .copy,
   .scrollDepth .orbs,
+  .settle,
   .blob,
   .orb {
     animation: none !important;

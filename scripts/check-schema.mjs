@@ -37,6 +37,21 @@ for (const run of [1, 2]) {
 }
 
 const rows = async (sql, params) => (await db.query(sql, params)).rows;
+
+// Migrasi sakelar judul hero: instalasi lama yang menyembunyikan judul dengan
+// simbol (mis. ".") dikonversi sekali; judul biasa tidak disentuh.
+for (const [legacyTitle, expected] of [
+  [".", { hero_show_title: false, hero_title: null }],
+  ["Halo dunia", { hero_show_title: true, hero_title: "Halo dunia" }],
+]) {
+  await db.exec("alter table public.site_settings drop column hero_show_title");
+  await db.query("update public.site_settings set hero_title = $1 where id = 1", [legacyTitle]);
+  await db.exec(schema);
+  const [hero] = await rows("select hero_show_title, hero_title from public.site_settings where id = 1");
+  assert.deepEqual(hero, expected, `migrasi hero_show_title untuk judul ${JSON.stringify(legacyTitle)}`);
+}
+await db.exec("update public.site_settings set hero_title = null, hero_show_title = true where id = 1");
+
 const asRole = async (role, sql, params) => {
   await db.exec(`set role ${role}`);
   try {

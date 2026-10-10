@@ -291,16 +291,48 @@
 }
 
 @utility liquid-gradient {
-  /* Mesh gradient untuk hero/sampul tanpa foto: beberapa sumber cahaya yang
-     diturunkan dari warna utama tema, jadi ikut berubah saat admin mengganti
-     warna di Pengaturan. Tanpa color-mix, tetap tampil warna utama polos. */
+  /* Mesh gradient untuk hero/sampul tanpa foto: sumber cahaya diturunkan dari
+     warna UTAMA dan AKSEN tema (keduanya diatur di Pengaturan → Identitas),
+     jadi ikut berubah saat admin mengganti warna. Bila aksen = utama, hasilnya
+     tetap kaya karena dicampur nada oranye/indigo. Tanpa color-mix, tampil
+     warna utama polos. */
   background-color: rgb(var(--primary));
   background-color: color-mix(in oklab, rgb(var(--primary)) 72%, black);
   background-image:
     radial-gradient(70% 90% at 12% 16%, color-mix(in oklab, rgb(var(--primary)) 80%, white) 0%, transparent 60%),
-    radial-gradient(60% 80% at 90% 8%, color-mix(in oklab, rgb(var(--primary)) 45%, rgb(var(--tone-orange))) 0%, transparent 62%),
-    radial-gradient(85% 90% at 72% 105%, color-mix(in oklab, rgb(var(--primary)) 38%, rgb(var(--tone-indigo))) 0%, transparent 66%),
+    radial-gradient(60% 80% at 90% 8%, color-mix(in oklab, rgb(var(--accent)) 55%, rgb(var(--tone-orange))) 0%, transparent 62%),
+    radial-gradient(85% 90% at 72% 105%, color-mix(in oklab, rgb(var(--accent)) 45%, rgb(var(--tone-indigo))) 0%, transparent 66%),
     linear-gradient(150deg, rgb(var(--primary)), color-mix(in oklab, rgb(var(--primary)) 50%, black));
+}
+
+@utility aurora {
+  /* Cahaya ambient lembut di atas permukaan terang/gelap (header dasbor,
+     kartu identitas Profil): campuran utama + aksen, tanpa menutupi teks.
+     Host wajib positioned; lapisan statis di ::before agar murah. */
+  isolation: isolate;
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+      radial-gradient(80% 120% at 0% 0%, rgb(var(--primary) / 0.16), transparent 60%),
+      radial-gradient(70% 110% at 100% 0%, rgb(var(--accent) / 0.12), transparent 62%),
+      radial-gradient(90% 90% at 60% 120%, rgb(var(--tone-indigo) / 0.1), transparent 65%);
+  }
+  .dark &::before {
+    background:
+      radial-gradient(80% 120% at 0% 0%, rgb(var(--primary) / 0.26), transparent 60%),
+      radial-gradient(70% 110% at 100% 0%, rgb(var(--accent) / 0.2), transparent 62%),
+      radial-gradient(90% 90% at 60% 120%, rgb(var(--tone-indigo) / 0.16), transparent 65%);
+  }
+  @media (prefers-contrast: more) {
+    &::before {
+      display: none;
+    }
+  }
 }
 
 @utility gloss {
@@ -336,15 +368,27 @@
 }
 
 @utility avatar-ring {
-  /* Cincin anggota inti ala story: gradien berputar dari warna utama tema. */
+  /* Cincin anggota inti ala story: gradien conic dari warna utama + aksen.
+     Gradien hidup di ::before agar bisa diputar murni lewat transform
+     (compositor) oleh .motion-ring-spin; elemen memotongnya jadi lingkaran. */
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   background-color: rgb(var(--primary));
-  background-image: conic-gradient(
-    from 210deg,
-    rgb(var(--primary)),
-    color-mix(in oklab, rgb(var(--primary)) 50%, rgb(var(--tone-orange))),
-    color-mix(in oklab, rgb(var(--primary)) 55%, rgb(var(--tone-pink))),
-    rgb(var(--primary))
-  );
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -30%;
+    z-index: -1;
+    pointer-events: none;
+    background-image: conic-gradient(
+      from 210deg,
+      rgb(var(--primary)),
+      color-mix(in oklab, rgb(var(--accent)) 55%, rgb(var(--tone-orange))),
+      color-mix(in oklab, rgb(var(--accent)) 60%, rgb(var(--tone-pink))),
+      rgb(var(--primary))
+    );
+  }
 }
 
 @utility media-tint {
@@ -604,13 +648,15 @@
     pointer-events: none;
     background:
       radial-gradient(60rem 34rem at 0% -8%, rgb(var(--primary) / 0.09), transparent 70%),
-      radial-gradient(48rem 30rem at 100% 0%, rgb(var(--tone-indigo) / 0.07), transparent 70%);
+      radial-gradient(48rem 30rem at 100% 0%, rgb(var(--accent) / 0.06), transparent 70%),
+      radial-gradient(40rem 26rem at 70% 4%, rgb(var(--tone-indigo) / 0.05), transparent 70%);
   }
 
   .dark body::before {
     background:
       radial-gradient(60rem 34rem at 0% -8%, rgb(var(--primary) / 0.16), transparent 70%),
-      radial-gradient(48rem 30rem at 100% 0%, rgb(var(--tone-indigo) / 0.12), transparent 70%);
+      radial-gradient(48rem 30rem at 100% 0%, rgb(var(--accent) / 0.11), transparent 70%),
+      radial-gradient(40rem 26rem at 70% 4%, rgb(var(--tone-indigo) / 0.09), transparent 70%);
   }
 
   @media (prefers-contrast: more) {
@@ -681,7 +727,8 @@
 /* Windows High Contrast: pertahankan struktur kontrol tanpa bergantung pada efek kaca. */
 @media (forced-colors: active) {
   body::before,
-  .grain::after {
+  .grain::after,
+  .aurora::before {
     display: none;
   }
 

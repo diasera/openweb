@@ -14,6 +14,7 @@ import { HighlightGrid } from "@/components/public/highlight-grid";
 import { MessageBoard } from "@/components/public/message-board";
 import { MemoriesRail } from "@/components/public/memories-rail";
 import { EventCard } from "@/components/public/event-card";
+import { SiteColophon } from "@/components/public/site-colophon";
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/seo/json-ld";
 import {
@@ -54,11 +55,12 @@ export default async function Home() {
     getNextEvent(),
   ]);
   const labels = getContentLabels(settings);
+  const memberLabel = toDisplayLabel(labels.memberPlural, settings.locale);
 
   return (
     <PageShell>
       <JsonLd data={homeStructuredData(settings)} />
-      <div className="space-y-7">
+      <div className="space-y-11 sm:space-y-14">
         <Hero
           {...resolveHeroContent(settings)}
           imageUrl={settings.hero_image_url}
@@ -67,9 +69,12 @@ export default async function Home() {
         />
 
         {members.length > 0 && (
-          <section data-nosnippet className="motion-reveal">
+          <section data-nosnippet aria-labelledby="home-members" className="motion-reveal">
             <SectionHeader
-              title={toDisplayLabel(labels.memberPlural, settings.locale)}
+              id="home-members"
+              eyebrow="Kenali kami"
+              title={memberLabel}
+              count={members.length}
               actionHref="/anggota"
             />
             <MemberRail members={members} />
@@ -77,28 +82,43 @@ export default async function Home() {
         )}
 
         {nextEvent && (
-          <section className="motion-reveal">
-            <SectionHeader title="Acara berikutnya" actionHref="/agenda" actionLabel="Agenda" />
+          <section aria-labelledby="home-event" className="motion-reveal">
+            <SectionHeader
+              id="home-event"
+              eyebrow="Agenda"
+              title="Acara berikutnya"
+              actionHref="/agenda"
+              actionLabel="Semua agenda"
+            />
             <EventCard event={nextEvent} siteUrl={getSiteUrl(settings)} featured />
           </section>
         )}
 
         {memories.length > 0 && (
-          <section data-nosnippet className="motion-reveal">
+          <section data-nosnippet aria-labelledby="home-memories" className="motion-reveal">
             <SectionHeader
-              title="Kenangan hari ini"
+              id="home-memories"
+              eyebrow="Hari ini"
+              title="Kenangan"
               subtitle="Momen pada tanggal yang sama di tahun-tahun sebelumnya"
             />
             <MemoriesRail media={memories} />
           </section>
         )}
 
-        <section data-nosnippet>
-          <SectionHeader title="Sorotan" actionHref="/galeri" />
+        <section data-nosnippet aria-labelledby="home-highlights">
+          <SectionHeader
+            id="home-highlights"
+            eyebrow="Pilihan"
+            title="Sorotan"
+            count={media.length}
+            actionHref="/galeri"
+            actionLabel="Galeri"
+          />
           <HighlightGrid media={media} />
         </section>
 
-        <div data-nosnippet>
+        <div data-nosnippet className="motion-reveal">
           <MessageBoard
             messages={messages}
             actionHref="/pesan"
@@ -108,6 +128,8 @@ export default async function Home() {
             composerSuccessNote="Terkirim! Pesan pilihan admin akan tampil di halaman depan."
           />
         </div>
+
+        <SiteColophon siteName={settings.site_name} footerText={settings.footer_text} />
       </div>
     </PageShell>
   );

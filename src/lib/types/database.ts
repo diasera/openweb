@@ -71,6 +71,8 @@ export type SiteSettingsRow = {
   content_labels: ContentLabels | null;
   hero_badge: string | null;
   hero_title: string | null;
+  /** false = judul besar tidak ditampilkan di atas foto hero (h1 tetap ada). */
+  hero_show_title: boolean;
   hero_subtitle: string | null;
   hero_image_url: string | null;
   hero_image_width: number | null;

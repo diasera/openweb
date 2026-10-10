@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireFeature } from "@/lib/auth";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { setIpBlocked } from "@/lib/admin/ip-bans";
+import { INVALID_INPUT, isValidId } from "@/lib/admin/guard";
 import {
   checkedDatabaseCall,
   checkedMutation,
@@ -18,6 +19,7 @@ function revalidateComments(mediaIds: readonly string[]) {
 
 export async function deleteComment(id: string): Promise<ActionResult> {
   await requireFeature("media");
+  if (!isValidId(id)) return INVALID_INPUT;
   const deleted = await checkedMutation(
     "comments.delete",
     "Gagal menghapus komentar.",
@@ -36,6 +38,7 @@ export async function deleteComment(id: string): Promise<ActionResult> {
 /** Blokir IP penulis + hapus semua komentar dari IP tersebut (pola moderasi pesan). */
 export async function banCommentIp(id: string): Promise<ActionResult> {
   const admin = await requireFeature("media");
+  if (!isValidId(id)) return INVALID_INPUT;
   const sb = createAdminSupabase();
   const comment = await checkedMutation(
     "comments.load-ip",
@@ -56,11 +59,7 @@ export async function banCommentIp(id: string): Promise<ActionResult> {
   const removed = await checkedDatabaseCall(
     "comments.delete-blocked-ip",
     "IP diblokir, tetapi komentar terkait gagal dihapus.",
-    sb
-      .from("comments")
-      .delete()
-      .eq("ip_address", comment.data.ip_address)
-      .select("media_id"),
+    sb.from("comments").delete().eq("ip_address", comment.data.ip_address).select("media_id"),
   );
   if (!removed.ok) return { error: removed.error };
   revalidateComments((removed.data ?? []).map((row) => row.media_id));

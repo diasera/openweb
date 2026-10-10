@@ -2,12 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireFeature } from "@/lib/auth";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { slugify, withPreviousSlug } from "@/lib/utils/slug";
 import { checkedMutation } from "@/lib/database/mutation";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/types/database";
+import { findAvailableSlug } from "@/lib/database/unique-slug";
+import { INVALID_INPUT, isOneOf, isValidId } from "@/lib/admin/guard";
+import { adminFeatureHref } from "@/lib/constants";
+import type { Database, PostStatus } from "@/lib/types/database";
 import {
   validationErrorMessage,
   type ActionResult,
@@ -25,16 +28,19 @@ import {
   uploadManagedImage,
   type ManagedImageAsset,
 } from "@/lib/assets/managed-images";
-import { findAvailableSlug } from "@/lib/database/unique-slug";
+import { revalidateSeoIndexes } from "@/lib/seo/revalidate";
+
+const POST_STATUSES = ["draft", "published", "archived"] as const satisfies readonly PostStatus[];
 
 const schema = z.object({
+  id: z.union([z.literal(""), z.uuid("ID artikel tidak valid")]),
   title: z.string().trim().min(1, "Judul wajib diisi").max(160),
   excerpt: z.string().trim().max(300),
   category: z.string().trim().max(40),
   tags: z.string().trim().max(200),
   content_html: z.string().max(300000),
   content_json: z.string().max(600000),
-  status: z.enum(["draft", "published", "archived"]),
+  status: z.enum(POST_STATUSES),
 });
 
 type Sb = SupabaseClient<Database>;
@@ -65,17 +71,25 @@ function droppedInlineImages(previousHtml: string, nextHtml = ""): ManagedImageA
     .map((url) => ({ kind: "blog-inline" as const, url }));
 }
 
-function revalidateBlog() {
-  revalidatePath("/profil/blog");
+/** Artikel tampil di admin, dasbor, /blog, detailnya, sitemap, dan feed. */
+function revalidateBlog(slugs: ReadonlyArray<string | null | undefined>) {
+  revalidatePath(adminFeatureHref("blog"));
   revalidatePath("/profil");
   revalidatePath("/blog");
+  for (const slug of new Set(slugs)) if (slug) revalidatePath(`/blog/${slug}`);
+  revalidateSeoIndexes();
 }
 
-export async function savePost(
-  formData: FormData,
-): Promise<ActionResult & { id?: string }> {
+function parseTags(value: string): string[] {
+  return value
+    ? [...new Set(value.split(",").map((tag) => tag.trim().replace(/^#/, "")).filter(Boolean))]
+    : [];
+}
+
+export async function savePost(formData: FormData): Promise<ActionResult & { id?: string }> {
   const admin = await requireFeature("blog");
   const parsed = schema.safeParse({
+    id: formData.get("id") ?? "",
     title: formData.get("title") ?? "",
     excerpt: formData.get("excerpt") ?? "",
     category: formData.get("category") ?? "",
@@ -84,23 +98,16 @@ export async function savePost(
     content_json: formData.get("content_json") ?? "",
     status: formData.get("status") ?? "draft",
   });
-  if (!parsed.success) {
-    return { error: validationErrorMessage(parsed) };
-  }
+  if (!parsed.success) return { error: validationErrorMessage(parsed) };
   const d = parsed.data;
+  const id = d.id || null;
   const sb = createAdminSupabase();
-  const id = formData.get("id")?.toString() || null;
 
   let contentJson: unknown = null;
   try {
-    contentJson = d.content_json
-      ? normalizeArticleJson(JSON.parse(d.content_json))
-      : null;
+    contentJson = d.content_json ? normalizeArticleJson(JSON.parse(d.content_json)) : null;
   } catch {
-    return {
-      error:
-        "Konten editor tidak valid. Muat ulang halaman agar isi artikel tidak rusak.",
-    };
+    return { error: "Konten editor tidak valid. Muat ulang halaman agar isi artikel tidak rusak." };
   }
 
   const current = id
@@ -109,9 +116,7 @@ export async function savePost(
         "Gagal membaca artikel sebelum diperbarui.",
         sb
           .from("blog_posts")
-          .select(
-            "id, slug, previous_slugs, published_at, author_name, cover_image_url, content_html",
-          )
+          .select("id, slug, previous_slugs, published_at, author_name, cover_image_url, content_html")
           .eq("id", id)
           .maybeSingle(),
       )
@@ -122,8 +127,7 @@ export async function savePost(
     "blog",
     slugify(d.title) || "artikel",
     id,
-    (candidate) =>
-      sb.from("blog_posts").select("id").eq("slug", candidate).maybeSingle(),
+    (candidate) => sb.from("blog_posts").select("id").eq("slug", candidate).maybeSingle(),
     current?.data.slug,
   );
   if (!slugResult.ok) return { error: slugResult.error };
@@ -134,10 +138,7 @@ export async function savePost(
     d.status === "published"
       ? (current?.data.published_at ?? new Date().toISOString())
       : undefined;
-
-  const tags = d.tags
-    ? d.tags.split(",").map((t) => t.trim().replace(/^#/, "")).filter(Boolean)
-    : [];
+  const tags = parseTags(d.tags);
 
   // Upload dilakukan terakhir setelah semua validasi/query awal lolos agar
   // file baru tidak menjadi yatim bila ID atau konten artikel bermasalah.
@@ -157,13 +158,7 @@ export async function savePost(
     slug,
     // URL yang pernah terbit tetap hidup: slug lama dialihkan ke slug baru.
     ...(current?.data.published_at && current.data.slug !== slug
-      ? {
-          previous_slugs: withPreviousSlug(
-            current.data.previous_slugs,
-            current.data.slug,
-            slug,
-          ),
-        }
+      ? { previous_slugs: withPreviousSlug(current.data.previous_slugs, current.data.slug, slug) }
       : {}),
     excerpt: d.excerpt || null,
     category: d.category || null,
@@ -179,12 +174,19 @@ export async function savePost(
     ...(publishedAt ? { published_at: publishedAt } : {}),
     ...(id ? {} : { author_id: admin.id, author_name: admin.name }),
   };
+  const mentionValues = blogMentionValues({
+    title: d.title,
+    excerpt: d.excerpt,
+    category: d.category,
+    tags,
+    // Artikel baru ditulis admin ini; artikel lama memakai penulis tersimpan.
+    author_name: current ? current.data.author_name : admin.name,
+    content_html: d.content_html,
+  });
 
   if (id) {
-    const updateQuery = sb
-      .from("blog_posts")
-      .update(payload)
-      .eq("id", id);
+    const updateQuery = sb.from("blog_posts").update(payload).eq("id", id);
+    // Cover yang diganti dijaga terhadap perubahan dari sesi lain.
     const guardedUpdate = coverChanged
       ? current?.data.cover_image_url
         ? updateQuery.eq("cover_image_url", current.data.cover_image_url)
@@ -196,8 +198,7 @@ export async function savePost(
       guardedUpdate.select("id").maybeSingle(),
       {
         duplicateMessage: "URL artikel sudah dipakai. Coba judul lain.",
-        notFoundMessage:
-          "Artikel berubah di sesi lain. Muat ulang sebelum menyimpan kembali.",
+        notFoundMessage: "Artikel berubah di sesi lain. Muat ulang sebelum menyimpan kembali.",
       },
     );
     if (!saved.ok) {
@@ -205,31 +206,15 @@ export async function savePost(
       return { error: saved.error };
     }
     const replacedCover =
-      coverChanged &&
-      current?.data.cover_image_url &&
-      current.data.cover_image_url !== uploadedCover?.url
+      coverChanged && current?.data.cover_image_url && current.data.cover_image_url !== uploadedCover?.url
         ? [{ kind: "blog-cover" as const, url: current.data.cover_image_url }]
         : [];
     await removeBlogAssetsIfUnused(sb, [
       ...replacedCover,
       ...droppedInlineImages(current?.data.content_html ?? "", contentHtml),
     ]);
-    await syncMemberMentions(
-      { blogPostId: id },
-      blogMentionValues({
-        title: d.title,
-        excerpt: d.excerpt,
-        category: d.category,
-        tags,
-        author_name: current?.data.author_name ?? null,
-        content_html: d.content_html,
-      }),
-    );
-    revalidateBlog();
-    if (current?.data.slug && current.data.slug !== slug) {
-      revalidatePath(`/blog/${current.data.slug}`);
-    }
-    revalidatePath(`/blog/${slug}`);
+    await syncMemberMentions({ blogPostId: id }, mentionValues);
+    revalidateBlog([current?.data.slug, slug]);
     return { id };
   }
 
@@ -243,61 +228,39 @@ export async function savePost(
     if (uploadedCover) await removeBlogAssetsIfUnused(sb, [uploadedCover]);
     return { error: saved.error };
   }
-  await syncMemberMentions(
-    { blogPostId: saved.data.id },
-    blogMentionValues({
-      title: d.title,
-      excerpt: d.excerpt,
-      category: d.category,
-      tags,
-      author_name: admin.name,
-      content_html: d.content_html,
-    }),
-  );
-  revalidateBlog();
-  revalidatePath(`/blog/${slug}`);
+  await syncMemberMentions({ blogPostId: saved.data.id }, mentionValues);
+  revalidateBlog([slug]);
   return { id: saved.data.id };
 }
 
-export async function setPostStatus(
-  id: string,
-  status: "draft" | "published" | "archived",
-): Promise<ActionResult> {
+export async function setPostStatus(id: string, status: PostStatus): Promise<ActionResult> {
   await requireFeature("blog");
+  if (!isValidId(id) || !isOneOf(status, POST_STATUSES)) return INVALID_INPUT;
   const sb = createAdminSupabase();
   const current = await checkedMutation(
     "blog.load-status",
     "Gagal membaca status artikel.",
-    sb
-      .from("blog_posts")
-      .select("id, slug, published_at")
-      .eq("id", id)
-      .maybeSingle(),
+    sb.from("blog_posts").select("id, slug, published_at").eq("id", id).maybeSingle(),
   );
   if (!current.ok) return { error: current.error };
 
-  const patch: { status: typeof status; published_at?: string } = { status };
+  const patch: { status: PostStatus; published_at?: string } = { status };
   if (status === "published" && !current.data.published_at) {
     patch.published_at = new Date().toISOString();
   }
   const saved = await checkedMutation(
     "blog.status",
     "Gagal mengubah status artikel.",
-    sb
-      .from("blog_posts")
-      .update(patch)
-      .eq("id", id)
-      .select("id")
-      .maybeSingle(),
+    sb.from("blog_posts").update(patch).eq("id", id).select("id").maybeSingle(),
   );
   if (!saved.ok) return { error: saved.error };
-  revalidateBlog();
-  revalidatePath(`/blog/${current.data.slug}`);
+  revalidateBlog([current.data.slug]);
   return {};
 }
 
 export async function deletePost(id: string): Promise<ActionResult> {
   await requireFeature("blog");
+  if (!isValidId(id)) return INVALID_INPUT;
   const sb = createAdminSupabase();
   const deleted = await checkedMutation(
     "blog.delete",
@@ -316,7 +279,6 @@ export async function deletePost(id: string): Promise<ActionResult> {
       : []),
     ...droppedInlineImages(deleted.data.content_html),
   ]);
-  revalidateBlog();
-  revalidatePath(`/blog/${deleted.data.slug}`);
+  revalidateBlog([deleted.data.slug]);
   return {};
 }

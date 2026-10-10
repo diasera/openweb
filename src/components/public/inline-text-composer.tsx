@@ -38,6 +38,7 @@ export function InlineTextComposer({
           value={value}
           onChange={(event) => onValueChange(event.target.value)}
           placeholder={placeholder}
+          aria-label={placeholder.replace(/…$/, "")}
           maxLength={500}
           className="placeholder:text-muted min-w-0 flex-1 bg-transparent text-base outline-hidden sm:text-sm"
         />

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireFeature } from "@/lib/auth";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { checkedMutation } from "@/lib/database/mutation";
+import { INVALID_INPUT, isValidId } from "@/lib/admin/guard";
 import { adminFeatureHref } from "@/lib/constants";
 import { normalizeNotificationHref } from "@/lib/utils/url";
 import { zonedInputToDate } from "@/lib/utils/time";
@@ -47,13 +48,17 @@ const schema = z
       return z.NEVER;
     }
     if (endsAt && endsAt < startsAt) {
-      context.addIssue({ code: "custom", message: "Waktu selesai harus setelah waktu mulai", path: ["ends_local"] });
+      context.addIssue({
+        code: "custom",
+        message: "Waktu selesai harus setelah waktu mulai",
+        path: ["ends_local"],
+      });
       return z.NEVER;
     }
     return { ...data, startsAt, endsAt };
   });
 
-/** Acara terdekat tampil di Dynamic Island pada semua halaman (root layout). */
+/** Acara terdekat tampil di Dynamic Island semua halaman dan di beranda. */
 function revalidateAgenda() {
   revalidatePath(adminFeatureHref("agenda"));
   revalidatePath("/agenda");
@@ -88,11 +93,7 @@ export async function saveEvent(formData: FormData): Promise<ActionResult> {
     data.id ? "Gagal memperbarui acara." : "Gagal membuat acara.",
     data.id
       ? sb.from("events").update(payload).eq("id", data.id).select("id").maybeSingle()
-      : sb
-          .from("events")
-          .insert({ ...payload, created_by: admin.id })
-          .select("id")
-          .maybeSingle(),
+      : sb.from("events").insert({ ...payload, created_by: admin.id }).select("id").maybeSingle(),
   );
   if (!saved.ok) return { error: saved.error };
   revalidateAgenda();
@@ -101,6 +102,7 @@ export async function saveEvent(formData: FormData): Promise<ActionResult> {
 
 export async function deleteEvent(id: string): Promise<ActionResult> {
   await requireFeature("agenda");
+  if (!isValidId(id)) return INVALID_INPUT;
   const deleted = await checkedMutation(
     "events.delete",
     "Gagal menghapus acara.",

@@ -1,8 +1,8 @@
 import { requireFeature } from "@/lib/auth";
 import { getAdminMusicTracks } from "@/lib/admin/music";
 import { buildAdminPageMetadata } from "@/lib/seo";
-import { PageHeader } from "@/components/ui/page-header";
-import { MusicManager } from "@/components/admin/music-manager";
+import { AdminPage } from "@/components/admin/admin-page";
+import { MusicManager } from "@/components/admin/music/music-manager";
 
 export const metadata = buildAdminPageMetadata("Musik");
 
@@ -11,12 +11,13 @@ export default async function MusicPage() {
   const tracks = await getAdminMusicTracks();
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <PageHeader
-        title="Musik"
-        description="Unggah audio, susun urutan, dan tentukan lagu yang tersedia untuk pengunjung."
-      />
+    <AdminPage
+      feature="music"
+      title="Musik"
+      description="Unggah audio, susun urutan, dan pilih lagu yang tersedia sebagai musik latar pengunjung."
+      width="narrow"
+    >
       <MusicManager tracks={tracks} />
-    </div>
+    </AdminPage>
   );
 }

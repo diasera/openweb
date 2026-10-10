@@ -3,6 +3,7 @@ import { AtSign, Mail, MapPin, Phone } from "lucide-react";
 import { getSettings, getMembers } from "@/lib/data";
 import { PageShell } from "@/components/public/page-shell";
 import { SiteIdentityCard } from "@/components/public/site-identity-card";
+import { SiteColophon } from "@/components/public/site-colophon";
 import { Card } from "@/components/ui/card";
 import { MemberCard } from "@/components/public/member-card";
 import { buildPageMetadata, PUBLIC_PAGE_SEO } from "@/lib/seo";
@@ -130,6 +131,12 @@ export default async function TentangPage() {
             </div>
           </Card>
         )}
+
+        <SiteColophon
+          siteName={settings.site_name}
+          footerText={settings.footer_text}
+          className="pt-6"
+        />
       </div>
     </PageShell>
   );

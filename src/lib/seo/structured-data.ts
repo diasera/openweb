@@ -13,6 +13,7 @@ import {
   getSiteAlternateName,
   getSiteUrl,
   getSocialImageUrl,
+  mediaTitle,
   OG_CARD_PATH,
   plainText,
 } from "./index";
@@ -165,8 +166,7 @@ export function mediaStructuredData(
   media: MediaRow,
 ): Schema | null {
   if (!media.url) return null;
-  const name =
-    media.title || media.caption || `Dokumentasi ${settings.site_name}`;
+  const name = mediaTitle(media, settings);
   const author = media.uploader_name
     ? { "@type": "Person", name: media.uploader_name }
     : organizationNode(settings);

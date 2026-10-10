@@ -34,12 +34,22 @@ export function EventCard({
   return (
     <article
       id={eventAnchor(event.id)}
-      className={cardClass("elevated", cn("scroll-mt-24 p-4", featured && "sm:p-5"))}
+      className={cardClass(
+        "elevated",
+        cn(
+          "scroll-mt-24 p-4",
+          // Kartu unggulan beranda: permukaan bercahaya warna utama + aksen.
+          featured && "aurora relative overflow-hidden sm:p-6",
+        ),
+      )}
     >
-      <div className="flex gap-3.5">
+      <div className={cn("flex gap-3.5", featured && "sm:gap-5")}>
         {/* Ubin ala ikon Kalender iOS: pita bulan + tanggal besar. */}
         <span
-          className="border-border bg-surface shadow-soft w-14 shrink-0 self-start overflow-hidden rounded-2xl border text-center leading-none"
+          className={cn(
+            "border-border bg-surface shadow-soft w-14 shrink-0 self-start overflow-hidden rounded-2xl border text-center leading-none",
+            featured && "sm:w-16 motion-blur-in",
+          )}
           aria-hidden="true"
         >
           <span
@@ -55,7 +65,12 @@ export function EventCard({
           </span>
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className={cn("font-display font-bold leading-snug", featured ? "text-xl" : "text-body")}>
+          <h3
+            className={cn(
+              "font-display font-bold leading-snug",
+              featured ? "text-xl sm:text-title2" : "text-body",
+            )}
+          >
             {event.title}
           </h3>
           <p className="text-muted mt-0.5 text-footnote">
@@ -74,7 +89,7 @@ export function EventCard({
         <p className="mt-3 text-sm leading-relaxed whitespace-pre-line">{event.description}</p>
       )}
 
-      {!past && featured && <EventCountdown event={event} className="mt-4" />}
+      {!past && featured && <EventCountdown event={event} className="mt-5" />}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {!past && (

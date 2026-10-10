@@ -1,6 +1,7 @@
-/* Gerbang Auth: dinding pin ala Pinterest yang bergeser pelan dalam ruang 3D
- * (sistem Depth), di belakang sheet kaca iOS. Seluruh warna dari token tema;
- * gerak hanya transform di compositor dan mati untuk reduced motion. */
+/* Gerbang Auth: dinding pin yang bergeser pelan dalam ruang 3D di belakang
+ * sheet kaca, ditambah cahaya aurora warna utama + aksen. Seluruh warna dari
+ * token tema; gerak hanya transform di compositor dan mati untuk reduced
+ * motion. */
 
 .wallViewport {
   position: fixed;
@@ -20,6 +21,7 @@
   /* Dinding sedikit rebah dan miring: kedalaman tanpa library 3D. */
   transform: perspective(1400px) rotateX(18deg) rotateZ(-8deg);
   transform-origin: 50% 35%;
+  animation: gate-wall-in 1400ms var(--motion-spring) backwards;
 }
 
 .column {
@@ -51,26 +53,28 @@
   z-index: 0;
   pointer-events: none;
   background:
+    radial-gradient(70% 50% at 15% 0%, rgb(var(--primary) / 0.22), transparent 70%),
+    radial-gradient(60% 45% at 95% 10%, rgb(var(--accent) / 0.18), transparent 70%),
     linear-gradient(
       to bottom,
-      rgb(var(--bg) / 0.45),
-      rgb(var(--bg) / 0.12) 28%,
-      rgb(var(--bg) / 0.55) 58%,
-      rgb(var(--bg) / 0.95)
-    ),
-    radial-gradient(90% 55% at 50% 0%, rgb(var(--primary) / 0.16), transparent 70%);
+      rgb(var(--bg) / 0.4),
+      rgb(var(--bg) / 0.1) 28%,
+      rgb(var(--bg) / 0.6) 58%,
+      rgb(var(--bg) / 0.96)
+    );
 }
 
 @media (min-width: 640px) {
   .scrim {
     background:
+      radial-gradient(70% 50% at 15% 0%, rgb(var(--primary) / 0.22), transparent 70%),
+      radial-gradient(60% 45% at 95% 10%, rgb(var(--accent) / 0.18), transparent 70%),
       radial-gradient(
         38rem 32rem at 50% 50%,
-        rgb(var(--bg) / 0.88),
+        rgb(var(--bg) / 0.9),
         rgb(var(--bg) / 0.5) 55%,
-        rgb(var(--bg) / 0.18)
-      ),
-      radial-gradient(90% 55% at 50% 0%, rgb(var(--primary) / 0.16), transparent 70%);
+        rgb(var(--bg) / 0.15)
+      );
   }
 }
 
@@ -98,6 +102,13 @@
 /* Login gagal: form bergetar sekali, seperti kolom kode sandi iOS. */
 .shake {
   animation: gate-shake 380ms var(--motion-ease-in-out);
+}
+
+@keyframes gate-wall-in {
+  from {
+    opacity: 0;
+    transform: perspective(1400px) rotateX(32deg) rotateZ(-8deg) translate3d(0, 6%, -120px);
+  }
 }
 
 @keyframes gate-drift {
@@ -129,6 +140,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .wall,
   .column,
   .shake {
     animation: none;

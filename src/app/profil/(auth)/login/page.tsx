@@ -11,27 +11,23 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-/** Bila owner belum pernah dibuat, alihkan ke setup (sesuai spesifikasi). */
+/** Owner belum pernah dibuat -> setup. Sesi yang masih berlaku -> kembali ke Profil. */
 export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ next?: string }>;
 }) {
   if (!(await ownerExists())) redirect(ADMIN_AUTH_PATHS.setup);
-  // Sesi yang masih berlaku di database langsung kembali ke profil.
   if (await getCurrentAdmin()) redirect("/profil");
-  const [{ next }, settings] = await Promise.all([
-    searchParams,
-    getSettings(),
-  ]);
+  const [{ next }, settings] = await Promise.all([searchParams, getSettings()]);
 
   return (
     <AuthCard
       siteName={settings.site_name}
       logoUrl={settings.logo_url}
       eyebrow="Area pengelola"
-      title="Masuk"
-      subtitle={`Kelola konten, anggota, dan tampilan ${settings.site_name}.`}
+      title="Selamat datang kembali"
+      subtitle={`Masuk untuk mengelola konten dan tampilan ${settings.site_name}.`}
       footer="Lupa password? Minta owner mengatur ulang dari menu Admin."
     >
       <LoginForm next={next} />

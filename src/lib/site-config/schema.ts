@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   normalizeAdsenseClientId,
   normalizeAnalyticsId,
+  normalizeVerificationCode,
 } from "./external-identifiers";
 import { hexToRgbChannels } from "@/lib/theme";
 import type {
@@ -70,6 +71,18 @@ const memberLabel = z
 const hexColor = (label: string) =>
   z.string().regex(/^#[0-9a-f]{6}$/i, `${label} tidak valid.`);
 
+/** Token verifikasi bersih; tag meta/rekaman DNS yang ditempel ikut diterima. */
+const verificationCode = (label: string) =>
+  z
+    .string()
+    .trim()
+    .max(SITE_CONFIG_LIMITS.verification)
+    .refine(
+      (value) => !value || normalizeVerificationCode(value) !== null,
+      `Kode ${label} tidak dikenali. Tempel nilai content atau seluruh tag meta.`,
+    )
+    .transform((value) => normalizeVerificationCode(value) ?? "");
+
 export const identityConfigSchema = z.object({
   site_name: z
     .string()
@@ -92,6 +105,7 @@ export const identityConfigSchema = z.object({
 export const homeConfigSchema = z.object({
   hero_badge: z.string().trim().max(SITE_CONFIG_LIMITS.heroBadge),
   hero_title: z.string().trim().max(SITE_CONFIG_LIMITS.heroTitle),
+  hero_show_title: z.boolean(),
   hero_subtitle: z.string().trim().max(SITE_CONFIG_LIMITS.heroSubtitle),
   visi: z.string().trim().max(SITE_CONFIG_LIMITS.visi),
   misi: z
@@ -103,8 +117,8 @@ export const homeConfigSchema = z.object({
 export const seoConfigSchema = z.object({
   site_url: canonicalUrl,
   seo_indexing_enabled: z.boolean(),
-  google_site_verification: z.string().trim().max(SITE_CONFIG_LIMITS.verification),
-  bing_site_verification: z.string().trim().max(SITE_CONFIG_LIMITS.verification),
+  google_site_verification: verificationCode("Google"),
+  bing_site_verification: verificationCode("Bing"),
 });
 
 export const contactConfigSchema = z.object({
@@ -188,6 +202,7 @@ const SECTION_PARSERS: {
   home: (formData) => ({
     hero_badge: text(formData, "hero_badge"),
     hero_title: text(formData, "hero_title"),
+    hero_show_title: flag(formData, "hero_show_title"),
     hero_subtitle: text(formData, "hero_subtitle"),
     visi: text(formData, "visi"),
     misi: normalizeStringList(
@@ -276,6 +291,7 @@ const SECTION_UPDATERS: {
   home: (input) => ({
     hero_badge: nullable(input.hero_badge),
     hero_title: nullable(input.hero_title),
+    hero_show_title: input.hero_show_title,
     hero_subtitle: nullable(input.hero_subtitle),
     visi: nullable(input.visi),
     misi: input.misi.length ? input.misi : null,

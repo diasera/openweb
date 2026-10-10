@@ -7,19 +7,28 @@ import {
   type MediaFilter,
 } from "@/lib/admin/media";
 import { getAdminAlbumOptions } from "@/lib/admin/albums";
-import { MEDIA_ADMIN_SECTIONS } from "@/lib/constants";
+import { isOneOf } from "@/lib/admin/guard";
+import { adminFeatureHref, MEDIA_ADMIN_SECTIONS } from "@/lib/constants";
 import { buildAdminPageMetadata } from "@/lib/seo";
 import { parsePageParam } from "@/lib/utils/url";
-import { PageHeader } from "@/components/ui/page-header";
-import { FilterTabs } from "@/components/admin/filter-tabs";
-import { MediaAdminCard } from "@/components/admin/media-admin-card";
+import { listReveal } from "@/components/motion";
 import { buttonClass } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/public/pagination";
+import { AdminPage } from "@/components/admin/admin-page";
+import { AdminTabs } from "@/components/admin/admin-tabs";
+import { MediaModerationCard } from "@/components/admin/media/media-moderation-card";
 
 export const metadata = buildAdminPageMetadata("Media");
 
-const FILTERS: MediaFilter[] = ["pending", "approved", "rejected", "all"];
+const BASE_PATH = adminFeatureHref("media");
+const FILTERS = ["pending", "approved", "rejected", "all"] as const satisfies readonly MediaFilter[];
+const EMPTY_COPY: Record<MediaFilter, string> = {
+  pending: "Tidak ada kiriman yang menunggu. Semua sudah ditinjau.",
+  approved: "Belum ada media yang terbit.",
+  rejected: "Tidak ada media yang ditolak.",
+  all: "Belum ada media sama sekali.",
+};
 
 export default async function MediaPage({
   searchParams,
@@ -28,9 +37,7 @@ export default async function MediaPage({
 }) {
   await requireFeature("media");
   const { status, page } = await searchParams;
-  const filter: MediaFilter = FILTERS.includes(status as MediaFilter)
-    ? (status as MediaFilter)
-    : "pending";
+  const filter: MediaFilter = isOneOf(status, FILTERS) ? status : "pending";
   const [result, counts, albums] = await Promise.all([
     getAdminMedia(filter, parsePageParam(page)),
     getMediaStatusCounts(),
@@ -38,58 +45,63 @@ export default async function MediaPage({
   ]);
 
   return (
-    <div>
-      <PageHeader
-        title="Media"
-        description="Tinjau, setujui, dan pilih media untuk halaman depan. Unggahan approved tetap masuk Galeri meski tidak dipin."
-        action={
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href={MEDIA_ADMIN_SECTIONS.album.href}
-              className={buttonClass({ variant: "outline", size: "sm" })}
-            >
-              <FolderOpen className="h-4 w-4" aria-hidden="true" /> Album
-            </Link>
-            <Link
-              href={MEDIA_ADMIN_SECTIONS.komentar.href}
-              className={buttonClass({ variant: "outline", size: "sm" })}
-            >
-              <MessageSquareText className="h-4 w-4" aria-hidden="true" /> Komentar
-            </Link>
-          </div>
-        }
-      />
-
-      <FilterTabs
-        basePath="/profil/media"
-        active={filter}
-        items={[
-          { label: `Menunggu (${counts.pending})`, value: "pending" },
-          { label: `Disetujui (${counts.approved})`, value: "approved" },
-          { label: `Ditolak (${counts.rejected})`, value: "rejected" },
-          { label: `Semua (${counts.all})`, value: "all" },
-        ]}
-      />
-
+    <AdminPage
+      feature="media"
+      title="Media"
+      description="Tinjau kiriman, pilih sorotan halaman depan, dan kelompokkan ke album. Media yang terbit tetap masuk Galeri walau bukan sorotan."
+      actions={
+        <>
+          <Link
+            href={MEDIA_ADMIN_SECTIONS.album.href}
+            className={buttonClass({ variant: "outline", size: "sm" })}
+          >
+            <FolderOpen className="size-4" aria-hidden="true" /> Album
+          </Link>
+          <Link
+            href={MEDIA_ADMIN_SECTIONS.komentar.href}
+            className={buttonClass({ variant: "outline", size: "sm" })}
+          >
+            <MessageSquareText className="size-4" aria-hidden="true" /> Komentar
+          </Link>
+        </>
+      }
+      toolbar={
+        <AdminTabs
+          basePath={BASE_PATH}
+          active={filter}
+          items={[
+            { label: "Menunggu", value: "pending", count: counts.pending },
+            { label: "Terbit", value: "approved", count: counts.approved },
+            { label: "Ditolak", value: "rejected", count: counts.rejected },
+            { label: "Semua", value: "all", count: counts.all },
+          ]}
+        />
+      }
+    >
       {result.rows.length === 0 ? (
         <EmptyState
-          icon={<Images className="h-8 w-8" />}
+          icon={<Images className="size-8" />}
           title="Tidak ada media"
-          description="Belum ada media pada filter ini."
+          description={EMPTY_COPY[filter]}
         />
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
-          {result.rows.map((m) => (
-            <MediaAdminCard key={m.id} media={m} albums={albums} />
+        <ul
+          aria-label="Media untuk dimoderasi"
+          className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+        >
+          {result.rows.map((media, index) => (
+            <li key={media.id} {...listReveal(index)}>
+              <MediaModerationCard media={media} albums={albums} />
+            </li>
           ))}
-        </div>
+        </ul>
       )}
       <Pagination
-        basePath="/profil/media"
+        basePath={BASE_PATH}
         current={result.page}
         total={result.totalPages}
         query={{ status: filter }}
       />
-    </div>
+    </AdminPage>
   );
 }

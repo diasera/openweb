@@ -9,7 +9,7 @@ import { AuthForm } from "./auth-form";
 
 const INITIAL: AuthState = {};
 
-/** Form login gerbang admin. `next` diteruskan secara aman ke server. */
+/** Form login gerbang admin. `next` diteruskan ke server yang memvalidasinya. */
 export function LoginForm({ next }: { next?: string }) {
   const [state, action, pending] = useActionState(loginAction, INITIAL);
 

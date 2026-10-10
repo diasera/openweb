@@ -1,80 +1,60 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { Lock } from "lucide-react";
 import {
-  getSettings,
-  getMemberCount,
   getApprovedMediaCount,
+  getMemberCount,
   getPublishedPostCount,
+  getSettings,
 } from "@/lib/data";
 import { allowedFeatures, getCurrentAdmin } from "@/lib/auth";
-import { getAdminStats } from "@/lib/admin/stats";
-import { ADMIN_AUTH_PATHS } from "@/lib/constants";
+import { getAdminDashboard } from "@/lib/admin/dashboard";
 import { isSupabaseConfigured } from "@/lib/supabase/public";
 import { getClientIp } from "@/lib/utils/request";
 import { getBellState } from "@/lib/visitors";
-import { PageShell } from "@/components/public/page-shell";
-import {
-  DESTINATION_ICONS,
-  type Destination,
-} from "@/components/public/destination-icons";
-import { SiteIdentityCard } from "@/components/public/site-identity-card";
-import { ProfilNotificationToggle } from "@/components/public/profil-notification-toggle";
-import { ProfilMusicToggle } from "@/components/public/music";
-import { AdminHome } from "@/components/admin/admin-home";
-import { StatsRow } from "@/components/ui/stats-row";
-import { MenuGroup, MenuRow } from "@/components/ui/menu-row";
-import { IconPlate } from "@/components/ui/icon-plate";
-import { MotionLink } from "@/components/motion";
-import { buildPageMetadata, PUBLIC_PAGE_SEO } from "@/lib/seo";
-import { getContentLabels, toDisplayLabel } from "@/lib/site-config";
+import { buildPageMetadata, normalizeVerificationCode, PUBLIC_PAGE_SEO } from "@/lib/seo";
+import { getContentLabels, getSiteOrigin, toDisplayLabel } from "@/lib/site-config";
+import { AdminDashboard } from "@/components/admin/dashboard/admin-dashboard";
+import { ProfilHub } from "@/components/public/profil/profil-hub";
 
-export const dynamic = "force-dynamic"; // membaca cookie (status lonceng)
-
-/** Kelas tone ditulis literal agar terbaca pemindai Tailwind. */
-const PROFILE_MENU: ReadonlyArray<{
-  href: Destination;
-  label: string;
-  tone: string;
-}> = [
-  { href: "/galeri", label: "Galeri", tone: "bg-tone-blue text-white" },
-  { href: "/album", label: "Album", tone: "bg-tone-indigo text-white" },
-  { href: "/agenda", label: "Agenda", tone: "bg-tone-orange text-white" },
-  { href: "/tersimpan", label: "Tersimpan", tone: "bg-tone-pink text-white" },
-  { href: "/blog", label: "Blog", tone: "bg-tone-teal text-white" },
-  { href: "/pesan", label: "Pesan Anonim", tone: "bg-tone-purple text-white" },
-  { href: "/anggota", label: "Anggota", tone: "bg-tone-green text-white" },
-  { href: "/tentang", label: "Tentang", tone: "bg-tone-cyan text-white" },
-  { href: "/privasi", label: "Kebijakan Privasi", tone: "bg-tone-gray text-white" },
-];
+export const dynamic = "force-dynamic"; // membaca cookie (sesi admin & lonceng)
 
 export async function generateMetadata(): Promise<Metadata> {
   return buildPageMetadata(await getSettings(), PUBLIC_PAGE_SEO.profil);
 }
 
+/** Tab Profil: dasbor bila admin masuk, hub jelajah bila pengunjung. */
 export default async function ProfilPage() {
   const settingsPromise = getSettings();
   const admin = await getCurrentAdmin();
 
   if (admin) {
-    const [settings, stats, requestHeaders] = await Promise.all([
+    const features = allowedFeatures(admin);
+    const [settings, data, requestHeaders] = await Promise.all([
       settingsPromise,
-      getAdminStats(),
+      getAdminDashboard(features),
       headers(),
     ]);
-
     return (
-      <AdminHome
+      <AdminDashboard
         siteName={settings.site_name}
         admin={admin}
-        features={allowedFeatures(admin)}
-        stats={stats}
+        features={features}
+        data={data}
         clientIpDetected={getClientIp(requestHeaders) !== null}
+        seo={
+          features.includes("setting")
+            ? {
+                indexing: settings.seo_indexing_enabled,
+                siteUrl: getSiteOrigin(settings),
+                verified: Boolean(normalizeVerificationCode(settings.google_site_verification)),
+              }
+            : null
+        }
       />
     );
   }
 
-  const [settings, memberCount, mediaCount, postCount, bell] = await Promise.all([
+  const [settings, members, media, posts, bell] = await Promise.all([
     settingsPromise,
     getMemberCount(),
     getApprovedMediaCount(),
@@ -82,59 +62,17 @@ export default async function ProfilPage() {
     isSupabaseConfigured() ? getBellState() : Promise.resolve(false),
   ]);
   const labels = getContentLabels(settings);
-  const memberLabel = toDisplayLabel(labels.memberPlural, settings.locale);
-  const subtitle = settings.tagline || settings.description || "";
 
   return (
-    <PageShell
-      header={{ variant: "title", title: "Profil" }}
-    >
-      <div className="space-y-4">
-        <SiteIdentityCard name={settings.site_name} logoUrl={settings.logo_url}>
-          {subtitle && <p className="text-muted text-sm">{subtitle}</p>}
-          <div className="mt-4">
-            <StatsRow
-              items={[
-                { value: memberCount, label: memberLabel },
-                { value: mediaCount, label: "Pin" },
-                { value: postCount, label: "Artikel" },
-              ]}
-            />
-          </div>
-        </SiteIdentityCard>
-
-        <MenuGroup>
-          {PROFILE_MENU.map((item) => (
-            <MenuRow
-              key={item.href}
-              href={item.href}
-              icon={
-                <IconPlate
-                  icon={DESTINATION_ICONS[item.href]}
-                  className={item.tone}
-                  size="sm"
-                />
-              }
-              // Istilah anggota mengikuti Pengaturan.
-              label={item.href === "/anggota" ? memberLabel : item.label}
-            />
-          ))}
-        </MenuGroup>
-
-        <ProfilNotificationToggle initialBell={bell} />
-        <ProfilMusicToggle />
-
-        <MotionLink
-          href={ADMIN_AUTH_PATHS.login}
-          className="motion-pressable bg-foreground text-bg rounded-ios flex items-center justify-center gap-2 py-3.5 font-semibold hover:opacity-90"
-        >
-          <Lock className="h-4 w-4" /> Masuk sebagai Admin
-        </MotionLink>
-
-        {settings.footer_text && (
-          <p className="text-muted text-center text-xs">{settings.footer_text}</p>
-        )}
-      </div>
-    </PageShell>
+    <ProfilHub
+      siteName={settings.site_name}
+      logoUrl={settings.logo_url}
+      tagline={settings.tagline}
+      description={settings.description}
+      footerText={settings.footer_text}
+      memberLabel={toDisplayLabel(labels.memberPlural, settings.locale)}
+      stats={{ members, media, posts }}
+      initialBell={bell}
+    />
   );
 }

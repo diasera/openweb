@@ -37,6 +37,7 @@ export const DEMO_SETTINGS: SiteSettingsRow = {
   tagline: "Tumbuh bersama melalui cerita, karya, dan kebersamaan.",
   hero_badge: "Template komunitas open source",
   hero_title: "Cerita yang tumbuh bersama",
+  hero_show_title: true,
   hero_subtitle: "Satu ruang untuk profil, kegiatan, karya, dan kenangan.",
   hero_image_url: null,
   hero_image_width: null,

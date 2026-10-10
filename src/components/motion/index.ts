@@ -4,3 +4,4 @@ export { MotionProvider, useAppMotion } from "./motion-context";
 export { RouteLoading } from "./route-loading";
 export { useMotionPresence } from "./use-motion-presence";
 export { listReveal, staggerDelay } from "./stagger";
+export { KineticWords, blurDelay, wordsDelay } from "./kinetic-words";

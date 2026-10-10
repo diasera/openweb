@@ -7,7 +7,7 @@ export {
   getContentLabels,
   toDisplayLabel,
 } from "./defaults";
-export { resolveHeroContent } from "./hero";
+export { hasReadableText, resolveHeroContent } from "./hero";
 export type { HeroContent, HeroSettings } from "./hero";
 export {
   LOCALE_OPTIONS,

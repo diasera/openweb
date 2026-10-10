@@ -48,11 +48,14 @@ Apple atau Pinterest.
   berlapis dengan parallax dan efek mundur saat scroll, serta transisi halaman
   3D. Seluruh gerak hanya `transform`/`opacity` dan mati otomatis untuk
   reduced motion.
-- Owner dan admin dengan izin per fitur, statistik, moderasi IP, notifikasi,
-  dan pengelolaan konten dari tab Profil yang sama.
+- Owner dan admin dengan izin per fitur dari tab Profil yang sama: dasbor
+  (sapaan, antrean yang perlu ditinjau, angka utama, pratinjau kiriman dan
+  pesan terbaru), moderasi media/komentar/IP, editor artikel, agenda, musik,
+  pengunjung + notifikasi, akun admin, dan Pengaturan.
 - SEO terpusat: site name, canonical URL, judul/deskripsi homepage, gambar
-  sosial, sitemap, robots, structured data, Search Console, Bing, Analytics,
-  dan konfigurasi AdSense.
+  sosial, sitemap (dengan gambar), robots, structured data, Search Console,
+  Bing, Analytics, dan konfigurasi AdSense. Pengaturan → SEO menampilkan panel
+  kesehatan SEO, endpoint siap salin, dan langkah Search Console.
 - Supabase Postgres + Storage dengan RLS dan signed upload; file besar tidak
   melewati Server Action.
 - Unggahan publik mendarat di bucket privat `media-inbox` dan baru dipindah ke
@@ -92,6 +95,24 @@ Apple atau Pinterest.
   listener `useDepthPointer`), `.motion-reveal` (reveal 3D berbasis scroll),
   `.motion-parallax`, `.animate-rise`, dan transisi rute. Daftar memakai
   `listReveal(index)` pada pembungkus item, bukan pada kartu yang ikut tilt.
+  Primitif premium lain ada di file yang sama: judul per kata
+  (`<KineticWords>` + `.motion-word`), `.motion-blur-in`, cahaya tepi
+  `[data-spotlight]` (posisi dari listener `useDepthPointer` yang sama),
+  `.edge-fade-x` untuk rail, `.motion-live-dot`, `.motion-digit` (hitung
+  mundur), `.motion-sheen`, `.motion-skeleton`, dan `.motion-ring-spin`.
+  Semuanya CSS murni (transform/opacity), tanpa library animasi JS.
+- `src/components/admin/` adalah kit admin bersama: `AdminPage` (kerangka
+  halaman), `AdminTabs` (filter URL), `AdminList`/`AdminRow`/`StatusBadge`,
+  `admin-actions.tsx` (aksi ikon, sheet konfirmasi, hapus, blokir IP),
+  `AdminFormDialog` (semua dialog buat/edit), `form-controls.tsx` (semua
+  field), `ImageField`, `SerpPreview`, dan `features.ts` (ikon/warna/deskripsi
+  per fitur). Fitur hanya menyumbang field dan datanya.
+- `src/lib/admin/guard.ts` memvalidasi argumen Server Action (id/enum) karena
+  action bisa dikirim langsung tanpa UI; `src/lib/seo/revalidate.ts`
+  menyegarkan sitemap & feed setiap kali URL publik bertambah/berkurang.
+- `src/lib/site-config/hero.ts` (`resolveHeroContent`) adalah satu sumber teks
+  hero untuk beranda dan pratinjau admin; h1 halaman depan selalu bermakna
+  walau judul disembunyikan dari foto.
 - `src/components/ui/icon-plate.tsx` adalah satu bentuk plat ikon ala
   Pengaturan iOS untuk menu Profil, banner notifikasi, dan kartu admin.
 - `src/components/public/destination-icons.ts` adalah satu peta ikon per
@@ -204,6 +225,12 @@ alih-alih error, sehingga deploy tidak gagal. Pin satu media tetap bisa dibuat;
 pin carousel (lebih dari satu item) menampilkan pesan "Skema database belum
 diperbarui" sampai SQL-nya dijalankan.
 
+Pembaruan terbaru menambah kolom `site_settings.hero_show_title`. Saat
+`schema.sql` dijalankan ulang, judul hero lama yang hanya berisi simbol
+(cara lama menyembunyikan judul, mis. ".") otomatis diubah menjadi sakelar
+mati + judul kosong. Sebelum SQL dijalankan pun, beranda sudah memperlakukan
+judul simbol sebagai tersembunyi; menyimpan tab Beranda memerlukan kolom baru.
+
 Catatan pembaruan keamanan terbaru:
 
 - Kiriman pending dari versi lama tetap berada di bucket publik sampai
@@ -270,12 +297,16 @@ Menu Pengaturan memusatkan konfigurasi berikut:
 - nama website, nama alternatif (khusus mesin pencari), tipe website, dan locale;
 - istilah tunggal/jamak anggota, nomor identitas, dan kelompok inti;
 - deskripsi, tagline, logo, favicon, warna, visi, dan misi;
-- hero beranda di tab Beranda: label, judul, subjudul, dan foto, dengan
-  pratinjau langsung. Judul kosong memakai nama website; nama alternatif tidak
-  pernah tampil di hero;
-- email, telepon, alamat, footer, dan tautan sosial;
+- hero beranda di tab Beranda: label, judul (dengan sakelar "Tampilkan judul
+  di atas foto"), subjudul, dan foto, dengan pratinjau langsung. Judul kosong
+  memakai nama website; saat judul disembunyikan, h1 halaman tetap memakai
+  nama website untuk mesin pencari. Nama alternatif tidak pernah tampil di hero;
+- warna utama dan aksen dengan palet cepat serta pratinjau tema; warna aksen
+  mewarnai gradien hero, cincin anggota inti, dan cahaya latar;
+- email, telepon, alamat, tautan sosial, dan teks footer (tahun © otomatis);
 - canonical URL, kontrol indexing, dan gambar sosial;
-- kode verifikasi Google/Bing, Google Analytics, dan Google AdSense.
+- kode verifikasi Google/Bing (boleh menempel seluruh tag `<meta>`), Google
+  Analytics, dan Google AdSense.
 
 Judul dan deskripsi hasil pencarian halaman depan disusun dari nama website,
 tagline, dan deskripsi (lihat pratinjau Google di tab Identitas). Mesin pencari
@@ -293,8 +324,15 @@ otomatis:
 - `/manifest.webmanifest`
 - `/ads.txt`
 
-Kirim URL absolut `/sitemap.xml` ke Google Search Console. Perubahan nama situs,
-judul, atau deskripsi baru terlihat setelah mesin pencari melakukan crawl ulang.
+Kirim URL absolut `/sitemap.xml` ke Google Search Console. Sitemap dan feed
+disegarkan otomatis setiap artikel terbit, pin disetujui, atau anggota/album
+berubah, dan setiap sumber konten dibaca terpisah sehingga satu tabel
+bermasalah tidak membuat sitemap gagal. Bila Search Console menampilkan
+"Tidak dapat mengambil peta situs" padahal `/sitemap.xml` terbuka normal,
+hapus entri lama lalu kirim ulang, uji dengan Inspeksi URL, dan minta
+pengindeksan untuk halaman penting (langkahnya juga ada di Pengaturan → SEO).
+Perubahan nama situs, judul, atau deskripsi baru terlihat setelah mesin
+pencari melakukan crawl ulang.
 
 ## Keamanan
 

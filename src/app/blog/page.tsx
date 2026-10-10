@@ -28,15 +28,12 @@ const PAGE_SIZE = 10;
 export const revalidate = 60;
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings();
-  return {
-    ...buildPageMetadata(settings, PUBLIC_PAGE_SEO.blog),
-    // Autodiscovery feed: pembaca RSS menemukan /feed.xml otomatis.
-    alternates: {
-      types: {
-        "application/rss+xml": [{ url: "/feed.xml", title: `Blog ${settings.site_name}` }],
-      },
-    },
-  };
+  // Autodiscovery feed: pembaca RSS menemukan /feed.xml otomatis. Dulu
+  // `alternates` ditimpa di sini sehingga canonical /blog ikut hilang.
+  return buildPageMetadata(settings, {
+    ...PUBLIC_PAGE_SEO.blog,
+    rssFeed: { url: "/feed.xml", title: `Blog ${settings.site_name}` },
+  });
 }
 
 export default async function BlogListPage({

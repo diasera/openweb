@@ -25,6 +25,24 @@ export async function getAdminPosts(
   return toPaged(data ?? [], count, page, ADMIN_POSTS_PAGE_SIZE);
 }
 
+/** Jumlah artikel per status untuk label tab pengelolaan blog. */
+export async function getPostStatusCounts(): Promise<Record<BlogFilter, number>> {
+  const sb = createAdminSupabase();
+  const head = { count: "exact" as const, head: true };
+  const byStatus = async (status?: PostStatus) => {
+    const query = sb.from("blog_posts").select("id", head);
+    const { count } = await (status ? query.eq("status", status) : query);
+    return count ?? 0;
+  };
+  const [all, published, draft, archived] = await Promise.all([
+    byStatus(),
+    byStatus("published"),
+    byStatus("draft"),
+    byStatus("archived"),
+  ]);
+  return { all, published, draft, archived };
+}
+
 export async function getPostById(id: string): Promise<BlogPostRow | null> {
   if (!isUuid(id)) return null;
   const sb = createAdminSupabase();

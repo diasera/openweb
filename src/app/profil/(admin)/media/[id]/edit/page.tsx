@@ -2,8 +2,8 @@ import { notFound } from "next/navigation";
 import { requireFeature } from "@/lib/auth";
 import { getAdminEditableMedia } from "@/lib/admin/media";
 import { buildAdminPageMetadata } from "@/lib/seo";
-import { MediaEditPage } from "@/components/admin/media-edit-page";
-import { PageHeader } from "@/components/ui/page-header";
+import { AdminPage } from "@/components/admin/admin-page";
+import { MediaEditPanel } from "@/components/admin/media/media-edit-panel";
 
 export const metadata = buildAdminPageMetadata("Edit Foto");
 
@@ -18,12 +18,13 @@ export default async function EditMediaPage({
   if (!media || media.type !== "photo") notFound();
 
   return (
-    <div>
-      <PageHeader
-        title="Edit foto"
-        description="Penyuntingan bersifat opsional dan tidak mengubah status moderasi media."
-      />
-      <MediaEditPage key={media.id} media={media} />
-    </div>
+    <AdminPage
+      feature="media"
+      title="Edit foto"
+      description="Potong, luruskan, atau beri filter. Penyuntingan tidak menyetujui atau menolak media."
+      width="narrow"
+    >
+      <MediaEditPanel key={media.id} media={media} />
+    </AdminPage>
   );
 }

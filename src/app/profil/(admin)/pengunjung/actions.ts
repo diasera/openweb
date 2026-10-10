@@ -6,6 +6,8 @@ import { z } from "zod";
 import { requireFeature } from "@/lib/auth";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { setIpBlocked } from "@/lib/admin/ip-bans";
+import { INVALID_INPUT, isValidId } from "@/lib/admin/guard";
+import { adminFeatureHref } from "@/lib/constants";
 import { checkedMutation } from "@/lib/database/mutation";
 import {
   validationErrorMessage,
@@ -15,7 +17,7 @@ import { normalizeNotificationHref } from "@/lib/utils/url";
 import { dispatchPushNotification } from "@/lib/push/send";
 import { removePushSubscriptionsByVisitor } from "@/lib/push/subscriptions";
 
-const notifSchema = z.object({
+const notificationSchema = z.object({
   title: z.string().trim().min(1, "Judul wajib diisi").max(120),
   body: z.string().trim().max(400),
   url: z
@@ -28,28 +30,28 @@ const notifSchema = z.object({
     ),
 });
 
-export async function sendNotification(
-  fd: FormData,
-): Promise<ActionResult> {
+function revalidateVisitors() {
+  revalidatePath(adminFeatureHref("pengunjung"));
+}
+
+export async function sendNotification(formData: FormData): Promise<ActionResult> {
   const admin = await requireFeature("pengunjung");
-  const parsed = notifSchema.safeParse({
-    title: fd.get("title") ?? "",
-    body: fd.get("body") ?? "",
-    url: fd.get("url") ?? "",
+  const parsed = notificationSchema.safeParse({
+    title: formData.get("title") ?? "",
+    body: formData.get("body") ?? "",
+    url: formData.get("url") ?? "",
   });
-  if (!parsed.success) {
-    return { error: validationErrorMessage(parsed) };
-  }
-  const sb = createAdminSupabase();
+  if (!parsed.success) return { error: validationErrorMessage(parsed) };
+  const url = normalizeNotificationHref(parsed.data.url);
   const sent = await checkedMutation(
     "notifications.create",
     "Gagal mengirim notifikasi.",
-    sb
+    createAdminSupabase()
       .from("notifications")
       .insert({
         title: parsed.data.title,
         body: parsed.data.body || null,
-        url: normalizeNotificationHref(parsed.data.url),
+        url,
         created_by: admin.id,
       })
       .select("id")
@@ -63,7 +65,7 @@ export async function sendNotification(
     id: sent.data.id,
     title: parsed.data.title,
     body: parsed.data.body || null,
-    url: normalizeNotificationHref(parsed.data.url),
+    url,
   };
   after(async () => {
     try {
@@ -75,33 +77,31 @@ export async function sendNotification(
     }
   });
 
-  revalidatePath("/profil/pengunjung");
+  revalidateVisitors();
   revalidatePath("/notifikasi");
   return {};
 }
 
 export async function deleteVisitor(id: string): Promise<ActionResult> {
   await requireFeature("pengunjung");
-  const sb = createAdminSupabase();
+  if (!isValidId(id)) return INVALID_INPUT;
   const deleted = await checkedMutation(
     "visitors.delete",
     "Gagal menghapus data pengunjung.",
-    sb.from("visitors").delete().eq("id", id).select("id, visitor_id").maybeSingle(),
+    createAdminSupabase().from("visitors").delete().eq("id", id).select("id, visitor_id").maybeSingle(),
   );
   if (!deleted.ok) return { error: deleted.error };
   // push_subscriptions tidak ber-FK ke visitors: tanpa ini perangkatnya tetap
   // menerima push dan ikut terhitung sebagai "Perangkat push".
   await removePushSubscriptionsByVisitor(deleted.data.visitor_id);
-  revalidatePath("/profil/pengunjung");
+  revalidateVisitors();
   return {};
 }
 
 /** Blokir hanya interaksi publik; akses dan pencatatan kunjungan tetap berjalan. */
-export async function setVisitorIpBlocked(
-  blocked: boolean,
-  id: string,
-): Promise<ActionResult> {
+export async function setVisitorIpBlocked(blocked: boolean, id: string): Promise<ActionResult> {
   const admin = await requireFeature("pengunjung");
+  if (!isValidId(id) || typeof blocked !== "boolean") return INVALID_INPUT;
   const sb = createAdminSupabase();
   const visitor = await checkedMutation(
     "visitors.load-ip",
@@ -109,7 +109,6 @@ export async function setVisitorIpBlocked(
     sb.from("visitors").select("id, ip_address").eq("id", id).maybeSingle(),
   );
   if (!visitor.ok) return { error: visitor.error };
-
   if (!visitor.data.ip_address) return { error: "IP pengunjung tidak tersedia." };
 
   const saved = await setIpBlocked(sb, {
@@ -119,25 +118,20 @@ export async function setVisitorIpBlocked(
     createdBy: admin.id,
   });
   if (saved.error) return saved;
-  revalidatePath("/profil/pengunjung");
+  revalidateVisitors();
   return {};
 }
 
 export async function deleteNotification(id: string): Promise<ActionResult> {
   await requireFeature("pengunjung");
-  const sb = createAdminSupabase();
+  if (!isValidId(id)) return INVALID_INPUT;
   const deleted = await checkedMutation(
     "notifications.delete",
     "Gagal menghapus notifikasi.",
-    sb
-      .from("notifications")
-      .delete()
-      .eq("id", id)
-      .select("id")
-      .maybeSingle(),
+    createAdminSupabase().from("notifications").delete().eq("id", id).select("id").maybeSingle(),
   );
   if (!deleted.ok) return { error: deleted.error };
-  revalidatePath("/profil/pengunjung");
+  revalidateVisitors();
   revalidatePath("/notifikasi");
   return {};
 }

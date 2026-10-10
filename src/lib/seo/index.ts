@@ -5,11 +5,17 @@ import {
   getSiteOrigin,
   toAbsoluteSiteUrl,
 } from "@/lib/site-config";
-import type { SiteSettingsRow, SocialLinks } from "@/lib/types/database";
+import type {
+  MediaRow,
+  SiteSettingsRow,
+  SocialLinks,
+} from "@/lib/types/database";
+import { formatSiteDate } from "@/lib/utils/time";
 
 export {
   normalizeAdsenseClientId,
   normalizeAnalyticsId,
+  normalizeVerificationCode,
 } from "@/lib/site-config/external-identifiers";
 
 export const PUBLIC_PAGE_SEO = {
@@ -110,6 +116,34 @@ export function getSocialHandle(social: SocialLinks | null) {
   }
 }
 
+/**
+ * Teks alt kartu sosial: nama situs + judul halaman, tanpa mengulang nama
+ * bila judul sudah diawali nama situs (judul beranda "Nama — Tagline").
+ */
+export function socialImageAlt(settings: SiteSettingsRow, title: string) {
+  const name = settings.site_name.trim();
+  return title.trim().toLocaleLowerCase().startsWith(name.toLocaleLowerCase())
+    ? title
+    : `${name} — ${title}`;
+}
+
+/**
+ * Judul tunggal sebuah pin untuk <title>, h1, breadcrumb, dan structured data.
+ * Pin tanpa judul/caption dulu berjudul seragam "Media" sehingga puluhan
+ * halaman bersaing sebagai duplikat; kini judulnya unik dari jenis, kategori,
+ * dan tanggal unggah.
+ */
+export function mediaTitle(
+  media: Pick<MediaRow, "title" | "caption" | "type" | "category" | "created_at">,
+  settings: Pick<SiteSettingsRow, "site_name">,
+) {
+  const explicit = media.title?.trim() || plainText(media.caption, 70);
+  if (explicit) return explicit;
+  const kind = media.type === "video" ? "Video" : "Foto";
+  const subject = media.category?.trim() || settings.site_name;
+  return `${kind} ${subject} · ${formatSiteDate(media.created_at)}`;
+}
+
 export function plainText(value: string | null | undefined, max = 170) {
   if (!value) return "";
   const text = value
@@ -135,6 +169,8 @@ interface PageMetadataInput {
   publishedTime?: string | null;
   modifiedTime?: string | null;
   authors?: string[];
+  /** Feed RSS untuk autodiscovery; digabung dengan canonical, bukan menimpanya. */
+  rssFeed?: { url: string; title: string };
 }
 
 function localizeTemplate(value: string, settings: SiteSettingsRow) {
@@ -178,7 +214,7 @@ export function buildPageMetadata(
   const titleText = localizeTemplate(input.title, settings);
   const description = localizeTemplate(input.description, settings);
   const image = input.image ?? getSocialImageUrl(settings) ?? OG_CARD_PATH;
-  const images = socialImages(image, settings, `${settings.site_name} — ${titleText}`);
+  const images = socialImages(image, settings, socialImageAlt(settings, titleText));
   const title = input.absoluteTitle
     ? ({ absolute: titleText } as const)
     : titleText;
@@ -195,7 +231,12 @@ export function buildPageMetadata(
   return {
     title,
     description,
-    alternates: { canonical },
+    alternates: {
+      canonical,
+      ...(input.rssFeed
+        ? { types: { "application/rss+xml": [input.rssFeed] } }
+        : {}),
+    },
     robots: noIndex
       ? { index: false, follow: false, googleBot: { index: false, follow: false } }
       : {

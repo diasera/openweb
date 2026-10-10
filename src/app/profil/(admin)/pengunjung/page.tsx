@@ -1,30 +1,29 @@
-import { Eye, Bell, Smartphone } from "lucide-react";
+import { Bell, BellRing, Eye, Smartphone } from "lucide-react";
 import { requireFeature } from "@/lib/auth";
-import { buildAdminPageMetadata } from "@/lib/seo";
 import {
-  getVisitors,
   getBellCount,
   getPushDeviceCount,
   getSentNotifications,
+  getVisitors,
 } from "@/lib/admin/visitors";
+import { adminFeatureHref } from "@/lib/constants";
+import { buildAdminPageMetadata } from "@/lib/seo";
 import { deviceLabel } from "@/lib/utils/request";
 import { parsePageParam } from "@/lib/utils/url";
-import { Pagination } from "@/components/public/pagination";
-import { timeAgo } from "@/lib/utils/time";
-import { PageHeader } from "@/components/ui/page-header";
-import { StatCard } from "@/components/admin/stat-card";
-import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils/cn";
+import { cardClass } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import {
-  BanIpButton,
-  DeleteButton,
-} from "@/components/admin/confirmed-action-button";
-import { NotificationComposer } from "@/components/admin/notification-composer";
-import {
-  deleteVisitor,
-  deleteNotification,
-  setVisitorIpBlocked,
-} from "./actions";
+import { RelativeTime } from "@/components/ui/relative-time";
+import { SectionHeader } from "@/components/ui/section-header";
+import { Pagination } from "@/components/public/pagination";
+import { listReveal } from "@/components/motion";
+import { AdminPage } from "@/components/admin/admin-page";
+import { AdminList, AdminRow, LeadingIcon, StatusBadge } from "@/components/admin/admin-list";
+import { BanIpAction, DeleteAction } from "@/components/admin/admin-actions";
+import { ADMIN_FEATURE_PRESENTATION } from "@/components/admin/features";
+import { StatTile } from "@/components/admin/stat-tile";
+import { NotificationComposer } from "@/components/admin/visitors/notification-composer";
+import { deleteNotification, deleteVisitor, setVisitorIpBlocked } from "./actions";
 
 export const metadata = buildAdminPageMetadata("Pengunjung");
 
@@ -41,128 +40,142 @@ export default async function PengunjungPage({
     getPushDeviceCount(),
     getSentNotifications(),
   ]);
-  const visitors = visitorPage.rows;
+  const plate = ADMIN_FEATURE_PRESENTATION.pengunjung.plate;
+  const tiles = [
+    { label: "Total pengunjung", value: visitorPage.total, icon: Eye, hint: "Perangkat unik tercatat" },
+    { label: "Langganan lonceng", value: bellCount, icon: Bell, hint: "Melihat notifikasi in-app" },
+    { label: "Perangkat push", value: pushCount, icon: Smartphone, hint: "Menerima push langsung" },
+  ];
 
   return (
-    <div>
-      <PageHeader
-        title="Pengunjung"
-        description="Pantau audiens, kirim notifikasi, dan batasi interaksi IP. IP yang diblokir tetap dapat membuka website."
-      />
-
-      <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard
-          label="Total pengunjung"
-          value={visitorPage.total}
-          icon={<Eye className="h-5 w-5" />}
-        />
-        <StatCard
-          label="Langganan lonceng"
-          value={bellCount}
-          icon={<Bell className="h-5 w-5" />}
-        />
-        <StatCard
-          label="Perangkat push"
-          value={pushCount}
-          icon={<Smartphone className="h-5 w-5" />}
-        />
-      </div>
-
-      <Card className="mb-6 p-5">
-        <h2 className="font-display text-lg font-bold">Kirim Notifikasi</h2>
-        <p className="text-muted mb-4 mt-0.5 text-sm">
-          Terlihat oleh {bellCount} pengunjung yang menyalakan lonceng
-          {pushCount > 0
-            ? ` dan terkirim langsung ke ${pushCount} perangkat.`
-            : "."}
-        </p>
-        <NotificationComposer />
-      </Card>
-
-      {notifications.length > 0 && (
-        <div className="mb-6">
-          <h2 className="font-display mb-3 text-lg font-bold">Notifikasi Terkirim</h2>
-          <div className="space-y-2">
-            {notifications.map((n) => (
-              <Card
-                key={n.id}
-                className="flex items-center justify-between gap-3 p-3"
+    <AdminPage
+      feature="pengunjung"
+      title="Pengunjung"
+      description="Pantau audiens, kirim notifikasi, dan batasi interaksi IP. IP yang diblokir tetap bisa membuka website."
+    >
+      <div className="space-y-9">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+          {tiles.map((tile, index) => {
+            const reveal = listReveal(index);
+            return (
+              <div
+                key={tile.label}
+                style={reveal.style}
+                className={cn(reveal.className, index === 0 && "col-span-2 lg:col-span-1")}
               >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{n.title}</p>
-                  <p className="text-muted truncate text-xs">
-                    {timeAgo(n.created_at)}
-                  </p>
-                </div>
-                <DeleteButton
-                  action={deleteNotification}
-                  id={n.id}
-                  message="Hapus notifikasi ini?"
-                />
-              </Card>
-            ))}
-          </div>
+                <StatTile {...tile} plate={plate} className="h-full" />
+              </div>
+            );
+          })}
         </div>
-      )}
 
-      <h2 className="font-display mb-3 text-lg font-bold">Daftar Pengunjung</h2>
-      {visitors.length === 0 ? (
-        <EmptyState
-          icon={<Eye className="h-8 w-8" />}
-          title="Belum ada pengunjung terekam"
-          description="Data pengunjung muncul otomatis saat website diakses."
-        />
-      ) : (
-        <div className="space-y-2">
-          {visitors.map((v) => (
-            <Card
-              key={v.id}
-              className="flex items-center justify-between gap-3 p-3"
-            >
-              <div className="min-w-0">
-                <p className="flex items-center gap-1.5 truncate text-sm font-medium">
-                  <span className="font-mono">{v.ip_address ?? "—"}</span>
-                  {v.notifications_enabled && (
-                    <Bell className="text-primary-readable h-3.5 w-3.5" />
+        <section
+          id="kirim-notifikasi"
+          aria-labelledby="notify-title"
+          className={cardClass("elevated", "aurora relative scroll-mt-28 overflow-hidden p-5 sm:p-6")}
+        >
+          <h2 id="notify-title" className="font-display text-lg font-bold">
+            Kirim notifikasi
+          </h2>
+          <p className="text-muted mb-5 mt-0.5 text-sm">
+            Terlihat oleh {bellCount} pengunjung yang menyalakan lonceng
+            {pushCount > 0 ? ` dan terkirim langsung ke ${pushCount} perangkat.` : "."}
+          </p>
+          <NotificationComposer />
+        </section>
+
+        {notifications.length > 0 && (
+          <section aria-labelledby="sent-title">
+            <SectionHeader id="sent-title" title="Notifikasi terkirim" count={notifications.length} />
+            <AdminList label="Notifikasi terkirim">
+              {notifications.map((notification, index) => (
+                <AdminRow
+                  key={notification.id}
+                  index={index}
+                  leading={<LeadingIcon icon={BellRing} className="bg-tone-cyan/12 text-tone-cyan-text" />}
+                  title={notification.title}
+                  meta={
+                    <>
+                      <RelativeTime iso={notification.created_at} />
+                      {notification.url && ` · ${notification.url}`}
+                    </>
+                  }
+                  actions={
+                    <DeleteAction
+                      action={deleteNotification}
+                      id={notification.id}
+                      title="Hapus notifikasi ini?"
+                      message="Notifikasi hilang dari daftar pengunjung; push yang sudah terkirim tidak bisa ditarik."
+                      successMessage="Notifikasi dihapus"
+                    />
+                  }
+                >
+                  {notification.body && (
+                    <p className="text-muted line-clamp-2 text-sm">{notification.body}</p>
                   )}
-                  {v.is_banned && (
-                    <span className="bg-danger/10 text-danger rounded-full px-2 py-0.5 text-caption2 font-semibold">
-                      Diblokir
-                    </span>
-                  )}
-                </p>
-                <p className="text-muted truncate text-xs">
-                  {deviceLabel(v.device)} · {v.visit_count}× · {timeAgo(v.last_seen_at)}
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-1">
-                {v.ip_address && (
-                  <BanIpButton
-                    action={setVisitorIpBlocked.bind(null, !v.is_banned)}
-                    id={v.id}
-                    blocked={v.is_banned}
-                    message={
-                      v.is_banned
-                        ? "Buka blokir IP ini agar dapat berinteraksi lagi?"
-                        : "Blokir IP ini dari komentar, upload, dan pesan anonim?"
-                    }
-                  />
-                )}
-                <DeleteButton
-                  action={deleteVisitor}
-                  id={v.id}
-                  message="Hapus data pengunjung ini?"
+                </AdminRow>
+              ))}
+            </AdminList>
+          </section>
+        )}
+
+        <section aria-labelledby="visitors-title">
+          <SectionHeader id="visitors-title" title="Daftar pengunjung" count={visitorPage.total} />
+          {visitorPage.rows.length === 0 ? (
+            <EmptyState
+              icon={<Eye className="size-8" />}
+              title="Belum ada pengunjung terekam"
+              description="Data pengunjung muncul otomatis saat website diakses."
+            />
+          ) : (
+            <AdminList label="Pengunjung">
+              {visitorPage.rows.map((visitor, index) => (
+                <AdminRow
+                  key={visitor.id}
+                  index={index}
+                  leading={<LeadingIcon icon={Smartphone} />}
+                  title={<span className="font-mono">{visitor.ip_address ?? "IP tidak tersedia"}</span>}
+                  badges={
+                    <>
+                      {visitor.notifications_enabled && <StatusBadge tone="primary">Lonceng</StatusBadge>}
+                      {visitor.is_banned && <StatusBadge tone="danger">Diblokir</StatusBadge>}
+                    </>
+                  }
+                  meta={
+                    <>
+                      {deviceLabel(visitor.device)} · {visitor.visit_count}× kunjungan · terakhir{" "}
+                      <RelativeTime iso={visitor.last_seen_at} />
+                    </>
+                  }
+                  actions={
+                    <>
+                      {visitor.ip_address && (
+                        <BanIpAction
+                          action={setVisitorIpBlocked.bind(null, !visitor.is_banned)}
+                          id={visitor.id}
+                          blocked={visitor.is_banned}
+                        />
+                      )}
+                      <DeleteAction
+                        action={deleteVisitor}
+                        id={visitor.id}
+                        title="Hapus data pengunjung ini?"
+                        message="Langganan push perangkat ini ikut dihapus."
+                        successMessage="Data pengunjung dihapus"
+                      />
+                    </>
+                  }
                 />
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-      <Pagination
-        basePath="/profil/pengunjung"
-        current={visitorPage.page}
-        total={visitorPage.totalPages}
-      />
-    </div>
+              ))}
+            </AdminList>
+          )}
+          <Pagination
+            basePath={adminFeatureHref("pengunjung")}
+            current={visitorPage.page}
+            total={visitorPage.totalPages}
+          />
+        </section>
+      </div>
+    </AdminPage>
   );
 }
