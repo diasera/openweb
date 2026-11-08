@@ -1,0 +1,100 @@
+/* Carousel media ala iOS Photos: swipe native (scroll-snap), page control
+ * kapsul kaca, dan burst simpan saat ketuk dua kali. Kurva memakai token
+ * spring di motion.css agar terasa sama dengan island, tab bar, dan sheet. */
+
+.track {
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
+}
+
+.track::-webkit-scrollbar {
+  display: none;
+}
+
+.slide {
+  scroll-snap-align: center;
+  /* Satu usapan = satu slide, seperti carousel Instagram. */
+  scroll-snap-stop: always;
+}
+
+.pager {
+  color: white;
+  background-color: rgb(0 0 0 / 0.28);
+  backdrop-filter: blur(12px) saturate(160%);
+}
+
+.dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 9999px;
+  background-color: rgb(255 255 255 / 0.5);
+  transition:
+    width var(--motion-control) var(--motion-spring-snappy),
+    background-color var(--motion-fast) ease-out;
+}
+
+.dot[aria-current="true"] {
+  width: 1rem;
+  background-color: white;
+}
+
+.arrow {
+  opacity: 0;
+  transition:
+    opacity var(--motion-fast) ease-out,
+    transform var(--motion-control) var(--motion-spring-snappy);
+}
+
+.root:hover .arrow,
+.root:focus-within .arrow {
+  opacity: 1;
+}
+
+.arrow:active {
+  transform: scale(0.9);
+}
+
+.counter {
+  animation: carousel-counter-in var(--motion-control) var(--motion-spring-bouncy) both;
+}
+
+.burst {
+  animation: carousel-burst 900ms var(--motion-spring-bouncy) both;
+  filter: drop-shadow(0 6px 18px rgb(0 0 0 / 0.35));
+}
+
+@keyframes carousel-counter-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+@keyframes carousel-burst {
+  0% {
+    opacity: 0;
+    transform: scale(0.2) rotate(-12deg);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.12) rotate(0deg);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.9) translateY(-18px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .counter,
+  .burst {
+    animation-duration: 1ms;
+  }
+}

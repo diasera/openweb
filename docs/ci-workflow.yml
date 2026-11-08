@@ -1,0 +1,35 @@
+# Salin ke .github/workflows/ci.yml agar GitHub Actions menjalankannya di setiap PR.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run check:member-slugs
+      - run: npm run check:media-formats
+      - run: npm run check:share-target
+      # schema.sql dijalankan dua kali di Postgres sungguhan (PGlite) + uji RPC/RLS.
+      - run: npm run check:schema
+      - run: npm run build
+      - run: npm run typecheck
+      - run: npm run audit:prod

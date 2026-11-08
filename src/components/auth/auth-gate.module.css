@@ -1,0 +1,156 @@
+/* Gerbang Auth: dinding pin yang bergeser pelan dalam ruang 3D di belakang
+ * sheet kaca, ditambah cahaya aurora warna utama + aksen. Seluruh warna dari
+ * token tema; gerak hanya transform di compositor dan mati untuk reduced
+ * motion. */
+
+.wallViewport {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.wall {
+  --wall-gap: 0.75rem;
+  position: absolute;
+  inset: -20% -16%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--wall-gap);
+  /* Dinding sedikit rebah dan miring: kedalaman tanpa library 3D. */
+  transform: perspective(1400px) rotateX(18deg) rotateZ(-8deg);
+  transform-origin: 50% 35%;
+  animation: gate-wall-in 1400ms var(--motion-spring) backwards;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  /* Isi kolom dirender dua kali; geser -50% = satu putaran tanpa sambungan. */
+  animation: gate-drift var(--drift, 80s) linear infinite;
+}
+
+.column:nth-child(even) {
+  animation-direction: reverse;
+}
+
+.column:nth-child(n + 4) {
+  display: none;
+}
+
+/* margin (bukan gap) agar tinggi tiap salinan identik dan putaran mulus. */
+.tile {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: var(--wall-gap);
+}
+
+/* Lapisan pembaca: dinding tetap terasa, form selalu kontras AA. */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(70% 50% at 15% 0%, rgb(var(--primary) / 0.22), transparent 70%),
+    radial-gradient(60% 45% at 95% 10%, rgb(var(--accent) / 0.18), transparent 70%),
+    linear-gradient(
+      to bottom,
+      rgb(var(--bg) / 0.4),
+      rgb(var(--bg) / 0.1) 28%,
+      rgb(var(--bg) / 0.6) 58%,
+      rgb(var(--bg) / 0.96)
+    );
+}
+
+@media (min-width: 640px) {
+  .scrim {
+    background:
+      radial-gradient(70% 50% at 15% 0%, rgb(var(--primary) / 0.22), transparent 70%),
+      radial-gradient(60% 45% at 95% 10%, rgb(var(--accent) / 0.18), transparent 70%),
+      radial-gradient(
+        38rem 32rem at 50% 50%,
+        rgb(var(--bg) / 0.9),
+        rgb(var(--bg) / 0.5) 55%,
+        rgb(var(--bg) / 0.15)
+      );
+  }
+}
+
+@media (min-width: 768px) {
+  .wall {
+    --wall-gap: 1rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .column:nth-child(4) {
+    display: flex;
+  }
+}
+
+@media (min-width: 1024px) {
+  .wall {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .column:nth-child(n + 4) {
+    display: flex;
+  }
+}
+
+/* Login gagal: form bergetar sekali, seperti kolom kode sandi iOS. */
+.shake {
+  animation: gate-shake 380ms var(--motion-ease-in-out);
+}
+
+@keyframes gate-wall-in {
+  from {
+    opacity: 0;
+    transform: perspective(1400px) rotateX(32deg) rotateZ(-8deg) translate3d(0, 6%, -120px);
+  }
+}
+
+@keyframes gate-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, -50%, 0);
+  }
+}
+
+@keyframes gate-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-7px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wall,
+  .column,
+  .shake {
+    animation: none;
+  }
+}
+
+/* Increase Contrast / High Contrast: hanya form di atas latar polos. */
+@media (prefers-contrast: more), (forced-colors: active) {
+  .wallViewport,
+  .scrim {
+    display: none;
+  }
+}
