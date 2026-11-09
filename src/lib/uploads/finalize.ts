@@ -1,6 +1,6 @@
 import "server-only";
 
-import { verifyStoredObject } from "@/lib/storage";
+import { verifyStoredObject } from "@/lib/supabase/storage";
 import { validateUploadDescriptor, type UploadPolicyResult } from "./policy";
 import {
   verifyUploadTicket,

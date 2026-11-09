@@ -1,0 +1,87 @@
+name: 🐞 Laporan bug
+description: Laporkan sesuatu yang tidak berjalan sebagaimana mestinya.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Terima kasih sudah meluangkan waktu melapor! Pastikan bug ini belum
+        pernah dilaporkan dengan [mencari issue yang ada](https://github.com/diasera/openweb/issues?q=is%3Aissue).
+
+        ⚠️ Celah keamanan **jangan** dilaporkan di sini — ikuti [SECURITY.md](https://github.com/diasera/openweb/blob/main/SECURITY.md).
+  - type: textarea
+    id: description
+    attributes:
+      label: Deskripsi
+      description: Jelaskan bug-nya secara singkat dan jelas.
+      placeholder: Saat menyimpan artikel, cover hilang setelah halaman dimuat ulang.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Langkah reproduksi
+      description: Langkah-langkah untuk memunculkan bug.
+      placeholder: |
+        1. Buka Profil Admin → Blog
+        2. Klik "Artikel baru"
+        3. Unggah cover lalu simpan
+        4. Muat ulang halaman
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Perilaku yang diharapkan
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Perilaku yang terjadi
+      description: Sertakan pesan error, log konsol, atau tangkapan layar bila ada.
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode aplikasi
+      options:
+        - Produksi (dengan Supabase)
+        - Demo (tanpa Supabase)
+        - Keduanya
+    validations:
+      required: true
+  - type: dropdown
+    id: hosting
+    attributes:
+      label: Hosting
+      options:
+        - Lokal (npm run dev)
+        - Vercel
+        - Self-hosted
+        - Lainnya
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versi
+      description: Lihat `version` di package.json atau tag rilis.
+      placeholder: v1.1.0
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser & perangkat
+      placeholder: Safari 18 di iPhone 15, Chrome 130 di Windows 11
+  - type: checkboxes
+    id: schema
+    attributes:
+      label: Pemeriksaan
+      options:
+        - label: Saya sudah menjalankan ulang `supabase/schema.sql` versi terbaru (khusus mode produksi).
+        - label: Saya sudah mencari issue serupa dan tidak menemukannya.
+          required: true

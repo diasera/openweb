@@ -9,7 +9,7 @@ import {
   toggleSaved,
   useIsSaved,
   type SavedKind,
-} from "@/lib/saved-items";
+} from "@/lib/hooks/use-saved-items";
 
 /** Tombol bagikan (Web Share API / salin tautan). Dipakai Detail Pin & Artikel. */
 export function ShareButton({ title }: { title?: string }) {

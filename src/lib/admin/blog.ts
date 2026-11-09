@@ -7,7 +7,7 @@ import { pageBounds, toPaged, type Paged } from "./paging";
 /** Filter artikel yang digunakan halaman pengelolaan blog. */
 export type BlogFilter = "all" | PostStatus;
 
-export const ADMIN_POSTS_PAGE_SIZE = 30;
+const ADMIN_POSTS_PAGE_SIZE = 30;
 
 export async function getAdminPosts(
   filter: BlogFilter = "all",

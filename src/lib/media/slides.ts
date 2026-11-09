@@ -17,7 +17,7 @@ export const PUBLIC_MEDIA_SLIDE_COLUMNS =
 /** Daftar/kartu cukup tahu jumlah item untuk badge carousel. */
 export type MediaWithSlideCount = MediaRow & { slide_count?: number };
 
-export function coverSlide(
+function coverSlide(
   media: Pick<MediaRow, keyof MediaSlide>,
 ): MediaSlide {
   return {

@@ -13,7 +13,7 @@ function truncate(value: string, max: number) {
   return clean.length <= max ? clean : `${clean.slice(0, max - 1).trimEnd()}…`;
 }
 
-export function ogCardFontSize(title: string) {
+function ogCardFontSize(title: string) {
   if (title.length <= 48) return 68;
   if (title.length <= 80) return 56;
   return 46;

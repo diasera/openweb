@@ -569,7 +569,7 @@ export const getPostBySlug = cache(async (slug: string): Promise<BlogPostRow | n
 });
 
 /** Komentar yang ditampilkan per pin: yang terbaru, disajikan kronologis. */
-export const COMMENT_DISPLAY_LIMIT = 100;
+const COMMENT_DISPLAY_LIMIT = 100;
 
 export async function getComments(
   mediaId: string,

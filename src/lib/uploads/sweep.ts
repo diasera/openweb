@@ -3,7 +3,7 @@ import { STORAGE_BUCKETS } from "@/lib/constants";
 import { isSchemaOutdatedError } from "@/lib/database/errors";
 import { consumeRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { createAdminSupabase } from "@/lib/supabase/admin";
-import { getStoragePublicUrl } from "@/lib/storage";
+import { getStoragePublicUrl } from "@/lib/supabase/storage";
 import { UPLOAD_TICKET_TTL_SECONDS } from "./ticket";
 
 const SWEEP_BATCH = 100;

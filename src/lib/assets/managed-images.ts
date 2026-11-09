@@ -5,7 +5,7 @@ import {
   getStoragePublicUrl,
   removeStorageObject,
   uploadToBucket,
-} from "@/lib/storage";
+} from "@/lib/supabase/storage";
 import { UUID_REGEX_SOURCE } from "@/lib/utils/id";
 
 const MANAGED_IMAGE_SPECS = {

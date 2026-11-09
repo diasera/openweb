@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Lint, cek & build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Instal dependensi
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Cek slug anggota
+        run: npm run check:member-slugs
+      - name: Cek format media
+        run: npm run check:media-formats
+      - name: Cek share target
+        run: npm run check:share-target
+      # schema.sql dijalankan dua kali di Postgres sungguhan (PGlite) + uji RPC/RLS.
+      - name: Cek skema database
+        run: npm run check:schema
+      - name: Build
+        run: npm run build
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Audit dependensi produksi
+        run: npm run audit:prod

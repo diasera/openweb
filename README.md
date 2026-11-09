@@ -1,443 +1,190 @@
+<div align="center">
+
+<img src="src/app/icon.svg" alt="Logo Ruang Bersama" width="84" height="84" />
+
 # Ruang Bersama
 
-Template website komunitas yang dapat dikustomisasi dari panel admin tanpa
-mengubah source code. Cocok untuk kelas kuliah, sekolah, organisasi, komunitas,
-usaha kecil, maupun portofolio kelompok.
+**Platform web komunitas open source — kelola seluruh identitas, galeri, artikel, agenda, dan anggota langsung dari panel admin, tanpa menyentuh kode.**
 
-Antarmukanya terinspirasi pola interaksi iOS dan susunan media Pinterest,
-dengan satu Dynamic Island untuk navigasi, status proses, notifikasi, dan
-kontrol musik. Proyek ini bukan produk resmi dan tidak berafiliasi dengan
-Apple atau Pinterest.
+[![CI](https://github.com/diasera/openweb/actions/workflows/ci.yml/badge.svg)](https://github.com/diasera/openweb/actions/workflows/ci.yml)
+[![Versi](https://img.shields.io/github/package-json/v/diasera/openweb?label=versi&color=ff2d55)](./CHANGELOG.md)
+[![Lisensi MIT](https://img.shields.io/github/license/diasera/openweb?label=lisensi&color=007aff)](./LICENSE)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D22.12%20(24%20LTS)-339933?logo=nodedotjs&logoColor=white)](./.nvmrc)
+[![PR Welcome](https://img.shields.io/badge/PR-welcome-34c759)](./.github/CONTRIBUTING.md)
 
-## Fitur utama
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org)
+[![React 19](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)](https://react.dev)
+[![TypeScript 6](https://img.shields.io/badge/TypeScript-6-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4-38bdf8?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Supabase](https://img.shields.io/badge/Supabase-Postgres_%2B_Storage-3fcf8e?logo=supabase&logoColor=white)](https://supabase.com)
 
-- Identitas, jenis website, istilah anggota, bahasa, kontak, tautan sosial,
-  warna, logo, favicon, dan hero dapat diatur dari Profil Admin.
-- Galeri foto/video, pin pilihan di homepage, komentar, dan unggahan publik
-  dengan moderasi admin (termasuk moderasi komentar lintas pin).
-- Pin carousel ala Instagram: satu pin berisi hingga 10 foto/video. Buat Pin
-  memakai composer multi-pilih dengan pratinjau carousel, filmstrip yang bisa
-  diurutkan (tahan & geser, tombol, atau Alt+panah), edit per foto, dan
-  unggahan paralel dengan progres per item. Kartu menampilkan badge jumlah
-  item; detail pin bisa digeser (scroll-snap native), punya page control,
-  navigasi keyboard, dan ketuk dua kali untuk Simpan. Moderator meninjau
-  setiap slide sebelum menyetujui.
-- Album per acara (`/album`) yang dikelola dari Profil Admin → Media → Album.
-- Agenda (`/agenda`) dengan hitung mundur live: acara terdekat tampil sebagai
-  Live Activity di Dynamic Island (H-7 sampai selesai) dan bisa disimpan ke
-  Kalender Apple/Outlook (`.ics`) atau Google Calendar.
-- Koleksi Tersimpan (`/tersimpan`) untuk pin dan artikel, tersimpan di
-  perangkat tanpa akun dan tersinkron antar-tab.
-- "Kenangan hari ini" di homepage: media pada tanggal yang sama tahun lalu.
-- Pencarian Spotlight full-text bahasa Indonesia (stemming + awalan kata) lintas
-  media, artikel, anggota (termasuk NIM), album, dan agenda.
-- PWA share target: foto/video dari menu Bagikan galeri Android langsung
-  terbuka di Buat Pin; beberapa file sekaligus langsung menjadi carousel.
-- Filter lintas halaman untuk Galeri (foto/video & kategori) dan Blog (kategori
-  & `#tag`), terhubung langsung dengan chip interaktif di detail pin dan artikel.
-- Blog dengan editor rich text, cover, kategori, tag, draft, dan publikasi.
-- Profil anggota dengan URL ramah baca seperti `/profil/siti-sholeh` serta
-  tautan dua arah dengan media (`/pin/[id]`) dan artikel (`/blog/[slug]`) yang
-  menyebut nama anggota.
-- Pesan anonim; hanya pesan yang dipin admin ditampilkan di homepage.
-- Playlist audio persisten dengan putar, jeda, seek, next/previous, Media
-  Session, dan kontrol Dynamic Island.
-- Tema terang/gelap, motion lintas halaman dengan kurva pegas iOS asli
-  (`linear()` spring), tab bar responsif, serta dukungan
-  `prefers-reduced-motion`.
-- Sistem kedalaman "Depth" tanpa library 3D: kartu interaktif miring
-  mengikuti kursor dengan pantulan cahaya, tekan-dalam di layar sentuh, daftar
-  bangkit dalam 3D saat digulir (scroll-driven animation di compositor), hero
-  berlapis dengan parallax dan efek mundur saat scroll, serta transisi halaman
-  3D. Seluruh gerak hanya `transform`/`opacity` dan mati otomatis untuk
-  reduced motion.
-- Owner dan admin dengan izin per fitur dari tab Profil yang sama: dasbor
-  (sapaan, antrean yang perlu ditinjau, angka utama, pratinjau kiriman dan
-  pesan terbaru), moderasi media/komentar/IP, editor artikel, agenda, musik,
-  pengunjung + notifikasi, akun admin, dan Pengaturan.
-- SEO terpusat: site name, canonical URL, judul/deskripsi homepage, gambar
-  sosial, sitemap (dengan gambar), robots, structured data, Search Console,
-  Bing, Analytics, dan konfigurasi AdSense. Pengaturan → SEO menampilkan panel
-  kesehatan SEO, endpoint siap salin, dan langkah Search Console.
-- Supabase Postgres + Storage dengan RLS dan signed upload; file besar tidak
-  melewati Server Action.
-- Unggahan publik mendarat di bucket privat `media-inbox` dan baru dipindah ke
-  bucket publik saat disetujui, sehingga kiriman yang belum dimoderasi tidak
-  pernah punya URL publik. Unggahan yang ditinggal dibersihkan otomatis.
-- Registry format media terpusat, pemeriksaan signature byte, normalisasi
-  HEIC/HEIF iPhone yang lazy-loaded, serta alias format lintas iOS/Android.
+[**Lihat Demo Langsung ↗**](https://mbsc.my.id) ·
+[**Mulai Cepat**](#-mulai-cepat) ·
+[**Deploy**](#-deploy-ke-vercel) ·
+[**Arsitektur**](./docs/ARCHITECTURE.md) ·
+[**Laporkan Bug**](https://github.com/diasera/openweb/issues/new?template=bug_report.yml) ·
+[**Usulkan Fitur**](https://github.com/diasera/openweb/issues/new?template=feature_request.yml)
 
-## Prinsip arsitektur
+</div>
 
-- `src/lib/site-config/` adalah pusat validasi, default, pilihan, dan runtime
-  konfigurasi website.
-- `src/app/globals.css` adalah pusat token desain: skala teks iOS Dynamic Type
-  (`text-caption2` … `text-large-title`), warna sistem iOS (`tone-*`, varian
-  `-text` lolos kontras AA), satu material kaca (`glass-material`) dengan tepi
-  spekular Liquid Glass (`--glass-rim`), elevasi kartu terang/gelap
-  (`--elevation-*`), tekstur `grain` untuk mesh gradient, dan masonry.
-  `src/lib/theme.ts` menurunkan warna turunan dari warna utama yang diatur
-  admin.
-- `src/app/fonts/` memuat satu font display self-hosted (Plus Jakarta Sans
-  variabel, OFL) lewat `next/font/local` untuk semua judul; teks isi tetap
-  memakai font sistem. Build tidak membutuhkan akses Google Fonts.
-- `src/components/public/dynamic-island/` adalah satu-satunya pemilik visual
-  Dynamic Island; feedback fitur masuk melalui kanal yang sama. Island juga
-  memegang aksi halaman dengan sistem prioritas: selama editor (artikel,
-  Edit postingan, Pengaturan) punya perubahan, ia memanggil
-  `useIslandActions({ actions })` dan island hanya memuat Kembali · judul ·
-  tombol utama (· musik bila lagu sedang diputar). Setelah tersimpan aksi
-  dilepas dan island kembali normal sendiri. Tidak ada bar kaca kedua di atas
-  atau di bawah halaman. Tombolnya `src/components/admin/island-save.tsx`;
-  Ctrl/⌘+S memakai `useSaveShortcut`.
-- `src/lib/data/` memusatkan pembacaan data publik dan fallback demo.
-- `src/lib/database/` memusatkan kontrak mutasi dan pesan error database.
-- `src/lib/media-formats/` memusatkan format ingest, MIME storage, signature,
-  normalisasi, dan probe playback untuk seluruh picker serta API.
-- `src/lib/media/slides.ts` + `src/components/ui/media-carousel.tsx` adalah satu
-  bentuk slide dan satu renderer carousel untuk detail pin, moderasi admin, dan
-  composer. Baris `media` tetap menjadi pin sekaligus sampul; slide berikutnya
-  ada di tabel `media_slides`, sehingga kartu, pencarian, album, dan feed lama
-  tidak berubah.
-- `src/components/motion/motion.css` memusatkan token durasi, kurva spring
-  (`--motion-spring`, `--motion-spring-snappy`, `--motion-spring-bouncy`), dan
-  kedalaman 3D: `.motion-card`/`[data-depth-tilt]` (tilt + glare, diisi satu
-  listener `useDepthPointer`), `.motion-reveal` (reveal 3D berbasis scroll),
-  `.motion-parallax`, `.animate-rise`, dan transisi rute. Daftar memakai
-  `listReveal(index)` pada pembungkus item, bukan pada kartu yang ikut tilt.
-  Primitif premium lain ada di file yang sama: judul per kata
-  (`<KineticWords>` + `.motion-word`), `.motion-blur-in`, cahaya tepi
-  `[data-spotlight]` (posisi dari listener `useDepthPointer` yang sama),
-  `.edge-fade-x` untuk rail, `.motion-live-dot`, `.motion-digit` (hitung
-  mundur), `.motion-sheen`, `.motion-skeleton`, dan `.motion-ring-spin`.
-  Semuanya CSS murni (transform/opacity), tanpa library animasi JS.
-- Loading konten selalu berupa skeleton yang meniru halaman aslinya, dari
-  satu otak: gaya `.motion-skeleton` (token `--skeleton-base/-shine`),
-  blok di `src/components/ui/skeleton.tsx`, dan komposisi per jenis halaman
-  di `skeleton-layouts.tsx`. Route cukup menyebut `skeleton: "…"` di
-  registry (`src/lib/navigation/app-routes.ts`, `ADMIN_FEATURE_META`);
-  `RouteSkeleton` di `loading.tsx` root & admin memilih bentuknya. Proses
-  pratinjau (HEIC, unduh foto asli) memakai `SkeletonOverlay`. Indikator
-  aksi di tombol datang dari `Button` (`icon` + `pending`).
-- `src/components/admin/` adalah kit admin bersama: `AdminPage` (kerangka
-  halaman), `AdminTabs` (filter URL), `AdminList`/`AdminRow`/`StatusBadge`,
-  `admin-actions.tsx` (aksi ikon, sheet konfirmasi, hapus, blokir IP),
-  `AdminFormDialog` (semua dialog buat/edit), `form-controls.tsx` (semua
-  field), `ImageField`, `SerpPreview`, dan `features.ts` (ikon/warna/deskripsi
-  per fitur). Fitur hanya menyumbang field dan datanya.
-- `src/lib/admin/guard.ts` memvalidasi argumen Server Action (id/enum) karena
-  action bisa dikirim langsung tanpa UI; `src/lib/seo/revalidate.ts`
-  menyegarkan sitemap & feed setiap kali URL publik bertambah/berkurang.
-- `src/lib/site-config/hero.ts` (`resolveHeroContent`) adalah satu sumber teks
-  hero untuk beranda dan pratinjau admin; h1 halaman depan selalu bermakna
-  walau judul disembunyikan dari foto.
-- `src/components/ui/icon-plate.tsx` adalah satu bentuk plat ikon ala
-  Pengaturan iOS untuk menu Profil, banner notifikasi, dan kartu admin.
-- `src/components/public/destination-icons.ts` adalah satu peta ikon per
-  tujuan navigasi untuk tab bar, panel cepat island, menu Profil, hasil
-  Spotlight, dan navigasi admin.
-- `src/lib/utils/time.ts` memusatkan format tanggal/jam di zona waktu situs.
-  Halaman publik ber-cache memakai `src/components/ui/relative-time.tsx`:
-  tanggal absolut saat SSR/hydration, lalu label relatif ("5 menit lalu")
-  sesudah hydration, sehingga tidak ada hydration mismatch. Jam yang terus
-  berdetak memakai `useNow` di `src/lib/hooks/use-now.ts`.
-- `src/lib/utils/storage.ts` adalah satu daftar key `localStorage` beserta
-  pembaca/penulis yang aman (mode privat, kuota penuh, JSON rusak).
-- `src/lib/media/revalidate.ts` adalah satu daftar halaman yang menampilkan
-  media; moderasi, unggah, dan edit postingan memakainya agar tidak
-  ada halaman ber-ISR yang tertinggal basi.
-- Satu editor per jenis konten, satu klik membuka semuanya (alamatnya di
-  `src/lib/constants.ts`): **Edit postingan** (pensil di kartu Media — media:
-  edit foto item ke-n, tambah foto/video, hapus, urutkan, jadikan sampul;
-  plus judul, caption, kategori, pengunggah, tanggal momen, komentar, album,
-  sorotan) dan **Edit artikel** (tulisan, status Draf/Terbit/Arsip, cover,
-  SEO). Batas & validasi teks pin ada di `src/lib/media/metadata.ts` +
-  `metadata-schema.ts` (`mediaDetailsSchema`), dipakai form unggah publik,
-  API unggah, dan Edit postingan.
-- Buat Pin dan Edit postingan memakai satu komposer carousel
-  (`src/components/public/media-composer.tsx`, termasuk picker file dan
-  `DraftPhotoEditor`), satu state draft (`useMediaDrafts`, bisa diisi item
-  tersimpan) dan satu pipeline unggah (`useDraftUploads`). Simpan Edit
-  postingan mengirim susunan media (bila berubah) + detail ke
-  `/api/media/[id]/edit`; database menulis semuanya atomik lewat RPC
-  `update_media_post` dengan pengecekan "masih sama dengan yang dibuka".
-- `src/lib/seo/feed.ts` adalah satu sumber isi `/feed.xml` dan `/feed.json`.
-- `src/components/admin/use-admin-action.ts` memusatkan pending, konfirmasi,
-  dan toast untuk aksi admin; `useFormDirty` (`src/lib/hooks/use-form-dirty.ts`)
-  menyediakan `notifyFormChange` untuk kontrol yang berubah tanpa event native
-  (Switch, editor foto).
-- `src/lib/types/database.ts` adalah kontrak TypeScript untuk skema Supabase.
-- `supabase/schema.sql` adalah sumber kebenaran database instalasi baru.
+---
 
-## Persyaratan
+**Ruang Bersama** dirancang untuk kelas kuliah, sekolah, himpunan, komunitas hobi, organisasi, hingga portofolio kolektif. Antarmukanya memadukan susunan visual **Pinterest** (masonry & pin carousel) dengan pola interaksi **iOS** (Dynamic Island, spring motion CSS murni, dan tema adaptif terang/gelap).
 
-- Node.js 24 LTS direkomendasikan (`.nvmrc` sudah disediakan); Node.js 22.12+
-  tetap didukung oleh rentang `engines`.
-- npm 11 direkomendasikan. Versi package manager dicatat di `package.json`
-  agar instalasi publik dapat direproduksi.
-- Project Supabase untuk mode produksi
+> *Proyek independen berlisensi MIT — tidak berafiliasi dengan Apple maupun Pinterest.*
 
-Tanpa environment Supabase, aplikasi tetap dapat dibuka memakai data demo
-generik. Fitur yang menulis data memerlukan Supabase.
+---
 
-### Versi yang sengaja ditahan
+## ✨ Mengapa Ruang Bersama?
 
-Seluruh dependensi berada di rilis terbaru yang kompatibel, kecuali dua major:
+| Fitur | Apa yang kamu dapatkan |
+| :--- | :--- |
+| 🎛️ **Kustomisasi penuh tanpa kode** | Nama situs, warna merek (kontras WCAG AA otomatis), logo, hero beranda, sebutan anggota (*mahasiswa / siswa / pengurus*), kontak, dan SEO diatur langsung dari **Profil Admin → Pengaturan**. |
+| 🖼️ **Galeri Masonry & Pin Carousel** | Unggahan publik ber-moderasi dengan hingga **10 foto/video per pin**, editor foto bawaan (crop, rotasi, filter, konversi HEIC iPhone otomatis), album kegiatan, dan fitur *Kenangan hari ini*. |
+| 🏝️ **Dynamic Island serbaguna** | Satu pusat kendali untuk navigasi cepat, progres unggah real-time, lonceng notifikasi, **Live Activity** hitung mundur agenda (H-7), dan pemutar musik latar lintas-halaman. |
+| 🔎 **Spotlight bahasa Indonesia** | Pencarian instan (`⌘K` / `Ctrl+K`) dengan *full-text stemming* bahasa Indonesia lintas pin galeri, artikel blog, profil anggota (termasuk NIM/nomor identitas), album, dan agenda. |
+| ✍️ **Blog, Agenda & Mention dua arah** | Editor artikel rich-text, filter kategori & `#tag` lintas halaman, ekspor kalender `.ics` / Google Calendar, serta tautan otomatis antara profil anggota dan pin/artikel yang menyebut mereka. |
+| 📱 **PWA & Web Share Target** | Dapat dipasang ke layar utama, menerima kiriman foto/video langsung dari menu **Bagikan** galeri Android ke komposer pin, dan mendukung notifikasi **Web Push (VAPID)**. |
+| 🛡️ **Keamanan berlapis sejak awal** | Row Level Security (RLS) ketat, karantina kiriman publik di bucket privat `media-inbox`, verifikasi *magic-bytes* file, rate-limit atomik di Postgres, sesi admin `HttpOnly`, dan retensi privasi 180 hari. |
+| 🧪 **Jalan instan dengan Mode Demo** | Tanpa konfigurasi Supabase pun aplikasi langsung menyala memakai data demo — ideal untuk eksplorasi desain dan pengembangan UI lokal. |
 
-- **TypeScript tetap 6.0.x.** TypeScript 7 (compiler native) belum menyertakan
-  JS compiler API, padahal `typescript-eslint` mensyaratkan
-  `typescript <6.1.0` dan skrip `check:*` memakai `ts.transpileModule`.
-  Next.js 16.3 sendiri sudah mendukung TypeScript 7.
-- **ESLint tetap 9.x.** `eslint-config-next` 16 bergantung pada
-  `eslint-plugin-react`, `eslint-plugin-jsx-a11y`, dan `eslint-plugin-import`
-  yang belum mendukung ESLint 10.
+---
 
-`npm audit` masih melaporkan satu advisory `braces` khusus dev (lewat
-`@next/eslint-plugin-next` → `fast-glob`) yang belum memiliki rilis perbaikan;
-dependensi produksi bersih (`npm run audit:prod`).
+## 🚀 Mulai cepat
 
-## Mulai cepat
+**Persyaratan:** Node.js **24 LTS** (minimal `22.12+`, tersedia di `.nvmrc`) dan `npm` **11**.
 
 ```bash
+git clone https://github.com/diasera/openweb.git
+cd openweb
 npm install
 cp .env.local.example .env.local
 npm run dev
 ```
 
-Di Windows PowerShell, perintah salin environment dapat ditulis sebagai:
+> **Pengguna Windows PowerShell:** ganti baris salin env dengan `Copy-Item .env.local.example .env.local`.
 
-```powershell
-Copy-Item .env.local.example .env.local
-```
+Buka **<http://localhost:3000>**.
+- Selama `.env.local` masih berisi nilai contoh, situs berjalan dalam **Mode Demo**.
+- Begitu Supabase dihubungkan, membuka tab **Profil** pertama kali akan memandu pembuatan akun **Owner**.
 
-Buka <http://localhost:3000>. Tab Profil akan mengarahkan instalasi baru ke
-setup owner pertama.
+---
 
-## Environment
+## 🗄️ Menyiapkan Supabase
 
-Isi `.env.local` dengan nilai dari dashboard Supabase:
+Untuk mengaktifkan penyimpanan database, unggahan media, dan panel admin:
 
-| Variable | Kegunaan | Rahasia |
-| --- | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | URL project Supabase | Tidak |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon key yang dibatasi RLS | Tidak |
-| `SUPABASE_SERVICE_ROLE_KEY` | Mutasi server dan signed upload | Ya |
-| `AUTH_SECRET` | Menandatangani cookie sesi admin | Ya |
-| `NEXT_PUBLIC_SITE_URL` | Fallback origin sebelum URL disimpan di pengaturan | Tidak |
-| `TRUSTED_PROXY` | Sumber header IP self-hosted (`cloudflare`, `x-real-ip`, atau `x-forwarded-for`) | Tidak |
-| `NEXT_PUBLIC_SITE_TIME_ZONE` | Zona waktu agenda dan "Kenangan hari ini" (IANA, bawaan `Asia/Jakarta`) | Tidak |
-| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Kunci publik Web Push (opsional; tanpa ini lonceng hanya in-app) | Tidak |
-| `VAPID_PRIVATE_KEY` | Kunci privat Web Push untuk mengirim notifikasi ke perangkat | Ya |
-| `VAPID_SUBJECT` | Kontak pengirim push, mis. `mailto:admin@example.com` | Tidak |
+1. Buat project baru di [Supabase](https://supabase.com/dashboard).
+2. Buka **SQL Editor**, salin seluruh isi [`supabase/schema.sql`](./supabase/schema.sql), lalu klik **Run**.
+   *(Skrip ini 100% idempoten: membuat tabel, indeks pencarian, bucket Storage, fungsi RPC, dan kebijakan RLS sekaligus — serta aman dijalankan ulang setiap kali kamu memperbarui versi aplikasi).*
+3. Isi variabel di `.env.local` sesuai bagian [Environment](#-environment) di bawah.
+4. Jalankan `npm run dev`, buka **Profil**, buat akun **Owner pertama**, lalu masuk ke **Pengaturan** untuk mengganti seluruh identitas situs.
 
-`AUTH_SECRET` harus berupa string acak minimal 32 karakter. Jangan pernah
-commit `.env`, `.env.local`, service role key, atau secret produksi.
-Vercel terdeteksi otomatis. Pada self-hosted, biarkan `TRUSTED_PROXY` kosong
-kecuali origin hanya menerima trafik proxy tepercaya dan proxy selalu menimpa
-header IP dari klien; konfigurasi yang salah membuat IP mudah dipalsukan.
+---
 
-## Menyiapkan Supabase
+## 🔑 Environment
 
-1. Buat project Supabase.
-2. Salin `supabase/schema.sql` ke SQL Editor lalu jalankan seluruh isinya.
-3. Isi `.env.local`.
-4. Jalankan `npm run dev` dan buat akun owner dari tab Profil.
-5. Buka Profil Admin → Pengaturan untuk mengganti seluruh identitas demo.
+Salin `.env.local.example` ke `.env.local` lalu sesuaikan nilainya:
 
-### Memperbarui database yang sudah ada
+| Variabel | Wajib | Rahasia | Kegunaan |
+| :--- | :---: | :---: | :--- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Ya* | Tidak | URL project Supabase (`https://<ref>.supabase.co`). |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Ya* | Tidak | Anon public key Supabase (dibatasi penuh oleh RLS). |
+| `SUPABASE_SERVICE_ROLE_KEY` | Ya* | **Ya** | Service role key khusus server untuk mutasi tervalidasi & signed upload. |
+| `AUTH_SECRET` | Ya* | **Ya** | Kunci HMAC cookie sesi admin (minimal 32 karakter acak, mis. `openssl rand -base64 32`). |
+| `NEXT_PUBLIC_SITE_URL` | Opsional | Tidak | Fallback origin kanonis sebelum URL utama disimpan di menu Pengaturan SEO. |
+| `NEXT_PUBLIC_SITE_TIME_ZONE` | Opsional | Tidak | Zona waktu IANA untuk agenda & *Kenangan hari ini* (bawaan: `Asia/Jakarta`). |
+| `TRUSTED_PROXY` | Opsional | Tidak | Sumber header IP untuk *self-hosted* (`cloudflare` \| `x-real-ip` \| `x-forwarded-for`). Vercel terdeteksi otomatis; biarkan kosong bila ragu. |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Opsional | Tidak | Kunci publik Web Push (`npx web-push generate-vapid-keys`). Tanpa ini, lonceng tetap bekerja *in-app*. |
+| `VAPID_PRIVATE_KEY` | Opsional | **Ya** | Kunci privat Web Push untuk mengirim notifikasi ke perangkat pengunjung. |
+| `VAPID_SUBJECT` | Opsional | Tidak | Kontak pengirim Web Push (mis. `mailto:admin@domainmu.id`). |
 
-`supabase/schema.sql` bersifat idempoten: untuk memperbarui instalasi lama,
-jalankan ulang seluruh isinya di SQL Editor (simpan backup lebih dulu). Skrip
-menambahkan kolom, fungsi, trigger, dan bucket baru tanpa menghapus data.
-Bila aplikasi menampilkan pesan "Skema database belum diperbarui", langkah ini
-yang dibutuhkan.
+*\*Tanpa keempat variabel pertama, aplikasi tetap berjalan normal dalam Mode Demo (hanya-baca).*
 
-Sebelum `schema.sql` terbaru dijalankan, fitur yang tabelnya baru (Agenda,
-Album, Kenangan hari ini, pencarian full-text, slide carousel) tampil kosong
-alih-alih error, sehingga deploy tidak gagal. Pin satu media tetap bisa dibuat;
-pin carousel (lebih dari satu item) menampilkan pesan "Skema database belum
-diperbarui" sampai SQL-nya dijalankan.
+---
 
-Pembaruan terbaru menambah kolom `site_settings.hero_show_title`. Saat
-`schema.sql` dijalankan ulang, judul hero lama yang hanya berisi simbol
-(cara lama menyembunyikan judul, mis. ".") otomatis diubah menjadi sakelar
-mati + judul kosong. Sebelum SQL dijalankan pun, beranda sudah memperlakukan
-judul simbol sebagai tersembunyi; menyimpan tab Beranda memerlukan kolom baru.
+## ☁️ Deploy ke Vercel
 
-Catatan pembaruan keamanan terbaru:
+1. **Fork** repository ini ke akun GitHub-mu.
+2. Siapkan project Supabase dan jalankan [`supabase/schema.sql`](./supabase/schema.sql).
+3. Buka [vercel.com/new](https://vercel.com/new) dan impor repository hasil fork.
+4. Tambahkan minimal `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, dan `AUTH_SECRET` pada **Environment Variables**.
+5. Klik **Deploy**, buka domain barumu → tab **Profil** untuk membuat akun Owner → **Pengaturan → SEO** untuk mengisi URL utama agar `/sitemap.xml`, `/robots.txt`, `/feed.xml`, `/feed.json`, dan kartu Open Graph memakai domain produksi.
 
-- Kiriman pending dari versi lama tetap berada di bucket publik sampai
-  ditinjau; menyetujui atau menolaknya memindahkan objek ke lokasi yang benar.
-- Mengganti password (atau menonaktifkan akun) langsung mengeluarkan sesi
-  admin tersebut di semua perangkat.
+**Self-hosted (Node.js / Docker / VPS):** jalankan `npm run build && npm run start` pada Node.js `>=22.12`. Jika berada di balik reverse proxy (Cloudflare/Nginx), atur `TRUSTED_PROXY` hanya bila proxy selalu menimpa header IP dari klien.
 
-## Format media
+---
 
-- Foto publik/storage: JPEG, PNG/APNG, GIF, WebP, dan AVIF.
-- Sumber HEIC/HEIF iPhone dinormalisasi menjadi JPEG di Web Worker sebelum
-  masuk editor atau Storage. BMP, TIFF, dan JPEG XL dinormalisasi bila browser
-  perangkat dapat mendecodenya.
-- Video: MP4/M4V, WebM, MOV/QuickTime, dan 3GP. MOV/HEVC tetap bergantung pada
-  codec perangkat; untuk jangkauan penuh gunakan MP4 H.264 + AAC atau pasang
-  adapter transcoding terpisah.
-- Audio: MP3, M4A/AAC, Ogg/Opus/Vorbis, WebM Audio, FLAC, dan WAV.
-- M4P rights-managed ditolak dengan pesan khusus karena FairPlay DRM tidak
-  boleh dilewati oleh converter website. `.img` ditolak karena merupakan disk
-  image, bukan format foto web.
-- GIF/APNG serta WebP/AVIF animasi tidak dibuka sebagai foto statis agar frame
-  lain tidak hilang tanpa persetujuan.
+## 🧭 Struktur repository
 
-### Batas ukuran unggah
-
-- Satu sumber: `UPLOAD_LIMITS` di `src/lib/constants.ts`, yaitu foto 100 MB
-  serta video dan audio 500 MB per file.
-- `file_size_limit` bucket di `supabase/schema.sql` bernilai sama dengan
-  `UPLOAD_LIMITS`.
-- `serverActions.bodySizeLimit` di `next.config.mjs` adalah batas foto ditambah
-  10 MB. Server Action hanya membawa foto (pengaturan, anggota, cover artikel).
-  Video dan audio dikirim langsung ke Storage lewat signed URL/TUS dan tidak
-  pernah melewati server aplikasi.
-- `src/proxy.ts` mengecualikan request Server Action (header `next-action`).
-  Next memotong body yang melewati proxy di `proxyClientMaxBodySize`
-  (bawaan 10 MB). Setiap action admin tetap memeriksa sesi sendiri lewat
-  `requireFeature`/`requireAdmin`.
-- `npm run check:media-formats` gagal bila nilai-nilai di atas tidak lagi
-  selaras.
-
-Batas platform tetap berlaku di atas angka aplikasi:
-
-- **Supabase Free** membatasi setiap file maksimal 50 MB (batas global
-  project). File yang lebih besar ditolak Storage meskipun limit bucket lebih
-  tinggi. Naikkan *Global file size limit* di Storage Settings dashboard
-  (paket Pro ke atas, hingga 500 GB), atau turunkan `UPLOAD_LIMITS`.
-  Sumber: [Supabase Storage file limits](https://supabase.com/docs/guides/storage/uploads/file-limits).
-- **Vercel Functions** menerima body request maksimal 4,5 MB. Foto yang
-  dikirim lewat Server Action biasanya jauh lebih kecil karena editor
-  mengekspornya ke WebP ≤2048 px. Namun GIF/WebP animasi besar akan ditolak
-  dengan 413 pada deploy Vercel.
-
-Klien unggah menampilkan pesan yang jelas bila Storage menolak file karena
-ukurannya.
-
-Jalankan `npm run check:media-formats` setelah mengubah registry, batas ukuran,
-atau SQL. Daftar lisensi decoder pihak ketiga tersedia di
-[`THIRD_PARTY_NOTICES.md`](./.github/THIRD_PARTY_NOTICES.md).
-
-## Konfigurasi tanpa mengubah kode
-
-Menu Pengaturan memusatkan konfigurasi berikut:
-
-- nama website, nama alternatif (khusus mesin pencari), tipe website, dan locale;
-- istilah tunggal/jamak anggota, nomor identitas, dan kelompok inti;
-- deskripsi, tagline, logo, favicon, warna, visi, dan misi;
-- hero beranda di tab Beranda: label, judul (dengan sakelar "Tampilkan judul
-  di atas foto"), subjudul, dan foto, dengan pratinjau langsung. Judul kosong
-  memakai nama website; saat judul disembunyikan, h1 halaman tetap memakai
-  nama website untuk mesin pencari. Nama alternatif tidak pernah tampil di hero;
-- warna utama dan aksen dengan palet cepat serta pratinjau tema; warna aksen
-  mewarnai gradien hero, cincin anggota inti, dan cahaya latar;
-- email, telepon, alamat, tautan sosial, dan teks footer (tahun © otomatis);
-- canonical URL, kontrol indexing, dan gambar sosial;
-- kode verifikasi Google/Bing (boleh menempel seluruh tag `<meta>`), Google
-  Analytics, dan Google AdSense.
-
-Judul dan deskripsi hasil pencarian halaman depan disusun dari nama website,
-tagline, dan deskripsi (lihat pratinjau Google di tab Identitas). Mesin pencari
-menilai kualitas serta relevansi konten, aksesibilitas, performa, reputasi, dan
-banyak sinyal lain; aplikasi tidak menjanjikan peringkat nomor satu atau
-persetujuan AdSense.
-
-## Endpoint SEO
-
-Setelah `site_url` diisi dan aplikasi di-deploy, endpoint berikut dibuat
-otomatis:
-
-- `/sitemap.xml`
-- `/robots.txt`
-- `/manifest.webmanifest`
-- `/ads.txt`
-
-Kirim URL absolut `/sitemap.xml` ke Google Search Console. Sitemap dan feed
-disegarkan otomatis setiap artikel terbit, pin disetujui, atau anggota/album
-berubah, dan setiap sumber konten dibaca terpisah sehingga satu tabel
-bermasalah tidak membuat sitemap gagal. Bila Search Console menampilkan
-"Tidak dapat mengambil peta situs" padahal `/sitemap.xml` terbuka normal,
-hapus entri lama lalu kirim ulang, uji dengan Inspeksi URL, dan minta
-pengindeksan untuk halaman penting (langkahnya juga ada di Pengaturan → SEO).
-Perubahan nama situs, judul, atau deskripsi baru terlihat setelah mesin
-pencari melakukan crawl ulang.
-
-## Keamanan
-
-- Anon key hanya membaca data publik yang diizinkan RLS.
-- Tabel admin, visitor, pesan privat, dan daftar blokir tidak memiliki policy
-  tulis untuk browser.
-- Mutasi publik divalidasi di server dan dapat dibatasi berdasarkan IP.
-- Rate limit disimpan atomik di Postgres sehingga tetap konsisten antar-instance
-  serverless; aplikasi fail-closed bila migrasi keamanannya belum tersedia.
-- Audio/video diunggah langsung ke signed URL satu-path yang berumur pendek.
-- Signature awal file diverifikasi kembali dari byte Storage; MIME dan
-  ekstensi tidak diperlakukan sebagai bukti isi file.
-- Sesi admin memakai cookie `HttpOnly`, `Secure`, dan `SameSite=Lax`.
-- Password disimpan sebagai hash scrypt, bukan plaintext.
-- Minimisasi data: IP dan informasi perangkat pengunjung, komentar, pesan, dan
-  media dihapus/dianonimkan otomatis setelah 180 hari (`DATA_RETENTION_DAYS`),
-  sesuai yang dijelaskan di halaman Privasi.
-
-Sebelum membuka repository ke publik, pastikan Git history juga tidak pernah
-berisi secret produksi. Menghapus secret dari commit terbaru tidak menghapusnya
-dari commit lama; rotasi secret yang pernah terekspos.
-
-## Struktur ringkas
+Repository ini mengikuti **Pola Sarang Laba-Laba** — satu pusat logika melayani banyak fitur tanpa kode berulang. Penjelasan lengkap mengenai alur media, batas ukuran unggah, sistem motion 3D, dan keamanan tersedia di **[`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)**.
 
 ```text
-src/
-├─ app/                         # halaman, metadata, route handler
-│  └─ profil/                   # publik, auth, dan area admin
-├─ components/
-│  ├─ admin/                    # UI pengelolaan
-│  ├─ motion/                   # motion primitives
-│  ├─ public/                   # halaman publik, Island, tab bar, musik
-│  ├─ seo/                      # renderer structured data
-│  └─ ui/                       # primitive reusable
-└─ lib/
-   ├─ auth/                     # session, password, permission
-   ├─ database/                 # hasil mutasi dan error mapping
-   ├─ site-config/              # pusat konfigurasi website
-   ├─ supabase/                 # client publik/browser/admin
-   └─ types/                    # kontrak database
-supabase/
-└─ schema.sql                   # instalasi baru & upgrade (idempoten)
+.
+├─ src/
+│  ├─ proxy.ts                  # Proxy request Next.js (bypass pemotongan body untuk Server Action foto)
+│  ├─ app/                      # App Router: halaman publik, area profil/admin, SEO endpoints, dan /api/*
+│  ├─ components/
+│  │  ├─ ui/                    # Primitif desain (Button, Card, Chip, Avatar, MediaCarousel, Skeleton, ...)
+│  │  ├─ motion/                # Sistem animasi pegas CSS murni, efek kedalaman 3D, dan RouteSkeleton
+│  │  ├─ public/                # Shell publik, Dynamic Island, Spotlight, komposer pin, pemutar musik
+│  │  ├─ admin/                 # Kit komponen panel admin bersama
+│  │  ├─ media-editor/          # Editor foto non-destruktif (crop, rotasi, koreksi warna, filter)
+│  │  ├─ auth/                  # Form login & setup owner pertama
+│  │  └─ seo/                   # Komponen JSON-LD terstruktur
+│  └─ lib/                      # Pusat logika terorganisasi per domain (site-config, media, security, seo, ...)
+├─ supabase/
+│  └─ schema.sql                # Skema database, bucket Storage, RPC, dan RLS (idempoten untuk instalasi & upgrade)
+├─ scripts/                     # Skrip verifikasi otomatis (schema PGlite, format media, slug anggota, share target)
+├─ docs/
+│  └─ ARCHITECTURE.md           # Dokumentasi mendalam arsitektur, keamanan, dan alur teknis
+└─ .github/                     # Workflow CI, panduan kontribusi, kebijakan keamanan, dan template Issue/PR
 ```
 
-## Pemeriksaan kualitas
+---
 
-```bash
-npm run lint
-npm run typecheck
-npm run check:member-slugs
-npm run check:media-formats   # registry ↔ SQL, termasuk batas ukuran unggah
-npm run check:share-target
-npm run check:schema   # schema.sql 2× di Postgres (PGlite) + uji RPC/RLS
-npm run audit:prod
-npm run build
-```
+## 🧪 Skrip & pemeriksaan kualitas
 
-Workflow GitHub Actions untuk semua pemeriksaan ini tersedia di
-`docs/ci-workflow.yml`; salin ke `.github/workflows/ci.yml` agar berjalan pada
-setiap pull request.
+Seluruh skrip di bawah ini juga dijalankan otomatis oleh [GitHub Actions CI](./.github/workflows/ci.yml) pada setiap push dan pull request:
 
-## Berkontribusi
+| Perintah | Kegunaan |
+| :--- | :--- |
+| `npm run dev` | Menjalankan server pengembangan lokal di `http://localhost:3000`. |
+| `npm run build` | Membangun bundel produksi Next.js. |
+| `npm run start` | Menjalankan server produksi dari hasil `build`. |
+| `npm run lint` | Memeriksa kualitas kode dengan ESLint. |
+| `npm run typecheck` | Memeriksa tipe statis dengan TypeScript (`tsc --noEmit`). |
+| `npm run check:member-slugs` | Menguji determinisme dan keunikan generator slug profil anggota. |
+| `npm run check:media-formats` | Memastikan sinkronisasi registry MIME/ukuran media antara TypeScript dan `schema.sql`. |
+| `npm run check:share-target` | Memastikan konstanta PWA Share Target selaras dengan `public/sw.js`. |
+| `npm run check:schema` | Menjalankan `supabase/schema.sql` 2× di Postgres lokal (PGlite) serta menguji RPC & RLS. |
+| `npm run audit:prod` | Memeriksa celah keamanan pada dependensi produksi. |
 
-- Cari dan pakai ulang kode yang sudah ada sebelum membuat fungsi atau file
-  baru; logika yang sama ditempatkan di satu pusat lalu dipakai banyak fitur.
-- Letakkan kode sesuai kategorinya (`lib/` untuk logika, `components/` untuk
-  UI, `supabase/schema.sql` untuk database) dan ikuti gaya file sekitarnya.
-- Pakai token desain (mis. `text-footnote`, `rounded-pin`, `text-tone-blue-text`)
-  alih-alih nilai px/hex arbitrer. Token kustom baru juga didaftarkan di
-  `src/lib/utils/cn.ts` agar tailwind-merge tidak membuangnya.
-- Jalankan seluruh pemeriksaan kualitas di atas sebelum membuka pull request.
+---
 
-## Lisensi
+## 🤝 Berkontribusi & komunitas
 
-Dirilis dengan [MIT License](./LICENSE).
+Kontribusi dalam bentuk laporan bug, usulan fitur, perbaikan dokumentasi, maupun pull request sangat terbuka!
+
+- 📖 **[Panduan Berkontribusi (`CONTRIBUTING.md`)](./.github/CONTRIBUTING.md)** — alur kerja PR, aturan Pola Sarang Laba-Laba, dan format commit.
+- 📐 **[Arsitektur Teknis (`docs/ARCHITECTURE.md`)](./docs/ARCHITECTURE.md)** — peta modul `src/lib/`, alur media, keamanan, dan keputusan desain.
+- 🤖 **[Aturan Pengembangan (`AGENTS.md`)](./AGENTS.md)** — prinsip kebersihan kode dan penempatan kategori folder.
+- 📜 **[Kode Etik (`CODE_OF_CONDUCT.md`)](./.github/CODE_OF_CONDUCT.md)** — standar interaksi komunitas yang ramah dan inklusif.
+- 🔒 **[Kebijakan Keamanan (`SECURITY.md`)](./.github/SECURITY.md)** — cara melaporkan celah keamanan secara privat.
+- 🗂️ **[Riwayat Perubahan (`CHANGELOG.md`)](./CHANGELOG.md)** — catatan rilis per versi.
+
+<a href="https://github.com/diasera/openweb/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=diasera/openweb" alt="Kontributor Ruang Bersama" />
+</a>
+
+---
+
+## 📄 Lisensi
+
+Dirilis di bawah **[MIT License](./LICENSE)**. Lisensi pustaka pihak ketiga dicantumkan di **[`THIRD_PARTY_NOTICES.md`](./.github/THIRD_PARTY_NOTICES.md)**.
+
+<div align="center">
+
+Dibuat dengan 💙 untuk komunitas Indonesia. Jika proyek ini bermanfaat, jangan lupa beri **⭐ Star** di GitHub!
+
+</div>

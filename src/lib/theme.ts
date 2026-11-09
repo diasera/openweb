@@ -1,6 +1,5 @@
 import type { ThemeTokens } from "@/lib/types/database";
-
-type Rgb = readonly [number, number, number];
+import { parseHexRgb, rgbContrastRatio, type Rgb } from "@/lib/utils/color";
 
 const LIGHT_BACKGROUNDS: readonly Rgb[] = [
   [242, 242, 247],
@@ -71,27 +70,6 @@ function normalizeRgbChannels(value: unknown): string | null {
   return parsed ? rgbChannels(parsed) : null;
 }
 
-function linearChannel(channel: number): number {
-  const value = channel / 255;
-  return value <= 0.03928
-    ? value / 12.92
-    : ((value + 0.055) / 1.055) ** 2.4;
-}
-
-function luminance([red, green, blue]: Rgb): number {
-  return (
-    0.2126 * linearChannel(red) +
-    0.7152 * linearChannel(green) +
-    0.0722 * linearChannel(blue)
-  );
-}
-
-function contrastRatio(first: Rgb, second: Rgb): number {
-  const a = luminance(first);
-  const b = luminance(second);
-  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
-}
-
 function mixRgb(source: Rgb, target: Rgb, amount: number): Rgb {
   return [
     Math.round(source[0] + (target[0] - source[0]) * amount),
@@ -114,7 +92,7 @@ function readablePrimary(
     if (
       backgrounds.every(
         (background) =>
-          contrastRatio(candidate, background) >= MIN_TEXT_CONTRAST,
+          rgbContrastRatio(candidate, background) >= MIN_TEXT_CONTRAST,
       )
     ) {
       return candidate;
@@ -133,8 +111,8 @@ function withPrimaryTints(backgrounds: readonly Rgb[], primary: Rgb): Rgb[] {
 }
 
 function primaryForeground(primary: Rgb): Rgb {
-  return contrastRatio(primary, DARK_FOREGROUND) >=
-    contrastRatio(primary, LIGHT_FOREGROUND)
+  return rgbContrastRatio(primary, DARK_FOREGROUND) >=
+    rgbContrastRatio(primary, LIGHT_FOREGROUND)
     ? DARK_FOREGROUND
     : LIGHT_FOREGROUND;
 }
@@ -198,10 +176,8 @@ export function themeBackgroundHex(theme: ThemeTokens | null | undefined): {
 
 /** "#E60023" -> "230 0 35" (channel RGB untuk CSS var). null bila tak valid. */
 export function hexToRgbChannels(hex: string): string | null {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) return null;
-  const int = parseInt(m[1]!, 16);
-  return `${(int >> 16) & 255} ${(int >> 8) & 255} ${int & 255}`;
+  const parsed = parseHexRgb(hex);
+  return parsed ? rgbChannels(parsed) : null;
 }
 
 /** "230 0 35" -> "#e60023" (untuk input color di form Setting). */

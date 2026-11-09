@@ -76,6 +76,7 @@ export const OG_CARD_WIDTH = 1200;
 export const OG_CARD_HEIGHT = 630;
 export const OG_CARD_PATH = "/api/og";
 export const BLOG_OG_CARD_PATH = "/api/og/blog";
+export const MEMBER_OG_CARD_PATH = "/api/og/anggota";
 
 /** Metadata judul admin terpusat agar suffix tidak tersebar di setiap page. */
 export function buildAdminPageMetadata(title: string): Metadata {
@@ -195,7 +196,9 @@ function socialImages(
   alt: string,
 ): NonNullable<Metadata["openGraph"]>["images"] {
   const known =
-    image === OG_CARD_PATH || image.startsWith(BLOG_OG_CARD_PATH)
+    image === OG_CARD_PATH ||
+    image.startsWith(BLOG_OG_CARD_PATH) ||
+    image.startsWith(MEMBER_OG_CARD_PATH)
       ? { width: OG_CARD_WIDTH, height: OG_CARD_HEIGHT }
       : image === settings.hero_image_url &&
           settings.hero_image_width &&

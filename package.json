@@ -4,6 +4,27 @@
   "private": true,
   "description": "Template website komunitas yang dapat dikustomisasi dari panel admin, dengan UI terinspirasi iOS dan Pinterest.",
   "license": "MIT",
+  "author": "diasera (https://github.com/diasera)",
+  "homepage": "https://github.com/diasera/openweb#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/diasera/openweb.git"
+  },
+  "bugs": {
+    "url": "https://github.com/diasera/openweb/issues"
+  },
+  "keywords": [
+    "nextjs",
+    "react",
+    "supabase",
+    "tailwindcss",
+    "typescript",
+    "pwa",
+    "community",
+    "komunitas",
+    "website-template",
+    "cms"
+  ],
   "packageManager": "npm@11.21.0",
   "engines": {
     "node": ">=22.12 <27",

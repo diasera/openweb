@@ -4,7 +4,7 @@ import { readableMediaUrls } from "@/lib/media/upload";
 import type { CommentRow, MediaRow } from "@/lib/types/database";
 import { pageBounds, toPaged, type Paged } from "./paging";
 
-export const ADMIN_COMMENTS_PAGE_SIZE = 30;
+const ADMIN_COMMENTS_PAGE_SIZE = 30;
 
 export type AdminComment = Omit<CommentRow, "ip_address" | "user_agent"> & {
   has_ip: boolean;

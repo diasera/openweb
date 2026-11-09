@@ -3,7 +3,7 @@ import { createAdminSupabase } from "@/lib/supabase/admin";
 import type { MusicTrackRow } from "@/lib/types/database";
 import { isMissingRelationError } from "@/lib/database/errors";
 import { STORAGE_BUCKETS } from "@/lib/constants";
-import { removeStorageObject } from "@/lib/storage";
+import { removeStorageObject } from "@/lib/supabase/storage";
 
 export async function getAdminMusicTracks(): Promise<MusicTrackRow[]> {
   const { data, error } = await createAdminSupabase()

@@ -6,7 +6,7 @@ import {
   getSignedReadUrls,
   moveStorageObject,
   removeStorageObject,
-} from "@/lib/storage";
+} from "@/lib/supabase/storage";
 import { checkedDatabaseCall, checkedMutation } from "@/lib/database/mutation";
 import { isSchemaOutdatedError, SCHEMA_OUTDATED_MESSAGE } from "@/lib/database/errors";
 import type { MediaDetails } from "./metadata-schema";
@@ -35,7 +35,7 @@ function mediaPathFromUrl(publicUrl: string): string | null {
 }
 
 /** Pindahkan objek media ke bucket publik (true) atau kembali ke inbox privat. */
-export async function setMediaObjectPublic(
+async function setMediaObjectPublic(
   publicUrl: string,
   visible: boolean,
 ): Promise<boolean> {

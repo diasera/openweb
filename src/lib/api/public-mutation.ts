@@ -1,7 +1,7 @@
 import "server-only";
 
 import { NextResponse } from "next/server";
-import { getPublicInteractionAccess } from "@/lib/moderation";
+import { getPublicInteractionAccess } from "@/lib/security/moderation";
 import type { RateLimitPolicy } from "@/lib/security/rate-limit";
 import { isSupabaseConfigured } from "@/lib/supabase/public";
 import { validateMutationOrigin } from "./request";

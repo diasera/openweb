@@ -13,7 +13,7 @@ import { MotionLink, listReveal } from "@/components/motion";
 import { requestJson } from "@/lib/api/client";
 import { SAVED_ITEM_LIMITS } from "@/lib/constants";
 import { useHydrated } from "@/lib/hooks/use-now";
-import { forgetSaved, useSavedItems } from "@/lib/saved-items";
+import { forgetSaved, useSavedItems } from "@/lib/hooks/use-saved-items";
 import type { MediaWithSlideCount } from "@/lib/media/slides";
 import type { PublicPostCard } from "@/lib/data";
 

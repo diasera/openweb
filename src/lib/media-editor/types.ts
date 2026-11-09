@@ -136,7 +136,7 @@ export const DEFAULT_PHOTO_RECIPE: PhotoEditRecipe = {
   filter: "none",
 };
 
-export const EDITABLE_PHOTO_MIME_TYPES = EDITABLE_IMAGE_MIME_TYPES;
+const EDITABLE_PHOTO_MIME_TYPES = EDITABLE_IMAGE_MIME_TYPES;
 
 /** MIME yang bisa dibuka editor; dipakai juga untuk foto yang sudah tersimpan. */
 export function canEditPhotoMime(mimeType: string | null | undefined): boolean {

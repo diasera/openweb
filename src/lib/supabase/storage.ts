@@ -158,7 +158,7 @@ export function getStoragePublicUrl(bucket: string, path: string): string {
 }
 
 /** URL baca: public URL untuk bucket publik, signed URL berumur pendek untuk bucket privat. */
-export async function getStorageReadUrl(
+async function getStorageReadUrl(
   bucket: string,
   path: string,
   expiresIn = SIGNED_READ_SECONDS,

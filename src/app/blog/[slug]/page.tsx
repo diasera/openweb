@@ -18,7 +18,7 @@ import { readingTime } from "@/lib/utils/reading-time";
 import { formatSiteDate } from "@/lib/utils/time";
 import { normalizeArticleHtml } from "@/lib/blog/content";
 import { JsonLd } from "@/components/seo/json-ld";
-import { buildPageMetadata, plainText } from "@/lib/seo";
+import { BLOG_OG_CARD_PATH, buildPageMetadata, plainText } from "@/lib/seo";
 import {
   articleStructuredData,
   breadcrumbStructuredData,
@@ -68,7 +68,7 @@ export async function generateMetadata({
     description,
     path: `/blog/${post.slug}`,
     // Tanpa cover, kartu sosial artikel dirender otomatis oleh /api/og.
-    image: post.cover_image_url ?? `/api/og/blog/${post.slug}`,
+    image: post.cover_image_url ?? `${BLOG_OG_CARD_PATH}/${post.slug}`,
     type: "article",
     publishedTime: post.published_at,
     modifiedTime: post.updated_at,

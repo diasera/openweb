@@ -89,7 +89,7 @@ export const getAlbumBySlug = cache(async (slug: string): Promise<PublicAlbum | 
   );
 });
 
-export const getAlbumById = cache(async (id: string): Promise<PublicAlbum | null> => {
+const getAlbumById = cache(async (id: string): Promise<PublicAlbum | null> => {
   if (!isSupabaseConfigured()) {
     return DEMO_ALBUMS.find((album) => album.id === id) ?? null;
   }

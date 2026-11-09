@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { getSettings } from "@/lib/data";
 import { getHomeSeoDescription } from "@/lib/seo";
 import { themeBackgroundHex } from "@/lib/theme";
-import { SHARE_TARGET } from "@/lib/share-target";
+import { SHARE_TARGET } from "@/lib/pwa/share-target";
 
 export const revalidate = 3600;
 

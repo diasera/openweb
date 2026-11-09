@@ -1,0 +1,52 @@
+name: ✨ Usulan fitur
+description: Usulkan ide atau peningkatan untuk Ruang Bersama.
+title: "[Fitur]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Punya ide? Ceritakan masalah yang ingin diselesaikan — bukan hanya
+        solusinya — agar kita bisa mencari cara terbaik bersama.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Masalah
+      description: Masalah atau kebutuhan apa yang mendasari usulan ini?
+      placeholder: Sebagai admin, saya kesulitan menemukan pin lama karena…
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solusi yang diusulkan
+      description: Bagaimana fitur ini sebaiknya bekerja?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatif yang sudah dipertimbangkan
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Halaman publik
+        - Panel admin
+        - Media & unggahan
+        - Blog
+        - Agenda & album
+        - Dynamic Island
+        - SEO
+        - PWA & notifikasi
+        - Database / Supabase
+        - Dokumentasi
+        - Lainnya
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Kontribusi
+      options:
+        - label: Saya bersedia membantu mengimplementasikan fitur ini.

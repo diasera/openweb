@@ -3,7 +3,7 @@ import { createAdminSupabase } from "@/lib/supabase/admin";
 import type { EventRow } from "@/lib/types/database";
 import { pageBounds, toPaged, type Paged } from "./paging";
 
-export const ADMIN_EVENTS_PAGE_SIZE = 30;
+const ADMIN_EVENTS_PAGE_SIZE = 30;
 
 export type EventOption = Pick<EventRow, "id" | "title" | "starts_at">;
 

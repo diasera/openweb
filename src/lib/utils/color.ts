@@ -1,8 +1,11 @@
 /**
- * Helper warna deterministik (seed -> warna tetap). Dipakai ulang oleh Avatar
- * (inisial), placeholder media tanpa gambar, dan MessageCard (tint).
- * Semua "sarang laba-laba": satu sumber, banyak pemakai.
+ * Helper warna deterministik & utilitas kontras WCAG 2.1.
+ * Dipakai oleh Avatar (inisial), placeholder media tanpa gambar, MessageCard (tint),
+ * dan generator token tema (`src/lib/theme.ts`).
+ * Semua "sarang laba-laba": satu sumber perhitungan warna untuk seluruh aplikasi.
  */
+
+export type Rgb = readonly [number, number, number];
 
 function hash(seed: string): number {
   let h = 0;
@@ -10,6 +13,36 @@ function hash(seed: string): number {
     h = (h * 31 + seed.charCodeAt(i)) >>> 0;
   }
   return h;
+}
+
+/** Parse "#RRGGBB" atau "RRGGBB" menjadi tuple RGB 0..255. */
+export function parseHexRgb(hex: string): Rgb | null {
+  const match = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!match) return null;
+  const value = Number.parseInt(match[1]!, 16);
+  return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+}
+
+function channelToLinear(channel: number): number {
+  const value = channel / 255;
+  return value <= 0.03928
+    ? value / 12.92
+    : ((value + 0.055) / 1.055) ** 2.4;
+}
+
+function rgbLuminance([red, green, blue]: Rgb): number {
+  return (
+    0.2126 * channelToLinear(red) +
+    0.7152 * channelToLinear(green) +
+    0.0722 * channelToLinear(blue)
+  );
+}
+
+/** Rasio kontras WCAG 2.1 antara dua tuple RGB `(1..21)`. */
+export function rgbContrastRatio(first: Rgb, second: Rgb): number {
+  const a = rgbLuminance(first);
+  const b = rgbLuminance(second);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
 // Tint pastel lembut untuk kartu pesan / placeholder.
@@ -48,32 +81,12 @@ export function pastelTint(seed: string): string {
   return `color-mix(in srgb, ${pickPastel(seed)} 22%, rgb(var(--surface)))`;
 }
 
-export function pickMuted(seed: string): string {
+function pickMuted(seed: string): string {
   return MUTED[hash(seed) % MUTED.length]!;
 }
 
-function channelToLinear(channel: number): number {
-  const value = channel / 255;
-  return value <= 0.03928
-    ? value / 12.92
-    : ((value + 0.055) / 1.055) ** 2.4;
-}
-
-function relativeLuminance(hex: string): number {
-  const match = /^#([0-9a-f]{6})$/i.exec(hex);
-  if (!match) return 0;
-  const value = Number.parseInt(match[1]!, 16);
-  const red = channelToLinear((value >> 16) & 255);
-  const green = channelToLinear((value >> 8) & 255);
-  const blue = channelToLinear(value & 255);
-  return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
-}
-
-function contrastRatio(first: string, second: string): number {
-  const a = relativeLuminance(first);
-  const b = relativeLuminance(second);
-  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
-}
+const DARK_INK_RGB: Rgb = [28, 28, 30];
+const LIGHT_INK_RGB: Rgb = [255, 255, 255];
 
 /** Warna teks avatar dipilih dari kontras aktual, bukan asumsi semua pastel gelap. */
 export function mutedAvatarColors(seed: string): {
@@ -81,14 +94,13 @@ export function mutedAvatarColors(seed: string): {
   foreground: string;
 } {
   const background = pickMuted(seed);
-  const dark = "#1C1C1E";
-  const light = "#FFFFFF";
+  const rgb = parseHexRgb(background) ?? DARK_INK_RGB;
   return {
     background,
     foreground:
-      contrastRatio(background, dark) >= contrastRatio(background, light)
-        ? dark
-        : light,
+      rgbContrastRatio(rgb, DARK_INK_RGB) >= rgbContrastRatio(rgb, LIGHT_INK_RGB)
+        ? "#1C1C1E"
+        : "#FFFFFF",
   };
 }
 

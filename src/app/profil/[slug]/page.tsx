@@ -4,7 +4,7 @@ import { getMemberByProfileKey, getSettings } from "@/lib/data";
 import { getMemberActivity } from "@/lib/members/activity";
 import { memberProfilePath } from "@/lib/members/slug";
 import { getContentLabels, toDisplayLabel } from "@/lib/site-config";
-import { buildPageMetadata, plainText } from "@/lib/seo";
+import { buildPageMetadata, MEMBER_OG_CARD_PATH, plainText } from "@/lib/seo";
 import {
   breadcrumbStructuredData,
   profileStructuredData,
@@ -38,7 +38,9 @@ export async function generateMetadata({ params }: MemberProfileParams): Promise
         : `Profil ${labels.memberSingular} tidak ditemukan.`),
     path: member ? memberProfilePath(member) : `/profil/${slug}`,
     // Tanpa foto pribadi, kartu sosial anggota dirender otomatis /api/og.
-    image: member?.photo_url ?? (member ? `/api/og/anggota/${member.slug}` : undefined),
+    image:
+      member?.photo_url ??
+      (member ? `${MEMBER_OG_CARD_PATH}/${member.slug}` : undefined),
     noIndex: !member,
   });
 }

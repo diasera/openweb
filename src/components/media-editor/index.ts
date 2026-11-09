@@ -1,4 +1,1 @@
-export {
-  PhotoEditor,
-  type PhotoEditorResult,
-} from "./photo-editor";
+export { PhotoEditor } from "./photo-editor";

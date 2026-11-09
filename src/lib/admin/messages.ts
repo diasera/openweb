@@ -3,7 +3,7 @@ import { createAdminSupabase } from "@/lib/supabase/admin";
 import type { MessageRow } from "@/lib/types/database";
 import { pageBounds, toPaged, type Paged } from "./paging";
 
-export const ADMIN_MESSAGES_PAGE_SIZE = 30;
+const ADMIN_MESSAGES_PAGE_SIZE = 30;
 
 /** Filter kotak pesan admin; satu daftar untuk tab dan validasi URL. */
 export const MESSAGE_FILTERS = ["all", "unread", "pinned"] as const;

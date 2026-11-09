@@ -34,7 +34,7 @@ const DEFAULT_ASPECTS = [
   ASPECTS.landscape,
 ] as const;
 
-export const PHOTO_EDITOR_PROFILES = {
+const PHOTO_EDITOR_PROFILES = {
   media: {
     id: "media",
     aspects: DEFAULT_ASPECTS,

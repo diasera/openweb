@@ -6,7 +6,7 @@ import { requireFeature } from "@/lib/auth";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { adminFeatureHref, STORAGE_BUCKETS } from "@/lib/constants";
 import { checkedMutation } from "@/lib/database/mutation";
-import { getStoragePublicUrl, removeStorageObject } from "@/lib/storage";
+import { getStoragePublicUrl, removeStorageObject } from "@/lib/supabase/storage";
 import { finalizeStoredUpload } from "@/lib/uploads/finalize";
 import { verifyUploadTicket } from "@/lib/uploads/ticket";
 import { INVALID_INPUT, isValidId } from "@/lib/admin/guard";

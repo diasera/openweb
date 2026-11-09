@@ -14,7 +14,7 @@ import { pageBounds, toPaged, type Paged } from "./paging";
 
 export type MediaFilter = "pending" | "approved" | "rejected" | "all";
 
-export const ADMIN_MEDIA_PAGE_SIZE = 48;
+const ADMIN_MEDIA_PAGE_SIZE = 48;
 
 /**
  * Bentuk kartu moderasi untuk klien: IP mentah tidak ikut terserialisasi dan

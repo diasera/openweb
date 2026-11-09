@@ -5,7 +5,7 @@ import { getClientIp, getUserAgent, parseDevice } from "@/lib/utils/request";
 import { getVisitorId, recordVisit } from "@/lib/visitors";
 import { invalidMutationResponse } from "@/lib/api/responses";
 import { validateMutationOrigin } from "@/lib/api/request";
-import { runScheduledMaintenance } from "@/lib/maintenance";
+import { runScheduledMaintenance } from "@/lib/security/maintenance";
 
 /** POST /api/track — catat kunjungan tanpa memengaruhi akses baca publik. */
 export async function POST(request: Request) {

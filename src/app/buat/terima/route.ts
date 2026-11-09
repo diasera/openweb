@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { SHARE_TARGET } from "@/lib/share-target";
+import { SHARE_TARGET } from "@/lib/pwa/share-target";
 
 /**
  * Cadangan bila service worker belum aktif saat berbagi dari galeri HP:

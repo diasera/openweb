@@ -18,7 +18,7 @@ import { isRetryableApiError, postJson } from "@/lib/api/client";
 import { UPLOAD_LIMITS } from "@/lib/constants";
 import { useDraftUploads } from "@/lib/hooks/use-draft-uploads";
 import { useMediaDrafts } from "@/lib/hooks/use-media-drafts";
-import { SHARE_TARGET, takeSharedFiles } from "@/lib/share-target";
+import { SHARE_TARGET, takeSharedFiles } from "@/lib/pwa/share-target";
 import { cn } from "@/lib/utils/cn";
 import { DraftPhotoEditor, MediaComposer, useAddMediaFiles } from "./media-composer";
 import styles from "./media-composer.module.css";

@@ -190,7 +190,7 @@ function processorRequired(format: MediaFormatDefinition): Error {
   );
 }
 
-export async function prepareMediaFile(
+async function prepareMediaFile(
   file: File,
   kinds: readonly MediaFormatKind[],
   signal?: AbortSignal,

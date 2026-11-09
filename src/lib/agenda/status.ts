@@ -8,7 +8,7 @@ export type EventPhase = "upcoming" | "ongoing" | "past";
 export const EVENT_DEFAULT_DURATION_MS = 3 * 60 * 60 * 1000;
 
 /** Island hanya menampilkan acara yang berlangsung atau paling lambat H-7. */
-export const ISLAND_EVENT_WINDOW_DAYS = 7;
+const ISLAND_EVENT_WINDOW_DAYS = 7;
 
 export function eventEndMs(event: EventTiming): number {
   return event.ends_at

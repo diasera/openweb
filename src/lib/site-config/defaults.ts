@@ -3,7 +3,7 @@ import type {
   SiteSettingsRow,
 } from "@/lib/types/database";
 
-export const DEFAULT_SITE_NAME = "Ruang Bersama";
+const DEFAULT_SITE_NAME = "Ruang Bersama";
 export const DEFAULT_SITE_DESCRIPTION =
   "Ruang digital untuk berbagi profil, kegiatan, karya, artikel, dan informasi terbaru.";
 

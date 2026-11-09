@@ -83,7 +83,7 @@ const verificationCode = (label: string) =>
     )
     .transform((value) => normalizeVerificationCode(value) ?? "");
 
-export const identityConfigSchema = z.object({
+const identityConfigSchema = z.object({
   site_name: z
     .string()
     .trim()
@@ -102,7 +102,7 @@ export const identityConfigSchema = z.object({
   accent_hex: hexColor("Warna aksen"),
 });
 
-export const homeConfigSchema = z.object({
+const homeConfigSchema = z.object({
   hero_badge: z.string().trim().max(SITE_CONFIG_LIMITS.heroBadge),
   hero_title: z.string().trim().max(SITE_CONFIG_LIMITS.heroTitle),
   hero_show_title: z.boolean(),
@@ -114,14 +114,14 @@ export const homeConfigSchema = z.object({
   footer_text: z.string().trim().max(SITE_CONFIG_LIMITS.footerText),
 });
 
-export const seoConfigSchema = z.object({
+const seoConfigSchema = z.object({
   site_url: canonicalUrl,
   seo_indexing_enabled: z.boolean(),
   google_site_verification: verificationCode("Google"),
   bing_site_verification: verificationCode("Bing"),
 });
 
-export const contactConfigSchema = z.object({
+const contactConfigSchema = z.object({
   contact_email: optionalEmail,
   contact_phone: z.string().trim().max(SITE_CONFIG_LIMITS.contactPhone),
   contact_address: z.string().trim().max(SITE_CONFIG_LIMITS.contactAddress),
@@ -151,7 +151,7 @@ export const contactConfigSchema = z.object({
 });
 
 /** Kunci section = kunci tab di URL; satu sumber untuk parser & updater. */
-export const SITE_SECTION_SCHEMAS = {
+const SITE_SECTION_SCHEMAS = {
   identity: identityConfigSchema,
   home: homeConfigSchema,
   seo: seoConfigSchema,

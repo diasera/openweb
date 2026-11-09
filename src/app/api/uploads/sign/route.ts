@@ -9,7 +9,7 @@ import {
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { signUploadTicket } from "@/lib/uploads/ticket";
 import { validateUploadDescriptor } from "@/lib/uploads/policy";
-import { runScheduledMaintenance } from "@/lib/maintenance";
+import { runScheduledMaintenance } from "@/lib/security/maintenance";
 import { readJsonBody } from "@/lib/api/request";
 import {
   consumeRateLimit,

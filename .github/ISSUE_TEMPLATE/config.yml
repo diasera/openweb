@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Laporkan celah keamanan
+    url: https://github.com/diasera/openweb/security/advisories/new
+    about: Laporkan celah keamanan secara privat, bukan lewat issue publik.
+  - name: 📖 Dokumentasi
+    url: https://github.com/diasera/openweb#readme
+    about: Panduan instalasi, konfigurasi, dan arsitektur.

@@ -26,7 +26,7 @@ function routeSkeleton(pathname: string): SkeletonLayoutId {
  * MotionPage yang menahan penanda halaman siap sampai konten asli tiba.
  * Di dalam AdminShell, PageShell sudah menyediakan keduanya.
  */
-export function RouteSkeleton({ framed = false }: { framed?: boolean }) {
+function RouteSkeleton({ framed = false }: { framed?: boolean }) {
   const layout = SKELETON_LAYOUTS[routeSkeleton(usePathname() || "/")];
   const screen = <SkeletonScreen label={layout.label}>{layout.content()}</SkeletonScreen>;
 

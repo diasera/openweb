@@ -20,7 +20,7 @@ export type CropHandle =
   | "nw";
 
 const EPSILON = 1e-6;
-export const DEFAULT_CROP_MIN_SIZE = 0.04;
+const DEFAULT_CROP_MIN_SIZE = 0.04;
 
 function finite(value: number, fallback: number): number {
   return Number.isFinite(value) ? value : fallback;

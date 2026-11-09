@@ -7,7 +7,7 @@ import { pageBounds, toPaged, type Paged } from "./paging";
 
 export type AdminVisitorRow = VisitorRow & { is_banned: boolean };
 
-export const ADMIN_VISITORS_PAGE_SIZE = 50;
+const ADMIN_VISITORS_PAGE_SIZE = 50;
 
 /** Data pengunjung untuk halaman pengelolaan admin. */
 export async function getVisitors(page = 1): Promise<Paged<AdminVisitorRow>> {
