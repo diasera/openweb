@@ -34,6 +34,12 @@ dan proyek ini menganut [Semantic Versioning](https://semver.org/lang/id/).
   `.github/workflows/ci.yml` agar berjalan otomatis di setiap push dan pull
   request.
 
+### Keamanan
+
+- Pembaruan dependensi produksi (`next` & `eslint-config-next` ke `^16.4.5`,
+  `zod` ke `^4.6.7`, serta `sanitize-html` ke `^2.18.1`) untuk menutup
+  advisory keamanan terbaru pada `npm run audit:prod`.
+
 ## [1.1.0] - 2026-11-09
 
 ### Ditambahkan
