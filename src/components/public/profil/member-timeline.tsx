@@ -13,7 +13,7 @@ function ActivityVisual({ item }: { item: MemberActivityItem }) {
   if (item.kind === "media") {
     return (
       <MediaPreview
-        media={{ type: item.mediaType, url: item.mediaUrl, thumbnail_url: item.thumbnailUrl }}
+        media={{ type: item.mediaType, url: item.mediaUrl }}
         alt=""
         sizes="88px"
         seed={item.id}

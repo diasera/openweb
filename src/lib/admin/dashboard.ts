@@ -10,7 +10,7 @@ const MESSAGE_PREVIEW_LIMIT = 4;
 
 export type DashboardQueueItem = Pick<
   MediaRow,
-  "id" | "type" | "url" | "thumbnail_url" | "title" | "caption" | "created_at"
+  "id" | "type" | "url" | "title" | "caption" | "created_at"
 >;
 
 export type DashboardMessage = Pick<MessageRow, "id" | "content" | "created_at" | "is_read">;
@@ -26,18 +26,12 @@ export interface AdminDashboardData {
 async function getModerationQueue(): Promise<DashboardQueueItem[]> {
   const { data, error } = await createAdminSupabase()
     .from("media")
-    .select("id, type, url, thumbnail_url, title, caption, created_at, status")
+    .select("id, type, url, title, caption, created_at, status")
     .eq("status", "pending")
     .order("created_at", { ascending: false })
     .limit(QUEUE_PREVIEW_LIMIT);
   if (error || !data) return [];
-  // Poster video kiriman pending bisa ikut berada di inbox privat.
-  const readable = await readableMediaUrls([
-    ...data,
-    ...data.flatMap((item) =>
-      item.thumbnail_url ? [{ url: item.thumbnail_url, status: item.status }] : [],
-    ),
-  ]);
+  const readable = await readableMediaUrls(data);
   return data.map((item) => ({
     id: item.id,
     type: item.type,
@@ -45,9 +39,6 @@ async function getModerationQueue(): Promise<DashboardQueueItem[]> {
     caption: item.caption,
     created_at: item.created_at,
     url: readable.get(item.url) ?? item.url,
-    thumbnail_url: item.thumbnail_url
-      ? (readable.get(item.thumbnail_url) ?? item.thumbnail_url)
-      : null,
   }));
 }
 

@@ -28,4 +28,7 @@ next-env.d.ts
 .agents/
 .codex/
 claude.md
+CLAUDE.md
 agents.md
+AGENTS.md
+skills-lock.json

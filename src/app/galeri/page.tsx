@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getApprovedMedia, getApprovedMediaCount, getSettings } from "@/lib/data";
+import {
+  getApprovedMedia,
+  getApprovedMediaCategories,
+  getApprovedMediaCount,
+  getSettings,
+} from "@/lib/data";
 import { PageShell } from "@/components/public/page-shell";
+import { FilterChips } from "@/components/public/filter-chips";
 import { GaleriBrowser } from "@/components/public/galeri-browser";
 import { Pagination } from "@/components/public/pagination";
 import { MotionLink } from "@/components/motion";
@@ -10,7 +16,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { JsonLd } from "@/components/seo/json-ld";
 import { buildPageMetadata, PUBLIC_PAGE_SEO } from "@/lib/seo";
 import { breadcrumbStructuredData } from "@/lib/seo/structured-data";
-import { parsePageParam } from "@/lib/utils/url";
+import { normalizeQueryFilter, parsePageParam } from "@/lib/utils/url";
 
 export const revalidate = 30;
 
@@ -23,16 +29,24 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function GaleriPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; type?: string; category?: string }>;
 }) {
-  const [{ page: pageParam }, settings] = await Promise.all([
-    searchParams,
-    getSettings(),
-  ]);
+  const [{ page: pageParam, type: typeParam, category: categoryParam }, settings] =
+    await Promise.all([searchParams, getSettings()]);
   const page = parsePageParam(pageParam);
-  const [media, total] = await Promise.all([
-    getApprovedMedia({ limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE }),
-    getApprovedMediaCount(),
+  const mediaType =
+    typeParam === "photo" || typeParam === "video" ? typeParam : undefined;
+  const category = normalizeQueryFilter(categoryParam);
+
+  const [media, total, categories] = await Promise.all([
+    getApprovedMedia({
+      limit: PAGE_SIZE,
+      offset: (page - 1) * PAGE_SIZE,
+      type: mediaType,
+      category,
+    }),
+    getApprovedMediaCount({ type: mediaType, category }),
+    getApprovedMediaCategories(),
   ]);
   const totalPages = Math.ceil(total / PAGE_SIZE);
   if (page > totalPages && totalPages > 0) notFound();
@@ -59,8 +73,27 @@ export default async function GaleriPage({
           </MotionLink>
         }
       />
-      <GaleriBrowser media={media} />
-      <Pagination basePath="/galeri" current={page} total={totalPages} />
+      <GaleriBrowser
+        media={media}
+        totalCount={total}
+        activeType={mediaType ?? "all"}
+        activeCategory={category}
+        categoryBar={
+          <FilterChips
+            basePath="/galeri"
+            paramName="category"
+            options={categories}
+            activeValue={category}
+            preserveQuery={{ type: mediaType }}
+          />
+        }
+      />
+      <Pagination
+        basePath="/galeri"
+        current={page}
+        total={totalPages}
+        query={{ type: mediaType, category }}
+      />
     </PageShell>
   );
 }

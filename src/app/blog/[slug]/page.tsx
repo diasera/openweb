@@ -7,8 +7,10 @@ import {
   getSettings,
 } from "@/lib/data";
 import { PageShell } from "@/components/public/page-shell";
+import { MentionedMembers } from "@/components/public/mentioned-members";
 import { PostRow } from "@/components/public/post-row";
 import { ShareButton, SaveButton } from "@/components/public/share-save";
+import { getMentionedMembersForPost } from "@/lib/members/activity";
 import { Avatar } from "@/components/ui/avatar";
 import { Chip } from "@/components/ui/chip";
 import { categoryColor } from "@/lib/categories";
@@ -22,7 +24,8 @@ import {
   breadcrumbStructuredData,
 } from "@/lib/seo/structured-data";
 import { getPhotoDestinationFrame } from "@/lib/media-editor/profiles";
-import { listReveal } from "@/components/motion";
+import { MotionLink, listReveal } from "@/components/motion";
+import { buildQueryHref } from "@/lib/utils/url";
 
 const BLOG_COVER_FRAME = getPhotoDestinationFrame("blog-cover");
 
@@ -87,6 +90,7 @@ export default async function ArticlePage({
   if (!post) notFound();
   // Slug lama (judul pernah diganti) dialihkan permanen ke URL kanonis.
   if (post.slug !== slug) permanentRedirect(`/blog/${post.slug}`);
+  const mentionedMembers = await getMentionedMembersForPost(post);
   const related = pickRelatedPosts(recentPosts, post.slug, post.category);
 
   // Zona situs, bukan zona server: artikel 00.30 WIB tidak tampil sebagai kemarin.
@@ -141,7 +145,17 @@ export default async function ArticlePage({
             className="text-xs font-bold uppercase tracking-wide"
             style={{ color: categoryColor(post.category) }}
           >
-            {[post.category, dateStr].filter(Boolean).join(" · ")}
+            {post.category ? (
+              <MotionLink
+                href={buildQueryHref("/blog", { category: post.category })}
+                prefetch={false}
+                className="hover:underline"
+              >
+                {post.category}
+              </MotionLink>
+            ) : null}
+            {post.category && dateStr ? " · " : null}
+            {dateStr}
           </p>
         )}
 
@@ -165,12 +179,23 @@ export default async function ArticlePage({
         {post.tags && post.tags.length > 0 && (
           <div className="mt-6 flex flex-wrap gap-2">
             {post.tags.map((t) => (
-              <Chip key={t} variant="soft">
-                #{t}
-              </Chip>
+              <MotionLink
+                key={t}
+                href={buildQueryHref("/blog", { tag: t })}
+                prefetch={false}
+              >
+                <Chip
+                  variant="soft"
+                  className="motion-pressable transition-colors hover:text-foreground"
+                >
+                  #{t}
+                </Chip>
+              </MotionLink>
             ))}
           </div>
         )}
+
+        <MentionedMembers members={mentionedMembers} settings={settings} className="mt-6" />
       </article>
 
       {related.length > 0 && (

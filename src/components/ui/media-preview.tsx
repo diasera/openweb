@@ -22,7 +22,7 @@ export function MediaPreview({
   stillOnly = false,
   className,
 }: {
-  media: Pick<MediaSlide, "type" | "url" | "thumbnail_url">;
+  media: Pick<MediaSlide, "type" | "url">;
   alt: string;
   sizes: string;
   /** Kunci gradien placeholder (biasanya id media). */

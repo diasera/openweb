@@ -12,7 +12,9 @@ import { PageShell } from "@/components/public/page-shell";
 import { ShareButton, SaveButton } from "@/components/public/share-save";
 import { PinComments } from "@/components/public/pin-comments";
 import { MediaCard } from "@/components/public/media-card";
+import { MentionedMembers } from "@/components/public/mentioned-members";
 import { PinMedia } from "@/components/public/pin-media";
+import { getMentionedMembersForMedia } from "@/lib/members/activity";
 import { Avatar } from "@/components/ui/avatar";
 import { buttonClass } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
@@ -29,6 +31,7 @@ import {
   breadcrumbStructuredData,
   mediaStructuredData,
 } from "@/lib/seo/structured-data";
+import { buildQueryHref } from "@/lib/utils/url";
 
 export const revalidate = 30;
 
@@ -53,7 +56,7 @@ export async function generateMetadata({
         ? `${title} — dokumentasi ${media.type === "video" ? "video" : "foto"} ${settings.site_name}.`
         : `Dokumentasi foto dan video ${settings.site_name}.`),
     path: `/pin/${id}`,
-    image: media?.thumbnail_url || (media?.type === "photo" ? media.url : null),
+    image: media?.type === "photo" ? media.url : null,
     noIndex: !media,
   });
 }
@@ -81,11 +84,12 @@ export default async function PinPage({
     getSettings(),
   ]);
   if (!media) notFound();
-  const [{ comments, total: commentTotal }, recentMedia, album, slides] = await Promise.all([
+  const [{ comments, total: commentTotal }, recentMedia, album, slides, mentionedMembers] = await Promise.all([
     getComments(media.id),
     getApprovedMedia({ limit: 30 }),
     getAlbumForMedia(media.id),
     getMediaSlides(media),
+    getMentionedMembersForMedia(media),
   ]);
   const mediaSchema = mediaStructuredData(settings, media);
   const related = pickRelatedMedia(recentMedia, media.id, media.category);
@@ -143,7 +147,16 @@ export default async function PinPage({
                 <RelativeTime iso={media.created_at} className="text-muted block text-xs" />
               </div>
             </div>
-            {media.category && <Chip variant="softPrimary">{media.category}</Chip>}
+            {media.category && (
+              <MotionLink
+                href={buildQueryHref("/galeri", { category: media.category })}
+                prefetch={false}
+              >
+                <Chip variant="softPrimary" className="motion-pressable">
+                  {media.category}
+                </Chip>
+              </MotionLink>
+            )}
           </div>
 
           {album && (
@@ -175,6 +188,8 @@ export default async function PinPage({
           {media.caption && (
             <p className="text-muted mt-2 text-subhead leading-relaxed">{media.caption}</p>
           )}
+
+          <MentionedMembers members={mentionedMembers} settings={settings} />
 
           <PinComments
             mediaId={media.id}

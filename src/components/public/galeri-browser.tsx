@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { ImageIcon } from "lucide-react";
 import { SearchInput } from "@/components/ui/search-input";
 import { Segmented } from "@/components/ui/segmented";
@@ -9,13 +10,42 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { MediaCard } from "@/components/public/media-card";
 import { listReveal } from "@/components/motion";
 import type { MediaWithSlideCount } from "@/lib/media/slides";
+import { buildQueryHref } from "@/lib/utils/url";
 
 type Filter = "all" | "photo" | "video";
 
-/** Galeri dengan pencarian + filter Semua/Foto/Video (client-side) + hitungan. */
-export function GaleriBrowser({ media }: { media: MediaWithSlideCount[] }) {
+/** Galeri dengan pencarian + filter Semua/Foto/Video + kategori lintas halaman. */
+export function GaleriBrowser({
+  media,
+  totalCount,
+  activeType = "all",
+  activeCategory,
+  categoryBar,
+}: {
+  media: MediaWithSlideCount[];
+  totalCount?: number;
+  activeType?: Filter;
+  activeCategory?: string;
+  categoryBar?: ReactNode;
+}) {
+  const router = useRouter();
+  const [, startTransition] = useTransition();
   const [q, setQ] = useState("");
-  const [filter, setFilter] = useState<Filter>("all");
+  const [optimisticType, setOptimisticType] = useState<Filter | null>(null);
+  const filter = optimisticType ?? activeType;
+
+  function handleTypeChange(next: Filter) {
+    setOptimisticType(next);
+    startTransition(() => {
+      router.push(
+        buildQueryHref("/galeri", {
+          type: next === "all" ? undefined : next,
+          category: activeCategory,
+        }),
+      );
+      setOptimisticType(null);
+    });
+  }
 
   const photos = media.filter((m) => m.type === "photo").length;
   const videos = media.filter((m) => m.type === "video").length;
@@ -26,7 +56,7 @@ export function GaleriBrowser({ media }: { media: MediaWithSlideCount[] }) {
       if (filter !== "all" && m.type !== filter) return false;
       if (
         query &&
-        !`${m.title ?? ""} ${m.caption ?? ""} ${m.uploader_name ?? ""}`
+        !`${m.title ?? ""} ${m.caption ?? ""} ${m.category ?? ""} ${m.uploader_name ?? ""}`
           .toLowerCase()
           .includes(query)
       )
@@ -37,18 +67,24 @@ export function GaleriBrowser({ media }: { media: MediaWithSlideCount[] }) {
 
   return (
     <div className="space-y-4">
-      <SearchInput value={q} onChange={setQ} placeholder="Cari di galeri…" />
+      <SearchInput
+        value={q}
+        onChange={setQ}
+        placeholder="Cari judul, keterangan, kategori, atau pengunggah…"
+      />
       <Segmented
         value={filter}
-        onChange={setFilter}
+        onChange={handleTypeChange}
         options={[
           { label: "Semua", value: "all" },
           { label: "Foto", value: "photo" },
           { label: "Video", value: "video" },
         ]}
       />
+      {categoryBar}
       <p className="text-muted text-xs">
-        {media.length} pin · {photos} foto · {videos} video
+        {totalCount ?? media.length} pin
+        {activeCategory ? ` · kategori ${activeCategory}` : ` · ${photos} foto · ${videos} video`}
       </p>
 
       {filtered.length === 0 ? (

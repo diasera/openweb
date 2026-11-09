@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Newspaper } from "lucide-react";
+import { Newspaper, X } from "lucide-react";
 import {
+  getPublishedPostCategories,
   getPublishedPostCount,
   getPublishedPosts,
   getSettings,
 } from "@/lib/data";
 import { PageShell } from "@/components/public/page-shell";
+import { FilterChips } from "@/components/public/filter-chips";
 import { PostRow } from "@/components/public/post-row";
 import { Pagination } from "@/components/public/pagination";
 import { Chip } from "@/components/ui/chip";
@@ -19,7 +21,11 @@ import { MotionLink, listReveal } from "@/components/motion";
 import { JsonLd } from "@/components/seo/json-ld";
 import { buildPageMetadata, PUBLIC_PAGE_SEO } from "@/lib/seo";
 import { breadcrumbStructuredData } from "@/lib/seo/structured-data";
-import { parsePageParam } from "@/lib/utils/url";
+import {
+  buildQueryHref,
+  normalizeQueryFilter,
+  parsePageParam,
+} from "@/lib/utils/url";
 import { getPhotoDestinationFrame } from "@/lib/media-editor/profiles";
 
 const BLOG_COVER_FRAME = getPhotoDestinationFrame("blog-cover");
@@ -39,21 +45,25 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function BlogListPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; category?: string; tag?: string }>;
 }) {
-  const [{ page: pageParam }, settings] = await Promise.all([
-    searchParams,
-    getSettings(),
-  ]);
+  const [{ page: pageParam, category: categoryParam, tag: tagParam }, settings] =
+    await Promise.all([searchParams, getSettings()]);
   const page = parsePageParam(pageParam);
-  const [posts, total] = await Promise.all([
-    getPublishedPosts(PAGE_SIZE, (page - 1) * PAGE_SIZE),
-    getPublishedPostCount(),
+  const category = normalizeQueryFilter(categoryParam);
+  const tag = normalizeQueryFilter(tagParam);
+  const filter = { category, tag };
+
+  const [posts, total, categories] = await Promise.all([
+    getPublishedPosts(PAGE_SIZE, (page - 1) * PAGE_SIZE, filter),
+    getPublishedPostCount(filter),
+    getPublishedPostCategories(),
   ]);
   const totalPages = Math.ceil(total / PAGE_SIZE);
   if (page > totalPages && totalPages > 0) notFound();
 
-  const featured = page === 1 ? posts[0] : undefined;
+  const isFiltered = Boolean(category || tag);
+  const featured = page === 1 && !isFiltered ? posts[0] : undefined;
   const rest = featured ? posts.slice(1) : posts;
 
   return (
@@ -70,11 +80,40 @@ export default async function BlogListPage({
         description={`Cerita dan kabar terbaru dari ${settings.site_name}`}
       />
 
+      <div className="mb-4 space-y-2">
+        <FilterChips
+          basePath="/blog"
+          paramName="category"
+          options={categories}
+          activeValue={category}
+          preserveQuery={{ tag }}
+        />
+        {tag && (
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-muted">Tag aktif:</span>
+            <MotionLink
+              href={buildQueryHref("/blog", { category })}
+              prefetch={false}
+              aria-label={`Hapus filter tag ${tag}`}
+            >
+              <Chip variant="softPrimary" className="motion-pressable">
+                #{tag}
+                <X className="size-3" aria-hidden="true" />
+              </Chip>
+            </MotionLink>
+          </div>
+        )}
+      </div>
+
       {posts.length === 0 ? (
         <EmptyState
           icon={<Newspaper className="h-8 w-8" />}
-          title="Belum ada artikel"
-          description="Artikel yang diterbitkan admin akan tampil di sini."
+          title={isFiltered ? "Tidak ada artikel yang cocok" : "Belum ada artikel"}
+          description={
+            isFiltered
+              ? "Coba pilih kategori lain atau reset filter tag."
+              : "Artikel yang diterbitkan admin akan tampil di sini."
+          }
         />
       ) : (
         <div className="space-y-4">
@@ -135,7 +174,12 @@ export default async function BlogListPage({
         </div>
       )}
 
-      <Pagination basePath="/blog" current={page} total={totalPages} />
+      <Pagination
+        basePath="/blog"
+        current={page}
+        total={totalPages}
+        query={{ category, tag }}
+      />
     </PageShell>
   );
 }

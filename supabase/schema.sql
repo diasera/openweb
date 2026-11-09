@@ -93,43 +93,6 @@ drop trigger if exists trg_site_settings_updated on public.site_settings;
 create trigger trg_site_settings_updated before update on public.site_settings
   for each row execute function public.set_updated_at();
 
--- Migrasi data SEO lama SEBELUM kolomnya dihapus, sehingga deploy lama terima
--- bersih tanpa langkah manual: judul/deskripsi kustom lama otomatis pindah ke
--- tagline/description. Judul lama biasa berpola "Nama — Tagline", jadi bagian
--- setelah nama situs diambil sebagai tagline; tanpa pola itu, nilai utuhnya
--- yang dipakai. Idempoten: hanya berjalan bila kolom lama masih ada.
-do $$
-begin
-  if exists (
-    select 1
-    from information_schema.columns
-    where table_schema = 'public'
-      and table_name = 'site_settings'
-      and column_name = 'seo_home_title'
-  ) then
-    update public.site_settings
-    set
-      tagline = coalesce(
-        nullif(btrim(split_part(seo_home_title, site_name || ' — ', 2)), ''),
-        nullif(btrim(seo_home_title), ''),
-        tagline
-      ),
-      description = coalesce(
-        nullif(btrim(seo_home_description), ''),
-        description
-      )
-    where id = 1;
-  end if;
-end
-$$;
-
--- Kolom legacy yang sudah dilebur ke site_name/tagline/description (dedup
--- panel Setting); di-drop secara idempoten agar deploy lama ikut bersih.
-alter table public.site_settings drop column if exists timezone;
-alter table public.site_settings drop column if exists keywords;
-alter table public.site_settings drop column if exists seo_home_title;
-alter table public.site_settings drop column if exists seo_home_description;
-
 -- ---- admins (owner + admin) ------------------------------------------------
 create table if not exists public.admins (
   id uuid primary key default gen_random_uuid(),
@@ -140,6 +103,7 @@ create table if not exists public.admins (
   permissions jsonb not null default '{}'::jsonb,
   avatar_url text,
   is_active boolean not null default true,
+  session_version integer not null default 1,
   last_login_at timestamptz,
   created_at timestamptz not null default now()
 );
@@ -149,8 +113,6 @@ create unique index if not exists admins_username_lower_idx
 -- Setup owner pertama harus tetap tunggal walau dua request datang bersamaan.
 create unique index if not exists admins_single_owner_idx
   on public.admins (role) where role = 'owner';
-alter table public.admins
-  add column if not exists session_version integer not null default 1;
 
 -- JWT sesi membawa versi ini. Password baru atau akun yang dinonaktifkan
 -- menaikkan versi sehingga seluruh sesi lama langsung ditolak server.
@@ -176,6 +138,7 @@ create trigger trg_admins_session_version before update on public.admins
 create table if not exists public.members (
   id uuid primary key default gen_random_uuid(),
   slug text,
+  previous_slugs text[] not null default '{}',
   name text not null,
   nim text,
   position text,                          -- jabatan (opsional)
@@ -186,10 +149,6 @@ create table if not exists public.members (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-alter table public.members add column if not exists slug text;
--- Slug lama tetap dialihkan ke URL baru setelah nama anggota diganti.
-alter table public.members
-  add column if not exists previous_slugs text[] not null default '{}';
 
 -- Aturan canonical URL profil. NFKD + rentang combining mark sama dengan
 -- src/lib/utils/slug.ts; daftar reserved sama dengan ADMIN_MANAGED_PATHS.
@@ -428,7 +387,6 @@ create table if not exists public.media (
   category text,
   url text not null,
   mime_type text,
-  thumbnail_url text,
   caption text,
   uploader_name text,
   status media_status not null default 'pending',
@@ -442,7 +400,6 @@ create table if not exists public.media (
   reviewed_at timestamptz,
   created_at timestamptz not null default now()
 );
-alter table public.media add column if not exists mime_type text;
 alter table public.media drop constraint if exists media_mime_type_matches_type;
 alter table public.media add constraint media_mime_type_matches_type check (
   public.media_mime_matches_type(type, mime_type)
@@ -464,7 +421,6 @@ create table if not exists public.media_slides (
   type media_type not null,
   url text not null,
   mime_type text,
-  thumbnail_url text,
   width integer,
   height integer,
   created_at timestamptz not null default now(),
@@ -509,18 +465,15 @@ drop trigger if exists trg_media_slides_object_url on public.media_slides;
 create trigger trg_media_slides_object_url before insert or update of url on public.media_slides
   for each row execute function public.guard_media_object_url();
 
--- Pendahulu update_media_post (hanya susunan item) sempat dirilis singkat.
-drop function if exists public.replace_media_items(uuid, text[], jsonb);
-
 -- "Edit postingan" admin: SATU transaksi untuk seluruh isi pin — susunan item
 -- (urutkan, jadikan sampul, tambah, hapus, ganti foto) beserta detailnya
 -- (teks, kategori, pengunggah, komentar, album, sorotan, tanggal momen).
 -- `p_expected` = URL sampul lalu slide yang dilihat editor; berbeda dengan isi
 -- sekarang berarti pin diubah sesi lain → false tanpa perubahan apa pun.
 -- `p_items` null = susunan tetap; selain itu berurutan, item pertama menjadi
--- sampul: [{type,url,mime_type,thumbnail_url,width,height}, …]. Slide dihapus
--- dulu agar URL boleh berpindah slot tanpa memicu guard di atas. Sorotan
--- hanya bertahan pada pin yang sudah terbit.
+-- sampul: [{type,url,mime_type,width,height}, …]. Slide dihapus dulu agar URL
+-- boleh berpindah slot tanpa memicu guard di atas. Sorotan hanya bertahan pada
+-- pin yang sudah terbit.
 create or replace function public.update_media_post(
   p_media_id uuid,
   p_expected text[],
@@ -562,18 +515,16 @@ begin
       type = (v_cover ->> 'type')::public.media_type,
       url = v_cover ->> 'url',
       mime_type = v_cover ->> 'mime_type',
-      thumbnail_url = v_cover ->> 'thumbnail_url',
       width = (v_cover ->> 'width')::integer,
       height = (v_cover ->> 'height')::integer
     where id = p_media_id;
     insert into public.media_slides
-      (media_id, position, type, url, mime_type, thumbnail_url, width, height)
+      (media_id, position, type, url, mime_type, width, height)
     select p_media_id,
            (item.ordinality - 1)::smallint,
            (item.value ->> 'type')::public.media_type,
            item.value ->> 'url',
            item.value ->> 'mime_type',
-           item.value ->> 'thumbnail_url',
            (item.value ->> 'width')::integer,
            (item.value ->> 'height')::integer
       from jsonb_array_elements(p_items) with ordinality as item(value, ordinality)
@@ -624,6 +575,8 @@ create table if not exists public.messages (
   created_at timestamptz not null default now()
 );
 create index if not exists messages_created_idx on public.messages (created_at desc);
+create index if not exists messages_pinned_idx
+  on public.messages (created_at desc) where is_pinned;
 
 -- ---- message_likes (dedup like per pengunjung, sisi server) ----------------
 -- Penegak "1 like per pengunjung per pesan" di database; kolom messages.likes
@@ -677,7 +630,6 @@ create table if not exists public.visitors (
   ip_address text,
   user_agent text,
   device jsonb,
-  location jsonb,
   notifications_enabled boolean not null default false,
   visit_count integer not null default 1,
   first_seen_at timestamptz not null default now(),
@@ -717,6 +669,7 @@ create table if not exists public.blog_posts (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   slug text not null unique,
+  previous_slugs text[] not null default '{}',
   excerpt text,
   category text,
   tags text[],
@@ -726,7 +679,6 @@ create table if not exists public.blog_posts (
   status post_status not null default 'draft',
   author_id uuid references public.admins(id) on delete set null,
   author_name text,
-  views integer not null default 0,
   published_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -735,9 +687,6 @@ drop trigger if exists trg_blog_updated on public.blog_posts;
 create trigger trg_blog_updated before update on public.blog_posts
   for each row execute function public.set_updated_at();
 create index if not exists blog_status_idx on public.blog_posts (status, published_at desc);
--- Slug lama tetap dialihkan ke URL baru setelah judul artikel diganti.
-alter table public.blog_posts
-  add column if not exists previous_slugs text[] not null default '{}';
 
 -- ---- music_tracks (playlist Dynamic Island) --------------------------------
 create table if not exists public.music_tracks (
@@ -754,7 +703,6 @@ create table if not exists public.music_tracks (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-alter table public.music_tracks add column if not exists mime_type text;
 alter table public.music_tracks
   drop constraint if exists music_tracks_mime_type_check;
 alter table public.music_tracks add constraint music_tracks_mime_type_check check (
@@ -904,8 +852,6 @@ end;
 $$;
 
 -- Tracking satu round-trip dan increment tidak hilang saat request bersamaan.
-drop function if exists public.record_visitor_visit(uuid, text, text, jsonb);
-drop function if exists public.record_visitor_visit(uuid, text, text, jsonb, text);
 create or replace function public.record_visitor_visit(
   p_visitor_id uuid,
   p_ip_address text,
@@ -1088,25 +1034,63 @@ as $$
       )
     order by rank desc, p.published_at desc nulls last
     limit (select lim from q)
+  ), album_hits as (
+    select 'album'::text as kind, a.id, a.title, a.description as subtitle, a.slug,
+      coalesce(ts_rank(d.doc, q.ts), 0) as rank, 4 as kind_order
+    from public.albums as a
+    cross join q
+    cross join lateral (
+      select
+        setweight(to_tsvector('public.app_search', a.title), 'A') ||
+        setweight(to_tsvector('public.app_search', coalesce(a.description, '')), 'B') as doc
+    ) as d
+    where (q.ts is not null and d.doc @@ q.ts)
+      or a.title ilike q.pattern
+      or a.description ilike q.pattern
+    order by rank desc, a.created_at desc
+    limit (select lim from q)
+  ), event_hits as (
+    select 'event'::text as kind, e.id, e.title, e.location as subtitle, null::text as slug,
+      coalesce(ts_rank(d.doc, q.ts), 0) as rank, 5 as kind_order
+    from public.events as e
+    cross join q
+    cross join lateral (
+      select
+        setweight(to_tsvector('public.app_search', e.title), 'A') ||
+        setweight(to_tsvector('public.app_search', coalesce(e.location, '')), 'B') ||
+        setweight(to_tsvector('public.app_search', coalesce(e.description, '')), 'C') as doc
+    ) as d
+    where e.is_published = true
+      and (
+        (q.ts is not null and d.doc @@ q.ts)
+        or e.title ilike q.pattern
+        or e.location ilike q.pattern
+        or e.description ilike q.pattern
+      )
+    order by rank desc, e.starts_at desc
+    limit (select lim from q)
   )
   select kind, id, title, subtitle, slug
   from (
     select * from member_hits
     union all select * from media_hits
     union all select * from post_hits
+    union all select * from album_hits
+    union all select * from event_hits
   ) as hits
   order by kind_order, rank desc;
 $$;
 
 -- "Kenangan hari ini": foto/video approved pada tanggal yang sama di tahun
 -- sebelumnya, dihitung di zona waktu situs.
+drop function if exists public.media_on_this_day(text, integer);
 create or replace function public.media_on_this_day(
   p_time_zone text,
   p_limit integer default 12
 )
 returns table (
   id uuid, type public.media_type, title text, category text, url text,
-  mime_type text, thumbnail_url text, caption text, uploader_name text,
+  mime_type text, caption text, uploader_name text,
   status public.media_status, is_pinned boolean, allow_comments boolean,
   source public.media_source, width integer, height integer,
   created_at timestamptz, album_id uuid
@@ -1119,7 +1103,7 @@ as $$
   with today as (
     select (now() at time zone p_time_zone)::date as local_day
   )
-  select m.id, m.type, m.title, m.category, m.url, m.mime_type, m.thumbnail_url,
+  select m.id, m.type, m.title, m.category, m.url, m.mime_type,
     m.caption, m.uploader_name, m.status, m.is_pinned, m.allow_comments,
     m.source, m.width, m.height, m.created_at, m.album_id
   from public.media as m
@@ -1133,11 +1117,12 @@ as $$
 $$;
 
 -- Kartu album publik: jumlah media approved + sampul dari media terbaru.
+drop function if exists public.album_summaries();
 create or replace function public.album_summaries()
 returns table (
   id uuid, slug text, title text, description text, event_id uuid,
   created_at timestamptz, updated_at timestamptz, media_count bigint,
-  cover_url text, cover_type public.media_type, cover_thumbnail_url text,
+  cover_url text, cover_type public.media_type,
   latest_media_at timestamptz
 )
 language sql
@@ -1149,7 +1134,6 @@ as $$
     count(m.id) as media_count,
     (array_agg(m.url order by m.created_at desc) filter (where m.id is not null))[1],
     (array_agg(m.type order by m.created_at desc) filter (where m.id is not null))[1],
-    (array_agg(m.thumbnail_url order by m.created_at desc) filter (where m.id is not null))[1],
     max(m.created_at)
   from public.albums as a
   left join public.media as m
@@ -1196,10 +1180,9 @@ begin
   where last_seen_at < v_cutoff and not notifications_enabled;
 
   update public.visitors
-  set ip_address = null, user_agent = null, device = null, location = null
+  set ip_address = null, user_agent = null, device = null
   where last_seen_at < v_cutoff
-    and (ip_address is not null or user_agent is not null
-      or device is not null or location is not null);
+    and (ip_address is not null or user_agent is not null or device is not null);
 
   update public.comments
   set ip_address = null, user_agent = null, device = null
@@ -1344,6 +1327,12 @@ create policy "public read comments" on public.comments
     )
   );
 
+-- Pembersihan kolom usang dari database lama secara idempoten.
+alter table public.visitors     drop column if exists location;
+alter table public.blog_posts   drop column if exists views;
+alter table public.media        drop column if exists thumbnail_url;
+alter table public.media_slides drop column if exists thumbnail_url;
+
 -- RLS membatasi BARIS, bukan KOLOM. Cabut SELECT tabel penuh agar anon tidak
 -- dapat mengambil IP/device lewat PostgREST langsung dengan anon key.
 revoke select on public.media, public.comments, public.blog_posts,
@@ -1352,11 +1341,11 @@ revoke select on public.media, public.comments, public.blog_posts,
   from public, anon, authenticated;
 
 grant select (
-  id, type, title, category, url, mime_type, thumbnail_url, caption, uploader_name,
+  id, type, title, category, url, mime_type, caption, uploader_name,
   status, is_pinned, allow_comments, source, width, height, created_at, album_id
 ) on public.media to anon, authenticated;
 grant select (
-  id, media_id, position, type, url, mime_type, thumbnail_url, width, height,
+  id, media_id, position, type, url, mime_type, width, height,
   created_at
 ) on public.media_slides to anon, authenticated;
 grant select (
@@ -1364,7 +1353,7 @@ grant select (
 ) on public.comments to anon, authenticated;
 grant select (
   id, title, slug, excerpt, category, tags, content_html, cover_image_url,
-  status, author_name, views, published_at, created_at, updated_at,
+  status, author_name, published_at, created_at, updated_at,
   previous_slugs
 ) on public.blog_posts to anon, authenticated;
 grant select (
@@ -1383,25 +1372,6 @@ grant select (
 ) on public.albums to anon, authenticated;
 
 -- (Sengaja) tidak ada policy anon untuk: admins, messages, visitors, banned_ips.
-
--- ============================================================================
--- Migrasi kolom baru (aman dijalankan ulang pada database lama).
--- ============================================================================
-alter table public.media        add column if not exists title text;
-alter table public.media        add column if not exists category text;
-alter table public.media        add column if not exists allow_comments boolean not null default true;
-alter table public.members      add column if not exists is_pengurus boolean not null default false;
-alter table public.blog_posts   add column if not exists category text;
-alter table public.blog_posts   add column if not exists tags text[];
-alter table public.blog_posts   add column if not exists author_name text;
-alter table public.messages     add column if not exists likes integer not null default 0;
-alter table public.messages     add column if not exists is_pinned boolean not null default false;
-create index if not exists messages_pinned_idx
-  on public.messages (created_at desc) where is_pinned;
-alter table public.site_settings add column if not exists visi text;
-alter table public.site_settings add column if not exists misi text[];
-alter table public.site_settings add column if not exists hero_image_width integer;
-alter table public.site_settings add column if not exists hero_image_height integer;
 
 -- Label hero (chip kiri-atas) kini field sendiri di tab Beranda. Dulu isinya
 -- ditebak dari nama alternatif/nama website sehingga bentrok dengan judul

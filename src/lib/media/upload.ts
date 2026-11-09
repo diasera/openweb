@@ -282,7 +282,7 @@ export type MediaItemPlan =
 
 type StoredMediaItem = Pick<
   MediaSlideRow,
-  "type" | "url" | "mime_type" | "thumbnail_url" | "width" | "height"
+  "type" | "url" | "mime_type" | "width" | "height"
 >;
 
 const STALE_MEDIA_MESSAGE =
@@ -294,12 +294,12 @@ async function loadMediaItems(mediaId: string) {
   const [cover, slides] = await Promise.all([
     sb
       .from("media")
-      .select("status, source, type, url, mime_type, thumbnail_url, width, height")
+      .select("status, source, type, url, mime_type, width, height")
       .eq("id", mediaId)
       .maybeSingle(),
     sb
       .from("media_slides")
-      .select("type, url, mime_type, thumbnail_url, width, height")
+      .select("type, url, mime_type, width, height")
       .eq("media_id", mediaId)
       .order("position", { ascending: true }),
   ]);
@@ -402,7 +402,6 @@ export async function updateMediaPost(params: {
           type: item.upload.mediaType,
           url,
           mime_type: item.upload.mimeType,
-          thumbnail_url: null,
           width: item.upload.width,
           height: item.upload.height,
         };

@@ -9,7 +9,7 @@ export const ADMIN_COMMENTS_PAGE_SIZE = 30;
 export type AdminComment = Omit<CommentRow, "ip_address" | "user_agent"> & {
   has_ip: boolean;
   /** `url` sudah bisa dibuka admin (signed URL inbox bila belum disetujui). */
-  media: Pick<MediaRow, "id" | "title" | "type" | "status" | "url" | "thumbnail_url"> | null;
+  media: Pick<MediaRow, "id" | "title" | "type" | "status" | "url"> | null;
 };
 
 /** Komentar terbaru lintas pin untuk moderasi; IP mentah tidak dikirim ke klien. */
@@ -27,7 +27,7 @@ export async function getAdminComments(page = 1): Promise<Paged<AdminComment>> {
   const { data: mediaRows } = mediaIds.length
     ? await sb
         .from("media")
-        .select("id, title, type, status, url, thumbnail_url")
+        .select("id, title, type, status, url")
         .in("id", mediaIds)
     : { data: [] };
   const readable = await readableMediaUrls(mediaRows ?? []);
@@ -40,7 +40,6 @@ export async function getAdminComments(page = 1): Promise<Paged<AdminComment>> {
         type: media.type,
         status: media.status,
         url: readable.get(media.url) ?? media.url,
-        thumbnail_url: media.thumbnail_url,
       },
     ]),
   );

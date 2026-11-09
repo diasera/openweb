@@ -347,7 +347,6 @@ function SlideMedia({
   if (slide.type === "video") {
     return (
       <video
-        poster={slide.thumbnail_url ?? undefined}
         controls
         playsInline
         muted={videoMuted}

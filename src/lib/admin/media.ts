@@ -50,7 +50,7 @@ async function getAdminSlides(
 
 /** Kolom detail yang dapat diubah di halaman "Edit postingan". */
 const EDITABLE_MEDIA_COLUMNS =
-  "id, title, caption, category, uploader_name, allow_comments, album_id, is_pinned, status, source, created_at, type, url, mime_type, thumbnail_url, width, height" as const;
+  "id, title, caption, category, uploader_name, allow_comments, album_id, is_pinned, status, source, created_at, type, url, mime_type, width, height" as const;
 
 /** Data halaman "Edit postingan": seluruh detail pin + seluruh item berurutan. */
 export type AdminEditableMedia = Pick<
@@ -175,7 +175,6 @@ export async function getAdminEditableMedia(
       readUrl: readable.get(slide.url) ?? slide.url,
       type: slide.type,
       mimeType: slide.mime_type,
-      thumbnailUrl: slide.thumbnail_url,
       width: slide.width,
       height: slide.height,
     })),

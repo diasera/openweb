@@ -34,12 +34,16 @@ const KIND_LABEL: Record<SiteSearchResult["kind"], string> = {
   media: "Media",
   blog: "Artikel",
   member: "Anggota",
+  album: "Album",
+  event: "Agenda",
 };
 
 const KIND_ICON: Record<SiteSearchResult["kind"], LucideIcon> = {
   media: DESTINATION_ICONS["/galeri"],
   blog: DESTINATION_ICONS["/blog"],
   member: DESTINATION_ICONS["/anggota"],
+  album: DESTINATION_ICONS["/album"],
+  event: DESTINATION_ICONS["/agenda"],
 };
 
 /** Quick panel hasil tap island: navigasi + kontrol cepat ala Live Activity iOS.
@@ -159,7 +163,7 @@ export function ExpandedRouteView({
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Cari media, artikel, anggota…"
+          placeholder="Cari media, artikel, anggota, album, agenda…"
           aria-label="Cari di situs"
           autoComplete="off"
           enterKeyHint="go"

@@ -130,6 +130,13 @@ await rejects("anon", "select created_by from public.events", /permission denied
 await rejects("anon", "select ip_address from public.media", /permission denied/);
 const albums = await asRole("anon", "select slug, media_count from public.album_summaries()");
 assert.deepEqual(albums.map((r) => [r.slug, Number(r.media_count)]), [["study-tour", 2]]);
+const studySearch = await asRole("anon", "select kind, title from public.search_site('Study', 5)");
+assert.deepEqual(studySearch.map((r) => [r.kind, r.title]), [
+  ["album", "Study Tour"],
+  ["event", "Study Tour"],
+]);
+const secretSearch = await asRole("anon", "select kind from public.search_site('Rahasia', 5)");
+assert.deepEqual(secretSearch, [], "agenda tidak terbit tidak muncul di pencarian");
 await assert.rejects(
   rows("insert into public.events (title, starts_at, ends_at) values ('x', now(), now() - interval '1 hour')"),
   /events_time_order/,
@@ -180,7 +187,7 @@ assert.equal(orphanSlides, 0, "hapus pin menghapus slide-nya");
 
 // Edit postingan: susunan item + detail diganti atomik, optimistic lock pada URL lama.
 const [{ id: carouselId }] = await rows("select id from public.media where url = 'https://x/media/a.jpg'");
-const item = (type, url, mime = null) => ({ type, url, mime_type: mime, thumbnail_url: null, width: 4, height: 3 });
+const item = (type, url, mime = null) => ({ type, url, mime_type: mime, width: 4, height: 3 });
 const details = (extra = {}) => ({
   title: "Kemah Bakti", category: null, caption: "Api unggun", uploader_name: null,
   allow_comments: true, album_id: null, is_pinned: false, created_at: null, ...extra,

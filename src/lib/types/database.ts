@@ -33,12 +33,6 @@ export interface DeviceInfo {
   type?: string | null; // mobile | tablet | desktop | ...
 }
 
-export interface GeoInfo {
-  country?: string | null;
-  region?: string | null;
-  city?: string | null;
-}
-
 /** Token tema = channel RGB, mis. { primary: "0 122 255" }. Di-override menu Setting. */
 export type ThemeTokens = Record<string, string>;
 
@@ -137,7 +131,6 @@ export type MediaRow = {
   category: string | null;
   url: string;
   mime_type: string | null;
-  thumbnail_url: string | null;
   caption: string | null;
   uploader_name: string | null;
   status: MediaStatus;
@@ -164,7 +157,6 @@ export type MediaSlideRow = {
   type: MediaType;
   url: string;
   mime_type: string | null;
-  thumbnail_url: string | null;
   width: number | null;
   height: number | null;
   created_at: string;
@@ -188,7 +180,6 @@ export type VisitorRow = {
   ip_address: string | null;
   user_agent: string | null;
   device: DeviceInfo | null;
-  location: GeoInfo | null;
   notifications_enabled: boolean;
   visit_count: number;
   first_seen_at: string;
@@ -234,7 +225,6 @@ export type BlogPostRow = {
   status: PostStatus;
   author_id: string | null;
   author_name: string | null;
-  views: number;
   published_at: string | null;
   created_at: string;
   updated_at: string;
@@ -322,12 +312,12 @@ export type AlbumSummaryRow = {
   media_count: number;
   cover_url: string | null;
   cover_type: MediaType | null;
-  cover_thumbnail_url: string | null;
+
   latest_media_at: string | null;
 }
 
 export type SiteSearchRow = {
-  kind: "media" | "blog" | "member";
+  kind: "media" | "blog" | "member" | "album" | "event";
   id: string;
   title: string;
   subtitle: string | null;
@@ -436,7 +426,7 @@ export interface Database {
           p_expected: string[];
           /** null = susunan item tidak berubah. */
           p_items: Array<
-            Pick<MediaSlideRow, "type" | "url" | "mime_type" | "thumbnail_url" | "width" | "height">
+            Pick<MediaSlideRow, "type" | "url" | "mime_type" | "width" | "height">
           > | null;
           p_details: Pick<
             MediaRow,

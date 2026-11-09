@@ -165,27 +165,13 @@ export function mediaStructuredData(
   settings: SiteSettingsRow,
   media: MediaRow,
 ): Schema | null {
-  if (!media.url) return null;
+  // Google mewajibkan thumbnailUrl terpisah untuk VideoObject, sehingga JSON-LD
+  // hanya dipancarkan untuk foto yang memiliki URL langsung.
+  if (!media.url || media.type === "video") return null;
   const name = mediaTitle(media, settings);
   const author = media.uploader_name
     ? { "@type": "Person", name: media.uploader_name }
     : organizationNode(settings);
-  if (media.type === "video") {
-    // Google mewajibkan thumbnailUrl untuk kelayakan Video rich result. Jangan
-    // memancarkan markup setengah lengkap sebelum derivative poster tersedia.
-    if (!media.thumbnail_url) return null;
-    return {
-      "@context": "https://schema.org",
-      "@type": "VideoObject",
-      contentUrl: absoluteUrl(media.url, settings),
-      thumbnailUrl: [absoluteUrl(media.thumbnail_url, settings)],
-      encodingFormat: media.mime_type || undefined,
-      name,
-      description: media.caption || name,
-      uploadDate: media.created_at,
-      author,
-    };
-  }
   return {
     "@context": "https://schema.org",
     "@type": "ImageObject",

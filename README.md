@@ -29,13 +29,16 @@ Apple atau Pinterest.
 - Koleksi Tersimpan (`/tersimpan`) untuk pin dan artikel, tersimpan di
   perangkat tanpa akun dan tersinkron antar-tab.
 - "Kenangan hari ini" di homepage: media pada tanggal yang sama tahun lalu.
-- Pencarian Spotlight full-text bahasa Indonesia (stemming + awalan kata),
-  termasuk isi artikel, caption, dan NIM anggota.
+- Pencarian Spotlight full-text bahasa Indonesia (stemming + awalan kata) lintas
+  media, artikel, anggota (termasuk NIM), album, dan agenda.
 - PWA share target: foto/video dari menu Bagikan galeri Android langsung
   terbuka di Buat Pin; beberapa file sekaligus langsung menjadi carousel.
+- Filter lintas halaman untuk Galeri (foto/video & kategori) dan Blog (kategori
+  & `#tag`), terhubung langsung dengan chip interaktif di detail pin dan artikel.
 - Blog dengan editor rich text, cover, kategori, tag, draft, dan publikasi.
 - Profil anggota dengan URL ramah baca seperti `/profil/siti-sholeh` serta
-  riwayat media dan artikel yang menyebut nama anggota.
+  tautan dua arah dengan media (`/pin/[id]`) dan artikel (`/blog/[slug]`) yang
+  menyebut nama anggota.
 - Pesan anonim; hanya pesan yang dipin admin ditampilkan di homepage.
 - Playlist audio persisten dengan putar, jeda, seek, next/previous, Media
   Session, dan kontrol Dynamic Island.

@@ -15,7 +15,6 @@ export function AlbumCard({ album }: { album: AlbumSummaryRow }) {
           media={{
             type: album.cover_type ?? "photo",
             url: album.cover_url ?? "",
-            thumbnail_url: album.cover_thumbnail_url,
           }}
           alt=""
           sizes="(max-width: 768px) 50vw, 320px"

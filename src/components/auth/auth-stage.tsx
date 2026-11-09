@@ -14,14 +14,14 @@ import styles from "./auth-gate.module.css";
 
 export type AuthWallMedia = Pick<
   MediaRow,
-  "id" | "type" | "url" | "thumbnail_url" | "width" | "height"
+  "id" | "type" | "url" | "width" | "height"
 >;
 
 interface WallTile {
   key: string;
   seed: string;
   ratio: number;
-  media: Pick<MediaSlide, "type" | "url" | "thumbnail_url">;
+  media: Pick<MediaSlide, "type" | "url">;
 }
 
 const WALL_COLUMNS = 6;
@@ -30,7 +30,7 @@ const TILES_PER_COLUMN = 6;
 const COLUMN_DRIFT = [78, 96, 70, 88, 104, 82];
 /** Rasio pin placeholder saat situs belum punya foto (mode demo/instalasi baru). */
 const PLACEHOLDER_RATIOS = [3 / 4, 1, 4 / 5, 2 / 3, 5 / 4, 3 / 5];
-const PLACEHOLDER_MEDIA = { type: "photo", url: "", thumbnail_url: null } as const;
+const PLACEHOLDER_MEDIA = { type: "photo", url: "" } as const;
 
 /**
  * Isi dinding dari media yang punya gambar diam, diulang secukupnya dengan

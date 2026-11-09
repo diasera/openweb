@@ -19,10 +19,13 @@ import {
   DEMO_MESSAGES,
   DEMO_POSTS,
   DEMO_COMMENTS,
+  DEMO_ALBUMS,
+  DEMO_EVENTS,
 } from "./demo";
+import { eventPagePath } from "@/lib/agenda/calendar";
 import { SAVED_ITEM_LIMITS } from "@/lib/constants";
 import { ensureMemberSlugs } from "@/lib/members/slug";
-import { normalizeSiteSettings } from "@/lib/site-config";
+import { normalizeSiteSettings, normalizeStringList } from "@/lib/site-config";
 import { isUuid } from "@/lib/utils/id";
 import { isSchemaOutdatedError } from "@/lib/database/errors";
 import { SITE_TIME_ZONE, zonedParts } from "@/lib/utils/time";
@@ -43,21 +46,83 @@ export type PublicMessage = Pick<
   "id" | "content" | "likes" | "created_at"
 >;
 
-type PublicListOptions = {
+export type MediaListFilter = {
+  /** Batasi ke satu album (halaman album). */
+  albumId?: string;
+  /** Filter jenis media (foto/video). */
+  type?: MediaRow["type"];
+  /** Filter kategori media. */
+  category?: string;
+};
+
+export type PublishedPostFilter = {
+  /** Filter kategori artikel. */
+  category?: string;
+  /** Filter satu tag artikel. */
+  tag?: string;
+};
+
+type PublicListOptions = MediaListFilter & {
   limit?: number;
   offset?: number;
   pinnedOnly?: boolean;
-  /** Batasi ke satu album (halaman album). */
-  albumId?: string;
   /** Badge carousel di kartu; matikan untuk daftar besar tanpa UI (sitemap). */
   slideCounts?: boolean;
 };
 
+const CATEGORY_FILTER_LIMIT = 24;
+
+function extractCategories(
+  rows: ReadonlyArray<{ category: string | null }>,
+): string[] {
+  return normalizeStringList(
+    rows.flatMap((row) => (row.category ? [row.category] : [])),
+    CATEGORY_FILTER_LIMIT,
+  );
+}
+
+function matchesMediaFilter(
+  item: MediaRow,
+  filter: MediaListFilter & { pinnedOnly?: boolean },
+): boolean {
+  if (filter.pinnedOnly && !item.is_pinned) return false;
+  if (filter.albumId && item.album_id !== filter.albumId) return false;
+  if (filter.type && item.type !== filter.type) return false;
+  if (
+    filter.category &&
+    item.category?.toLocaleLowerCase() !== filter.category.toLocaleLowerCase()
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function matchesPostFilter(
+  post: BlogPostRow,
+  filter?: PublishedPostFilter,
+): boolean {
+  if (
+    filter?.category &&
+    post.category?.toLocaleLowerCase() !== filter.category.toLocaleLowerCase()
+  ) {
+    return false;
+  }
+  if (
+    filter?.tag &&
+    !(post.tags ?? []).some(
+      (tag) => tag.toLocaleLowerCase() === filter.tag!.toLocaleLowerCase(),
+    )
+  ) {
+    return false;
+  }
+  return true;
+}
+
 const PUBLIC_MEDIA_COLUMNS =
-  "id, type, title, category, url, mime_type, thumbnail_url, caption, uploader_name, status, is_pinned, allow_comments, source, width, height, created_at" as const;
+  "id, type, title, category, url, mime_type, caption, uploader_name, status, is_pinned, allow_comments, source, width, height, created_at" as const;
 
 const PUBLIC_POST_COLUMNS =
-  "id, title, slug, excerpt, category, tags, content_html, cover_image_url, status, author_name, views, published_at, created_at, updated_at" as const;
+  "id, title, slug, excerpt, category, tags, content_html, cover_image_url, status, author_name, published_at, created_at, updated_at" as const;
 
 /** album_id sengaja tidak di kolom umum: galeri tetap jalan sebelum schema.sql terbaru. */
 function publicMediaRow(
@@ -262,29 +327,67 @@ export async function getMemberCount(): Promise<number> {
   );
 }
 
-export async function getApprovedMediaCount(albumId?: string): Promise<number> {
+export async function getApprovedMediaCount(
+  options?: string | MediaListFilter,
+): Promise<number> {
+  const filter: MediaListFilter =
+    typeof options === "string" ? { albumId: options } : (options ?? {});
   if (!isSupabaseConfigured()) {
-    return albumId
-      ? DEMO_MEDIA.filter((item) => item.album_id === albumId).length
-      : DEMO_MEDIA.length;
+    return DEMO_MEDIA.filter((item) => matchesMediaFilter(item, filter)).length;
   }
   let query = createPublicSupabase()
     .from("media")
     .select("id", { count: "exact", head: true })
     .eq("status", "approved");
-  if (albumId) query = query.eq("album_id", albumId);
+  if (filter.albumId) query = query.eq("album_id", filter.albumId);
+  if (filter.type) query = query.eq("type", filter.type);
+  if (filter.category) query = query.eq("category", filter.category);
   return unwrapCount("media-count", await query);
 }
 
-export async function getPublishedPostCount(): Promise<number> {
-  if (!isSupabaseConfigured()) return DEMO_POSTS.length;
-  return unwrapCount(
-    "post-count",
+export async function getApprovedMediaCategories(): Promise<string[]> {
+  if (!isSupabaseConfigured()) return extractCategories(DEMO_MEDIA);
+  const data = unwrap(
+    "media-categories",
+    await createPublicSupabase()
+      .from("media")
+      .select("category")
+      .eq("status", "approved")
+      .not("category", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(200),
+  );
+  return extractCategories(data ?? []);
+}
+
+export async function getPublishedPostCount(
+  filter?: PublishedPostFilter,
+): Promise<number> {
+  if (!isSupabaseConfigured()) {
+    return DEMO_POSTS.filter((post) => matchesPostFilter(post, filter)).length;
+  }
+  let query = createPublicSupabase()
+    .from("blog_posts")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "published");
+  if (filter?.category) query = query.eq("category", filter.category);
+  if (filter?.tag) query = query.contains("tags", [filter.tag]);
+  return unwrapCount("post-count", await query);
+}
+
+export async function getPublishedPostCategories(): Promise<string[]> {
+  if (!isSupabaseConfigured()) return extractCategories(DEMO_POSTS);
+  const data = unwrap(
+    "post-categories",
     await createPublicSupabase()
       .from("blog_posts")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "published"),
+      .select("category")
+      .eq("status", "published")
+      .not("category", "is", null)
+      .order("published_at", { ascending: false })
+      .limit(200),
   );
+  return extractCategories(data ?? []);
 }
 
 /** Media publik approved; homepage dapat meminta hanya item yang dipin. */
@@ -293,12 +396,13 @@ export async function getApprovedMedia({
   offset = 0,
   pinnedOnly = false,
   albumId,
+  type,
+  category,
   slideCounts = true,
 }: PublicListOptions = {}): Promise<MediaWithSlideCount[]> {
   if (!isSupabaseConfigured()) {
-    const media = DEMO_MEDIA.filter(
-      (item) =>
-        (!pinnedOnly || item.is_pinned) && (!albumId || item.album_id === albumId),
+    const media = DEMO_MEDIA.filter((item) =>
+      matchesMediaFilter(item, { pinnedOnly, albumId, type, category }),
     ).slice(offset, offset + limit);
     return slideCounts ? withSlideCounts(media) : media;
   }
@@ -308,6 +412,8 @@ export async function getApprovedMedia({
     .eq("status", "approved");
   if (pinnedOnly) query = query.eq("is_pinned", true);
   if (albumId) query = query.eq("album_id", albumId);
+  if (type) query = query.eq("type", type);
+  if (category) query = query.eq("category", category);
   const data = unwrap(
     "approved-media",
     await query
@@ -384,16 +490,23 @@ const POST_CARD_COLUMNS =
 export async function getPublishedPosts(
   limit = 30,
   offset = 0,
+  filter?: PublishedPostFilter,
 ): Promise<PublicPostCard[]> {
   if (!isSupabaseConfigured()) {
-    return DEMO_POSTS.slice(offset, offset + limit);
+    return DEMO_POSTS.filter((post) => matchesPostFilter(post, filter)).slice(
+      offset,
+      offset + limit,
+    );
   }
+  let query = createPublicSupabase()
+    .from("blog_posts")
+    .select(POST_CARD_COLUMNS)
+    .eq("status", "published");
+  if (filter?.category) query = query.eq("category", filter.category);
+  if (filter?.tag) query = query.contains("tags", [filter.tag]);
   const data = unwrap(
     "published-posts",
-    await createPublicSupabase()
-      .from("blog_posts")
-      .select(POST_CARD_COLUMNS)
-      .eq("status", "published")
+    await query
       .order("published_at", { ascending: false })
       .range(offset, offset + limit - 1),
   );
@@ -531,9 +644,9 @@ export async function getPublicMessages({
   return data ?? [];
 }
 
-/** Hasil pencarian situs (Spotlight island) lintas media, blog, dan anggota. */
+/** Hasil pencarian situs (Spotlight island) lintas anggota, media, blog, album, dan agenda. */
 export type SiteSearchResult = {
-  kind: "media" | "blog" | "member";
+  kind: "media" | "blog" | "member" | "album" | "event";
   id: string;
   title: string;
   subtitle: string | null;
@@ -546,11 +659,15 @@ const SEARCH_KIND_ORDER: Record<SiteSearchResult["kind"], number> = {
   member: 0,
   media: 1,
   blog: 2,
+  album: 3,
+  event: 4,
 };
 
 function searchHref(row: SiteSearchRow): string {
   if (row.kind === "member") return `/profil/${row.slug}`;
   if (row.kind === "blog") return `/blog/${row.slug}`;
+  if (row.kind === "album") return `/album/${row.slug}`;
+  if (row.kind === "event") return eventPagePath(row.id);
   return `/pin/${row.id}`;
 }
 
@@ -586,6 +703,24 @@ function demoSearch(needle: string): SiteSearchRow[] {
         subtitle: p.category ?? null,
         slug: p.slug,
       })),
+    ...DEMO_ALBUMS.filter((a) => matches(a.title, a.description))
+      .slice(0, SEARCH_LIMIT_PER_KIND)
+      .map((a) => ({
+        kind: "album" as const,
+        id: a.id,
+        title: a.title,
+        subtitle: a.description ?? null,
+        slug: a.slug,
+      })),
+    ...DEMO_EVENTS.filter((e) => e.is_published && matches(e.title, e.location, e.description))
+      .slice(0, SEARCH_LIMIT_PER_KIND)
+      .map((e) => ({
+        kind: "event" as const,
+        id: e.id,
+        title: e.title,
+        subtitle: e.location ?? null,
+        slug: null,
+      })),
   ];
 }
 
@@ -612,7 +747,7 @@ export async function searchSiteContent(
       );
 
   return rows
-    .filter((row) => row.kind === "media" || row.slug)
+    .filter((row) => row.kind === "media" || row.kind === "event" || row.slug)
     .sort((a, b) => SEARCH_KIND_ORDER[a.kind] - SEARCH_KIND_ORDER[b.kind])
     .map((row) => ({
       kind: row.kind,

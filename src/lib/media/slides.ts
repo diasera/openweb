@@ -7,12 +7,12 @@ import type { MediaRow, MediaSlideRow } from "@/lib/types/database";
  */
 export type MediaSlide = Pick<
   MediaSlideRow,
-  "id" | "type" | "url" | "mime_type" | "thumbnail_url" | "width" | "height"
+  "id" | "type" | "url" | "mime_type" | "width" | "height"
 >;
 
 /** Kolom slide yang boleh dibaca anon (sinkron dengan grant di schema.sql). */
 export const PUBLIC_MEDIA_SLIDE_COLUMNS =
-  "id, media_id, position, type, url, mime_type, thumbnail_url, width, height" as const;
+  "id, media_id, position, type, url, mime_type, width, height" as const;
 
 /** Daftar/kartu cukup tahu jumlah item untuk badge carousel. */
 export type MediaWithSlideCount = MediaRow & { slide_count?: number };
@@ -25,7 +25,6 @@ export function coverSlide(
     type: media.type,
     url: media.url,
     mime_type: media.mime_type,
-    thumbnail_url: media.thumbnail_url,
     width: media.width,
     height: media.height,
   };
@@ -54,12 +53,11 @@ export interface StoredMediaSource {
   readUrl: string;
   type: MediaSlide["type"];
   mimeType: string | null;
-  thumbnailUrl: string | null;
   width: number | null;
   height: number | null;
 }
 
-/** Gambar diam yang mewakili slide (poster untuk video). */
-export function slidePreviewUrl(slide: Pick<MediaSlide, "type" | "url" | "thumbnail_url">) {
-  return slide.type === "video" ? slide.thumbnail_url : slide.url;
+/** Gambar diam yang mewakili slide (hanya untuk foto). */
+export function slidePreviewUrl(slide: Pick<MediaSlide, "type" | "url">) {
+  return slide.type === "video" ? null : slide.url || null;
 }

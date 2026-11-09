@@ -1,10 +1,11 @@
 import "server-only";
 import { createPublicSupabase, isSupabaseConfigured } from "@/lib/supabase/public";
-import { DEMO_MEDIA, DEMO_POSTS } from "@/lib/data/demo";
-import type { MemberRow } from "@/lib/types/database";
+import { DEMO_MEDIA, DEMO_MEMBERS, DEMO_POSTS } from "@/lib/data/demo";
+import type { BlogPostRow, MediaRow, MemberRow } from "@/lib/types/database";
 import { calendarKey, siteDateKey, zonedParts } from "@/lib/utils/time";
 import { textMentionsMember } from "./name-match";
 import { blogMentionValues, mediaMentionValues } from "./mention-values";
+import { ensureMemberSlugs } from "./slug";
 
 export type MemberActivityItem =
   | {
@@ -15,9 +16,8 @@ export type MemberActivityItem =
       description: string | null;
       occurredAt: string;
       mediaType: "photo" | "video";
-      /** URL media asli; video tanpa poster dipratinjau dari frame pertamanya. */
+      /** URL media asli; video dipratinjau dari frame pertamanya. */
       mediaUrl: string;
-      thumbnailUrl: string | null;
     }
   | {
       kind: "blog";
@@ -36,7 +36,6 @@ function mediaItem(media: {
   caption: string | null;
   uploader_name: string | null;
   url: string;
-  thumbnail_url: string | null;
   created_at: string;
 }): MemberActivityItem {
   return {
@@ -48,7 +47,6 @@ function mediaItem(media: {
     occurredAt: media.created_at,
     mediaType: media.type,
     mediaUrl: media.url,
-    thumbnailUrl: media.thumbnail_url,
   };
 }
 
@@ -96,7 +94,7 @@ async function fallbackScan(member: MemberRow): Promise<MemberActivityItem[]> {
     sb
       .from("media")
       .select(
-        "id, type, title, category, caption, uploader_name, url, thumbnail_url, created_at",
+        "id, type, title, category, caption, uploader_name, url, created_at",
       )
       .eq("status", "approved")
       .eq("source", "admin")
@@ -154,7 +152,7 @@ export async function getMemberActivity(
     mediaIds.length > 0
       ? sb
           .from("media")
-          .select("id, type, title, caption, uploader_name, url, thumbnail_url, created_at")
+          .select("id, type, title, caption, uploader_name, url, created_at")
           .in("id", mediaIds)
           .eq("status", "approved")
       : Promise.resolve({ data: [] }),
@@ -170,6 +168,103 @@ export async function getMemberActivity(
     ...(mediaResult.data ?? []).map(mediaItem),
     ...(blogResult.data ?? []).map(blogItem),
   ]);
+}
+
+type MentionLookupSource =
+  | {
+      column: "media_id";
+      id: string;
+      values: unknown[];
+    }
+  | {
+      column: "blog_post_id";
+      id: string;
+      values: unknown[];
+    };
+
+function matchMembersByText(
+  members: readonly MemberRow[],
+  values: unknown[],
+): MemberRow[] {
+  return ensureMemberSlugs(members).filter((member) =>
+    textMentionsMember(member.name, values),
+  );
+}
+
+async function resolveMentionedMembers(
+  source: MentionLookupSource,
+): Promise<MemberRow[]> {
+  const hasText = source.values.some((value) =>
+    Array.isArray(value)
+      ? value.length > 0
+      : typeof value === "string" && value.trim().length > 0,
+  );
+  if (!hasText) return [];
+  if (!isSupabaseConfigured()) {
+    return matchMembersByText(DEMO_MEMBERS, source.values);
+  }
+
+  const sb = createPublicSupabase();
+  const { data: mentions, error } = await sb
+    .from("member_mentions")
+    .select("member_id")
+    .eq(source.column, source.id)
+    .limit(60);
+
+  if (!error && mentions && mentions.length > 0) {
+    const memberIds = [...new Set(mentions.map((item) => item.member_id))];
+    const { data: members } = await sb
+      .from("members")
+      .select("*")
+      .in("id", memberIds)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true });
+    return ensureMemberSlugs(members ?? []);
+  }
+
+  const { data: allMembers } = await sb
+    .from("members")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
+  return matchMembersByText(allMembers ?? [], source.values);
+}
+
+/** Anggota yang disebut pada pin admin; kiriman pengunjung tidak menandai profil. */
+export async function getMentionedMembersForMedia(
+  media: Pick<
+    MediaRow,
+    "id" | "source" | "title" | "category" | "caption" | "uploader_name"
+  >,
+): Promise<MemberRow[]> {
+  if (media.source !== "admin") return [];
+  return resolveMentionedMembers({
+    column: "media_id",
+    id: media.id,
+    values: mediaMentionValues(media),
+  });
+}
+
+/** Anggota yang disebut pada artikel terbit. */
+export async function getMentionedMembersForPost(
+  post: Pick<
+    BlogPostRow,
+    | "id"
+    | "title"
+    | "excerpt"
+    | "category"
+    | "tags"
+    | "author_name"
+    | "content_html"
+  >,
+): Promise<MemberRow[]> {
+  return resolveMentionedMembers({
+    column: "blog_post_id",
+    id: post.id,
+    values: blogMentionValues(post),
+  });
 }
 
 /** Sel satu hari pada grafik aktivitas. */

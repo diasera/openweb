@@ -28,7 +28,6 @@ function demoSummaries(): AlbumSummaryRow[] {
       media_count: media.length,
       cover_url: cover?.url || null,
       cover_type: cover?.type ?? null,
-      cover_thumbnail_url: cover?.thumbnail_url ?? null,
       latest_media_at: cover?.created_at ?? null,
     };
   });

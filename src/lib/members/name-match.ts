@@ -5,6 +5,7 @@ const IGNORED_NAME_PARTS = new Set([
   "mohammad",
   "mohamad",
   "mhd",
+  "anggota",
 ]);
 
 /** Bentuk pencarian yang stabil untuk tanda baca, kapital, dan diakritik. */

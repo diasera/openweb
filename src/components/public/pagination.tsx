@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { MotionLink } from "@/components/motion";
 import { cn } from "@/lib/utils/cn";
+import { buildQueryHref } from "@/lib/utils/url";
 
 /** Jendela nomor halaman ringkas: 1 … (current-1) current (current+1) … last. */
 function pageWindow(current: number, total: number): Array<number | "gap"> {
@@ -24,13 +25,10 @@ function pageHref(
   page: number,
   query: Record<string, string | undefined>,
 ): string {
-  const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(query)) {
-    if (value && key !== "page") params.set(key, value);
-  }
-  if (page > 1) params.set("page", String(page));
-  const search = params.toString();
-  return search ? `${basePath}?${search}` : basePath;
+  return buildQueryHref(basePath, {
+    ...query,
+    page: page > 1 ? String(page) : undefined,
+  });
 }
 
 /**

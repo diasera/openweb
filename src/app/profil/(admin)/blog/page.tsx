@@ -116,7 +116,6 @@ export default async function BlogAdminPage({
                 <>
                   Diperbarui <RelativeTime iso={post.updated_at} />
                   {post.author_name && ` · ${post.author_name}`}
-                  {post.views > 0 && ` · ${post.views}× dibaca`}
                 </>
               }
               actions={

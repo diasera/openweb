@@ -25,8 +25,8 @@ type SweepTarget = {
 };
 
 /**
- * Media dirujuk lewat url (objek utama) maupun thumbnail_url (poster video),
- * baik di baris pin (`media`) maupun slide carousel (`media_slides`).
+ * Media dirujuk lewat kolom url di baris pin (`media`) maupun slide carousel
+ * (`media_slides`).
  */
 async function referencedMediaPaths(paths: string[]) {
   const urls = new Map(
@@ -34,21 +34,16 @@ async function referencedMediaPaths(paths: string[]) {
   );
   const sb = createAdminSupabase();
   const candidates = [...urls.keys()];
-  const [pinUrls, pinPosters, slideUrls, slidePosters] = await Promise.all([
+  const [pinUrls, slideUrls] = await Promise.all([
     sb.from("media").select("url").in("url", candidates),
-    sb.from("media").select("thumbnail_url").in("thumbnail_url", candidates),
     sb.from("media_slides").select("url").in("url", candidates),
-    sb.from("media_slides").select("thumbnail_url").in("thumbnail_url", candidates),
   ]);
-  if (pinUrls.error || pinPosters.error) return null;
+  if (pinUrls.error) return null;
   // Tabel slide belum dimigrasi berarti belum ada slide; error lain fail-closed.
-  const slideError = slideUrls.error ?? slidePosters.error;
-  if (slideError && !isSchemaOutdatedError(slideError)) return null;
+  if (slideUrls.error && !isSchemaOutdatedError(slideUrls.error)) return null;
   const referencedUrls = [
     ...pinUrls.data.map((row) => row.url),
-    ...pinPosters.data.map((row) => row.thumbnail_url),
     ...(slideUrls.data ?? []).map((row) => row.url),
-    ...(slidePosters.data ?? []).map((row) => row.thumbnail_url),
   ];
   return new Set(
     referencedUrls.flatMap((url) => (url ? (urls.get(url) ?? []) : [])),

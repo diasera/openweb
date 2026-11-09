@@ -47,8 +47,6 @@ function draftSlide(draft: MediaDraft): MediaSlide {
     type: draft.isVideo ? "video" : "photo",
     url: draft.preview,
     mime_type: null,
-    // Poster video lama tetap dipakai; file baru memakai frame pertamanya.
-    thumbnail_url: draft.stored && !draft.isEdited ? draft.stored.thumbnailUrl : null,
     width: draft.dims?.width ?? null,
     height: draft.dims?.height ?? null,
   };
