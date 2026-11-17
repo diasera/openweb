@@ -1,6 +1,7 @@
 "use client";
 
 import { Share, Bookmark } from "lucide-react";
+import { buttonClass } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { cn } from "@/lib/utils/cn";
 import { useToast } from "@/components/ui/toast";
@@ -11,19 +12,33 @@ import {
   type SavedKind,
 } from "@/lib/hooks/use-saved-items";
 
-/** Tombol bagikan (Web Share API / salin tautan). Dipakai Detail Pin & Artikel. */
-export function ShareButton({ title }: { title?: string }) {
+/**
+ * Pusat tombol bagikan (Web Share API / salin tautan). Dipakai oleh Detail Pin,
+ * Artikel Blog, Profil Anggota, dan Kartu Agenda.
+ */
+export function ShareButton({
+  title,
+  href,
+  variant = "icon",
+  label = "Bagikan",
+}: {
+  title?: string;
+  href?: string;
+  variant?: "icon" | "outlineSm";
+  label?: string;
+}) {
   const { toast } = useToast();
 
   async function share() {
-    const url = window.location.href;
+    const url = href
+      ? new URL(href, window.location.origin).toString()
+      : window.location.href;
     if (navigator.share) {
       try {
         await navigator.share({ title, url });
         return;
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
-        // Implementasi Web Share parsial tetap mendapat fallback clipboard.
       }
     }
     try {
@@ -36,11 +51,23 @@ export function ShareButton({ title }: { title?: string }) {
       toast.error("Tautan tidak dapat disalin");
     }
   }
+
+  if (variant === "outlineSm") {
+    return (
+      <button
+        type="button"
+        onClick={share}
+        aria-label={title ? `${label}: ${title}` : label}
+        className={buttonClass({ variant: "outline", size: "sm" })}
+      >
+        <Share className="h-3.5 w-3.5" aria-hidden="true" />
+        {label}
+      </button>
+    );
+  }
+
   return (
-    <IconButton
-      onClick={share}
-      aria-label="Bagikan"
-    >
+    <IconButton onClick={share} aria-label={label}>
       <Share className="h-5 w-5" aria-hidden="true" />
     </IconButton>
   );

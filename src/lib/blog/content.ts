@@ -1,6 +1,7 @@
 import "server-only";
 import sanitizeHtml from "sanitize-html";
 import { normalizeArticleResourceHref } from "@/lib/utils/url";
+import { normalizeCalloutTone } from "./callout";
 import { isProseMirrorDoc } from "./doc";
 
 function normalizeSpaces(value: string) {
@@ -21,6 +22,7 @@ const ARTICLE_TAGS = [
   "ol",
   "li",
   "blockquote",
+  "aside",
   "pre",
   "code",
   "br",
@@ -62,6 +64,7 @@ export function normalizeArticleHtml(html: string) {
       h4: ["style"],
       h5: ["style"],
       h6: ["style"],
+      aside: ["data-callout"],
       code: ["class"],
     },
     allowedClasses: {
@@ -76,6 +79,12 @@ export function normalizeArticleHtml(html: string) {
     allowedSchemesByTag: { img: ["https", "http"] },
     allowProtocolRelative: false,
     transformTags: {
+      aside: (_tagName, attributes) => ({
+        tagName: "aside",
+        attribs: {
+          "data-callout": normalizeCalloutTone(attributes["data-callout"]),
+        },
+      }),
       a: (_tagName, attributes) => {
         const href = normalizeArticleResourceHref(attributes.href);
         if (!href) return { tagName: "a", attribs: {} };

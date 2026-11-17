@@ -17,15 +17,20 @@ import {
   AlignRight,
   Bold,
   Check,
+  Code as CodeIcon,
+  FileCode2,
   Heading1,
   Heading2,
+  Heading3,
   ImageIcon,
+  Info,
   Italic,
   Link2,
   Link2Off,
   List,
   ListOrdered,
   LoaderCircle,
+  Minus,
   Quote,
   Redo2,
   Strikethrough,
@@ -38,6 +43,13 @@ import { PhotoEditor } from "@/components/media-editor";
 import { SkeletonEditor, SkeletonScreen } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import { requestJson } from "@/lib/api/client";
+import {
+  CALLOUT_LABELS,
+  CALLOUT_TONES,
+  normalizeCalloutTone,
+  type CalloutTone,
+} from "@/lib/blog/callout";
+import { Callout } from "@/lib/blog/callout-extension";
 import { isProseMirrorDoc } from "@/lib/blog/doc";
 import { IMAGE_UPLOAD_ACCEPT } from "@/lib/constants";
 import { canEditPhoto } from "@/lib/media-editor";
@@ -62,13 +74,20 @@ function toolbarState(editor: Editor) {
   return {
     heading1: editor.isActive("heading", { level: 1 }),
     heading2: editor.isActive("heading", { level: 2 }),
+    heading3: editor.isActive("heading", { level: 3 }),
     bold: editor.isActive("bold"),
     italic: editor.isActive("italic"),
     underline: editor.isActive("underline"),
     strike: editor.isActive("strike"),
+    inlineCode: editor.isActive("code"),
     bulletList: editor.isActive("bulletList"),
     orderedList: editor.isActive("orderedList"),
     blockquote: editor.isActive("blockquote"),
+    codeBlock: editor.isActive("codeBlock"),
+    callout: editor.isActive("callout"),
+    calloutTone: editor.isActive("callout")
+      ? normalizeCalloutTone(editor.getAttributes("callout").tone)
+      : ("info" as CalloutTone),
     alignLeft: editor.isActive({ textAlign: "left" }),
     alignCenter: editor.isActive({ textAlign: "center" }),
     alignRight: editor.isActive({ textAlign: "right" }),
@@ -137,6 +156,7 @@ export function RichEditor({
     },
     extensions: [
       StarterKit.configure({ link: { openOnClick: false } }),
+      Callout,
       Image,
       Placeholder.configure({ placeholder: "Mulai menulis cerita…" }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
@@ -252,17 +272,22 @@ export function RichEditor({
             <ToolGroup>
               <Tool icon={Heading1} title="Judul 1" active={active.heading1} onClick={() => chain().toggleHeading({ level: 1 }).run()} />
               <Tool icon={Heading2} title="Judul 2" active={active.heading2} onClick={() => chain().toggleHeading({ level: 2 }).run()} />
+              <Tool icon={Heading3} title="Judul 3" active={active.heading3} onClick={() => chain().toggleHeading({ level: 3 }).run()} />
             </ToolGroup>
             <ToolGroup>
               <Tool icon={Bold} title="Tebal" active={active.bold} onClick={() => chain().toggleBold().run()} />
               <Tool icon={Italic} title="Miring" active={active.italic} onClick={() => chain().toggleItalic().run()} />
               <Tool icon={UnderlineIcon} title="Garis bawah" active={active.underline} onClick={() => chain().toggleUnderline().run()} />
               <Tool icon={Strikethrough} title="Coret" active={active.strike} onClick={() => chain().toggleStrike().run()} />
+              <Tool icon={CodeIcon} title="Kode sebaris" active={active.inlineCode} onClick={() => chain().toggleCode().run()} />
             </ToolGroup>
             <ToolGroup>
               <Tool icon={List} title="Poin" active={active.bulletList} onClick={() => chain().toggleBulletList().run()} />
               <Tool icon={ListOrdered} title="Bernomor" active={active.orderedList} onClick={() => chain().toggleOrderedList().run()} />
               <Tool icon={Quote} title="Kutipan" active={active.blockquote} onClick={() => chain().toggleBlockquote().run()} />
+              <Tool icon={Info} title="Kotak sorotan" active={active.callout} onClick={() => chain().toggleCallout("info").run()} />
+              <Tool icon={FileCode2} title="Blok kode" active={active.codeBlock} onClick={() => chain().toggleCodeBlock().run()} />
+              <Tool icon={Minus} title="Garis pemisah" onClick={() => chain().setHorizontalRule().run()} />
             </ToolGroup>
             <ToolGroup>
               <Tool icon={AlignLeft} title="Rata kiri" active={active.alignLeft} onClick={() => chain().setTextAlign("left").run()} />
@@ -328,6 +353,38 @@ export function RichEditor({
                 />
               )}
               <Tool icon={X} title="Tutup" onClick={() => setLinkDraft(null)} />
+            </div>
+          )}
+
+          {active.callout && (
+            <div className="border-border/70 animate-fade-in flex flex-wrap items-center gap-1.5 border-t px-3 py-1.5">
+              <span className="text-muted mr-1 text-caption2 font-semibold uppercase tracking-wide">
+                Gaya sorotan:
+              </span>
+              {CALLOUT_TONES.map((tone) => (
+                <button
+                  key={tone}
+                  type="button"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => chain().setCalloutTone(tone).run()}
+                  className={cn(
+                    "motion-pressable rounded-full px-2.5 py-1 text-caption1 font-semibold transition-colors",
+                    active.calloutTone === tone
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-surface-2 text-muted hover:text-foreground",
+                  )}
+                >
+                  {CALLOUT_LABELS[tone]}
+                </button>
+              ))}
+              <button
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => chain().unsetCallout().run()}
+                className="text-muted hover:text-foreground ml-auto px-2 py-1 text-caption1 font-medium"
+              >
+                Lepas kotak
+              </button>
             </div>
           )}
         </div>

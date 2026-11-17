@@ -85,6 +85,25 @@ export function googleCalendarUrl(event: CalendarEvent, pageUrl: string): string
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
+/** Tautan "tambah ke Outlook Web / Office 365". */
+export function outlookCalendarUrl(event: CalendarEvent, pageUrl: string): string {
+  const params = new URLSearchParams({
+    path: "/calendar/action/compose",
+    rru: "addevent",
+    subject: event.title,
+    startdt: new Date(Date.parse(event.starts_at)).toISOString(),
+    enddt: new Date(eventEndMs(event)).toISOString(),
+    body: eventDetails(event, pageUrl),
+    location: event.location ?? "",
+  });
+  return `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`;
+}
+
+/** Tautan pencarian lokasi acara di Google Maps. */
+export function eventMapsUrl(location: string): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location.trim())}`;
+}
+
 export function eventAnchor(id: string): string {
   return `acara-${id}`;
 }

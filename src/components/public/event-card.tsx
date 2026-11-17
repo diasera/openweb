@@ -1,20 +1,30 @@
-import { ExternalLink, MapPin } from "lucide-react";
+import { ArrowUpRight, ExternalLink, MapPin } from "lucide-react";
 import { MotionLink } from "@/components/motion";
 import { cardClass } from "@/components/ui/card";
-import { EventCountdown } from "@/components/public/event-countdown";
+import {
+  EventCountdown,
+  EventStatusBadge,
+} from "@/components/public/event-countdown";
 import { AddToCalendar } from "@/components/public/add-to-calendar";
+import { ShareButton } from "@/components/public/share-save";
 import type { PublicEvent } from "@/lib/data";
 import {
   eventAnchor,
   eventIcsPath,
-  googleCalendarUrl,
+  eventMapsUrl,
   eventPagePath,
+  googleCalendarUrl,
+  outlookCalendarUrl,
 } from "@/lib/agenda/calendar";
 import { eventDateTile, formatEventSchedule } from "@/lib/utils/time";
 import { isExternalHref, normalizeNotificationHref } from "@/lib/utils/url";
 import { cn } from "@/lib/utils/cn";
 
-/** Kartu acara: ubin tanggal, jadwal, lokasi, hitung mundur, dan tombol kalender. */
+/**
+ * Kartu acara bergaya Luma: ubin tanggal iOS, lencana status waktu nyata,
+ * tautan lokasi langsung ke Peta, hitung mundur, ekspor multi-kalender, dan
+ * pembagi tautan acara spesifik.
+ */
 export function EventCard({
   event,
   siteUrl,
@@ -29,7 +39,8 @@ export function EventCard({
   album?: { slug: string; title: string } | null;
 }) {
   const tile = eventDateTile(event.starts_at);
-  const pageUrl = new URL(eventPagePath(event.id), siteUrl).toString();
+  const relativePath = eventPagePath(event.id);
+  const pageUrl = new URL(relativePath, siteUrl).toString();
   const safeHref = normalizeNotificationHref(event.url);
   const externalLink = safeHref ? isExternalHref(safeHref) : false;
 
@@ -40,8 +51,7 @@ export function EventCard({
         "elevated",
         cn(
           "scroll-mt-24 p-4",
-          // Kartu unggulan beranda: permukaan bercahaya warna utama + aksen.
-          featured && "aurora relative overflow-hidden sm:p-6",
+          featured && "aurora relative sm:p-6",
         ),
       )}
     >
@@ -66,23 +76,34 @@ export function EventCard({
             {tile.day}
           </span>
         </span>
+
         <div className="min-w-0 flex-1">
-          <h3
-            className={cn(
-              "font-display font-bold leading-snug",
-              featured ? "text-xl sm:text-title2" : "text-body",
-            )}
-          >
-            {event.title}
-          </h3>
+          <div className="flex items-start justify-between gap-2">
+            <h3
+              className={cn(
+                "font-display font-bold leading-snug",
+                featured ? "text-xl sm:text-title2" : "text-body",
+              )}
+            >
+              {event.title}
+            </h3>
+            {(!featured || past) && <EventStatusBadge event={event} />}
+          </div>
           <p className="text-muted mt-0.5 text-footnote">
             {formatEventSchedule(event.starts_at, event.ends_at)}
           </p>
           {event.location && (
-            <p className="text-muted mt-0.5 flex items-center gap-1 text-footnote">
+            <a
+              href={eventMapsUrl(event.location)}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`Buka lokasi ${event.location} di Peta`}
+              className="text-muted hover:text-primary-readable mt-0.5 inline-flex max-w-full items-center gap-1 text-footnote transition-colors"
+            >
               <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               <span className="truncate">{event.location}</span>
-            </p>
+              <ArrowUpRight className="h-3 w-3 shrink-0 opacity-70" aria-hidden="true" />
+            </a>
           )}
         </div>
       </div>
@@ -98,8 +119,15 @@ export function EventCard({
           <AddToCalendar
             icsHref={eventIcsPath(event.id)}
             googleHref={googleCalendarUrl(event, pageUrl)}
+            outlookHref={outlookCalendarUrl(event, pageUrl)}
           />
         )}
+        <ShareButton
+          title={event.title}
+          href={relativePath}
+          variant="outlineSm"
+          label="Bagikan"
+        />
         {safeHref && (
           <a
             href={safeHref}
@@ -112,7 +140,6 @@ export function EventCard({
         {album && (
           <MotionLink
             href={`/album/${album.slug}`}
-            prefetch={false}
             className="text-primary-readable px-2 text-sm font-semibold"
           >
             Lihat album →

@@ -1,11 +1,20 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { ChevronDown, LoaderCircle, Pause, Play, SkipBack, SkipForward } from "lucide-react";
+import {
+  ChevronDown,
+  ListMusic,
+  LoaderCircle,
+  Pause,
+  Play,
+  SkipBack,
+  SkipForward,
+} from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { MusicBars } from "@/components/public/music/music-bars";
 import { useMusic } from "@/components/public/music";
 import { formatClock } from "@/lib/utils/time";
+import { cn } from "@/lib/utils/cn";
 import styles from "../dynamic-island.module.css";
 
 export function MusicIslandView() {
@@ -53,6 +62,20 @@ export function MusicIslandView() {
           playing={music.isPlaying}
           className={styles.musicSignal}
         />
+        {music.tracks.length > 1 && (
+          <button
+            type="button"
+            aria-label={music.queueOpen ? "Sembunyikan daftar lagu" : "Tampilkan daftar lagu"}
+            aria-expanded={music.queueOpen}
+            onClick={music.toggleQueue}
+            className={cn(
+              styles.musicClose,
+              music.queueOpen && "bg-primary/15 text-primary-readable",
+            )}
+          >
+            <ListMusic className="h-4 w-4" />
+          </button>
+        )}
         <button
           type="button"
           aria-label="Tutup pemutar musik"
@@ -115,6 +138,54 @@ export function MusicIslandView() {
           <SkipForward className="size-5.25 fill-current" />
         </button>
       </div>
+
+      {music.queueOpen && music.tracks.length > 1 && (
+        <div
+          role="listbox"
+          aria-label="Daftar lagu"
+          className={styles.musicQueue}
+        >
+          {music.tracks.map((track, idx) => {
+            const activeTrack = idx === music.currentIndex;
+            return (
+              <button
+                key={track.id}
+                type="button"
+                role="option"
+                aria-selected={activeTrack}
+                onClick={() => run(() => music.playTrackAt(idx))}
+                className={cn(
+                  styles.musicQueueItem,
+                  activeTrack && styles.musicQueueItemActive,
+                )}
+              >
+                <span className="text-muted w-4 shrink-0 text-left text-caption2 tabular-nums">
+                  {activeTrack ? (
+                    <MusicBars playing={music.isPlaying} className="text-primary-readable scale-75" />
+                  ) : (
+                    idx + 1
+                  )}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-left">
+                  <span className="block truncate text-xs font-semibold">
+                    {track.title}
+                  </span>
+                  {track.artist && (
+                    <span className="text-muted block truncate text-[11px]">
+                      {track.artist}
+                    </span>
+                  )}
+                </span>
+                {track.duration_seconds ? (
+                  <span className="text-muted shrink-0 text-caption2 tabular-nums">
+                    {formatClock(track.duration_seconds)}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

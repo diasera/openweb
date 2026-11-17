@@ -216,6 +216,10 @@ export function DynamicIslandViewport({
             activity ? styles.activity : styles.route,
             shellView.kind === "notice" && styles.noticeActivity,
             shellView.kind === "music" && styles.musicActivity,
+            shellView.kind === "music" &&
+              music.queueOpen &&
+              music.tracks.length > 1 &&
+              styles.musicActivityQueue,
             shellView.kind === "expandedRoute" && styles.expandedRoute,
             shellView.kind === "expandedRoute" && event && styles.expandedRouteEvent,
           )}

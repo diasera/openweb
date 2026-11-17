@@ -2,7 +2,11 @@
 
 import { useNow } from "@/lib/hooks/use-now";
 import { countdownParts } from "@/lib/utils/time";
-import { eventPhase, type EventTiming } from "@/lib/agenda/status";
+import {
+  compactCountdown,
+  eventPhase,
+  type EventTiming,
+} from "@/lib/agenda/status";
 import { cn } from "@/lib/utils/cn";
 
 const UNITS = [
@@ -100,5 +104,39 @@ export function EventCountdown({
         </div>
       ))}
     </div>
+  );
+}
+
+/**
+ * Lencana status waktu nyata ringkas ("Berlangsung", "Besok", "H-5") untuk
+ * header kartu agenda bergaya Luma.
+ */
+export function EventStatusBadge({ event }: { event: EventTiming }) {
+  const current = useNow();
+  if (current === null) return null;
+  const phase = eventPhase(event, current);
+  if (phase === "past") {
+    return (
+      <span className="bg-surface-2 text-muted shrink-0 rounded-full px-2.5 py-0.5 text-caption2 font-semibold">
+        Selesai
+      </span>
+    );
+  }
+  const label = compactCountdown(event, current);
+  if (!label) return null;
+
+  if (phase === "ongoing") {
+    return (
+      <span className="bg-tone-green/15 text-tone-green-text inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-caption2 font-bold">
+        <span className="motion-live-dot size-1.75" aria-hidden="true" />
+        Berlangsung
+      </span>
+    );
+  }
+
+  return (
+    <span className="bg-primary/12 text-primary-readable shrink-0 rounded-full px-2.5 py-0.5 text-caption2 font-bold tabular-nums">
+      {label}
+    </span>
   );
 }

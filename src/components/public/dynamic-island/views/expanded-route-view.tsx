@@ -1,8 +1,7 @@
 "use client";
 
-import type { Route } from "next";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Bell, Search, type LucideIcon } from "lucide-react";
 import { ThemeToggle } from "@/components/public/theme-toggle";
 import { MusicQuickButton } from "@/components/public/music";
@@ -11,7 +10,7 @@ import {
   DESTINATION_ICONS,
   destinationIcon,
 } from "@/components/public/destination-icons";
-import { MotionLink } from "@/components/motion";
+import { MotionLink, useAppMotion } from "@/components/motion";
 import { iconButtonClass } from "@/components/ui/icon-button";
 import { Skeleton, SkeletonScreen, skeletonWave } from "@/components/ui/skeleton";
 import { ApiError, requestJson } from "@/lib/api/client";
@@ -31,6 +30,14 @@ const EXTRA_LINKS: ReadonlyArray<{ href: string; label: string }> = [
   { href: "/tentang", label: "Tentang" },
 ];
 
+const KIND_ORDER: ReadonlyArray<SiteSearchResult["kind"]> = [
+  "media",
+  "blog",
+  "member",
+  "event",
+  "album",
+];
+
 const KIND_LABEL: Record<SiteSearchResult["kind"], string> = {
   media: "Media",
   blog: "Artikel",
@@ -47,8 +54,11 @@ const KIND_ICON: Record<SiteSearchResult["kind"], LucideIcon> = {
   event: DESTINATION_ICONS["/agenda"],
 };
 
+type KindFilter = "all" | SiteSearchResult["kind"];
+
 /** Quick panel hasil tap island: navigasi + kontrol cepat ala Live Activity iOS.
- *  Saat diketik, panel berubah jadi Spotlight — hasil instan lintas konten. */
+ *  Saat diketik, panel berubah jadi Spotlight — hasil instan lintas konten
+ *  dengan dukungan navigasi panah keyboard dan penyaring kategori cepat. */
 export function ExpandedRouteView({
   brand,
   event,
@@ -62,8 +72,9 @@ export function ExpandedRouteView({
   autoFocusSearch?: boolean;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
+  const { navigate } = useAppMotion();
   const inputRef = useRef<HTMLInputElement>(null);
+  const resultsListRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SiteSearchResult[]>([]);
   // Kata kunci yang hasilnya sedang ditampilkan. Selama berbeda dengan input
@@ -71,13 +82,50 @@ export function ExpandedRouteView({
   // menampilkan "Tidak ada hasil" sebelum pencarian benar-benar berjalan.
   const [resultsFor, setResultsFor] = useState("");
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [kindFilter, setKindFilter] = useState<KindFilter>("all");
+  const [selection, setSelection] = useState<{ key: string; index: number }>({
+    key: "",
+    index: 0,
+  });
 
   const trimmed = query.trim();
   const spotlightActive = trimmed.length >= 2;
   const searching = spotlightActive && resultsFor !== trimmed;
-  // Saat kata kunci terlalu pendek, hasil lama disembunyikan lewat derive —
-  // tidak perlu setState sinkron di effect.
-  const visibleResults = spotlightActive ? results : [];
+
+  const rawResults = useMemo(
+    () => (spotlightActive ? results : []),
+    [results, spotlightActive],
+  );
+
+  const availableKinds = useMemo(() => {
+    const counts = new Map<SiteSearchResult["kind"], number>();
+    for (const item of rawResults) {
+      counts.set(item.kind, (counts.get(item.kind) ?? 0) + 1);
+    }
+    return KIND_ORDER.filter((kind) => (counts.get(kind) ?? 0) > 0).map((kind) => ({
+      kind,
+      count: counts.get(kind) ?? 0,
+    }));
+  }, [rawResults]);
+
+  const effectiveKind: KindFilter =
+    kindFilter !== "all" && availableKinds.some((entry) => entry.kind === kindFilter)
+      ? kindFilter
+      : "all";
+
+  const visibleResults = useMemo(
+    () =>
+      effectiveKind === "all"
+        ? rawResults
+        : rawResults.filter((item) => item.kind === effectiveKind),
+    [effectiveKind, rawResults],
+  );
+
+  const selectionScopeKey = `${trimmed}:${effectiveKind}`;
+  const selectedIndex =
+    selection.key === selectionScopeKey && visibleResults.length > 0
+      ? Math.min(selection.index, visibleResults.length - 1)
+      : 0;
 
   useEffect(() => {
     if (autoFocusSearch) inputRef.current?.focus({ preventScroll: true });
@@ -94,13 +142,11 @@ export function ExpandedRouteView({
           { signal: controller.signal },
           "Pencarian gagal. Coba lagi sebentar.",
         );
-        // requestJson menelan galat body (abort di tengah unduhan → `{}`).
         if (controller.signal.aborted) return;
         setResults(data.results ?? []);
         setSearchError(null);
       } catch (error) {
         if (controller.signal.aborted) return;
-        // 429/503 bukan "tidak ada hasil": tampilkan alasannya apa adanya.
         setResults([]);
         setSearchError(
           error instanceof ApiError
@@ -109,12 +155,43 @@ export function ExpandedRouteView({
         );
       }
       setResultsFor(trimmed);
-    }, 250);
+    }, 220);
     return () => {
       clearTimeout(timer);
       controller.abort();
     };
   }, [trimmed, spotlightActive]);
+
+  function moveSelection(nextIndex: number) {
+    if (visibleResults.length === 0) return;
+    const clamped =
+      ((nextIndex % visibleResults.length) + visibleResults.length) %
+      visibleResults.length;
+    setSelection({ key: selectionScopeKey, index: clamped });
+    requestAnimationFrame(() => {
+      const node = resultsListRef.current?.querySelector<HTMLElement>(
+        `[data-result-index="${clamped}"]`,
+      );
+      node?.scrollIntoView({ block: "nearest" });
+    });
+  }
+
+  function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (!spotlightActive || visibleResults.length === 0) return;
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      moveSelection(selectedIndex + 1);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      moveSelection(selectedIndex - 1);
+    } else if (event.key === "Home" && event.ctrlKey) {
+      event.preventDefault();
+      moveSelection(0);
+    } else if (event.key === "End" && event.ctrlKey) {
+      event.preventDefault();
+      moveSelection(visibleResults.length - 1);
+    }
+  }
 
   const links = [
     ...APP_TAB_ROUTES.map((tab) => ({
@@ -133,26 +210,31 @@ export function ExpandedRouteView({
     })),
   ];
 
+  const activeOptionId =
+    spotlightActive && visibleResults[selectedIndex]
+      ? `spotlight-opt-${visibleResults[selectedIndex]!.kind}-${visibleResults[selectedIndex]!.id}`
+      : undefined;
+
   return (
     <div className={styles.panel} role="dialog" aria-label="Panel cepat situs">
       <div className={styles.panelHeader}>
         <SiteLogo name={brand.siteName} url={brand.logoUrl} size={44} />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className={cn(styles.panelBrand, "font-display truncate")}>{brand.siteName}</p>
           {brand.tagline && <p className={styles.panelTagline}>{brand.tagline}</p>}
         </div>
       </div>
 
-      {/* Spotlight: ketik untuk mencari media, artikel, dan anggota. */}
+      {/* Spotlight: ketik untuk mencari media, artikel, anggota, album, dan agenda. */}
       <form
         className={styles.panelSearchForm}
         role="search"
         onSubmit={(event) => {
           event.preventDefault();
-          const first = visibleResults[0];
-          if (first) {
+          const chosen = visibleResults[selectedIndex] ?? visibleResults[0];
+          if (chosen) {
             onNavigate();
-            router.push(first.href as Route);
+            navigate(chosen.href);
           } else {
             inputRef.current?.blur();
           }
@@ -164,13 +246,60 @@ export function ExpandedRouteView({
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={handleSearchKeyDown}
           placeholder="Cari media, artikel, anggota, album, agenda…"
           aria-label="Cari di situs"
+          aria-activedescendant={activeOptionId}
+          aria-controls={spotlightActive ? "spotlight-results-list" : undefined}
           autoComplete="off"
           enterKeyHint="go"
           className={styles.panelSearchInput}
         />
+        {!query && (
+          <kbd
+            aria-hidden="true"
+            className="border-border text-muted hidden shrink-0 rounded-md border px-1.5 py-0.5 font-sans text-[10px] font-semibold pointer-fine:inline-block"
+          >
+            ⌘K
+          </kbd>
+        )}
       </form>
+
+      {spotlightActive && availableKinds.length > 1 && (
+        <div
+          role="tablist"
+          aria-label="Filter jenis hasil pencarian"
+          className="no-scrollbar mb-2 flex shrink-0 items-center gap-1 overflow-x-auto px-0.5"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={effectiveKind === "all"}
+            onClick={() => setKindFilter("all")}
+            className={cn(
+              styles.spotlightFilterChip,
+              effectiveKind === "all" && styles.spotlightFilterChipActive,
+            )}
+          >
+            Semua ({rawResults.length})
+          </button>
+          {availableKinds.map(({ kind, count }) => (
+            <button
+              key={kind}
+              type="button"
+              role="tab"
+              aria-selected={effectiveKind === kind}
+              onClick={() => setKindFilter(kind)}
+              className={cn(
+                styles.spotlightFilterChip,
+                effectiveKind === kind && styles.spotlightFilterChipActive,
+              )}
+            >
+              {KIND_LABEL[kind]} ({count})
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className={styles.panelBody}>
         {!spotlightActive && event && (
@@ -179,10 +308,13 @@ export function ExpandedRouteView({
 
         {spotlightActive ? (
           <div
+            id="spotlight-results-list"
+            ref={resultsListRef}
+            role="listbox"
+            aria-label="Hasil pencarian situs"
             className={cn(
               styles.panelResults,
               "transition-opacity",
-              // Hasil lama diredupkan selama kata kunci baru dicari.
               searching && visibleResults.length > 0 && "opacity-60",
             )}
             aria-live="polite"
@@ -203,15 +335,25 @@ export function ExpandedRouteView({
                 Tidak ada hasil untuk “{trimmed}”.
               </p>
             ) : (
-              visibleResults.map((result) => {
+              visibleResults.map((result, idx) => {
                 const KindIcon = KIND_ICON[result.kind];
+                const selected = idx === selectedIndex;
                 return (
                   <MotionLink
                     key={`${result.kind}-${result.id}`}
+                    id={`spotlight-opt-${result.kind}-${result.id}`}
+                    role="option"
+                    aria-selected={selected}
+                    data-result-index={idx}
                     href={result.href}
-                    prefetch={false}
+                    onMouseEnter={() =>
+                      setSelection({ key: selectionScopeKey, index: idx })
+                    }
                     onClick={onNavigate}
-                    className={styles.panelResult}
+                    className={cn(
+                      styles.panelResult,
+                      selected && styles.panelResultSelected,
+                    )}
                   >
                     <KindIcon className="size-4.5 shrink-0" aria-hidden="true" />
                     <span className="min-w-0 flex-1">
@@ -234,7 +376,6 @@ export function ExpandedRouteView({
               <MotionLink
                 key={link.href}
                 href={link.href}
-                prefetch={false}
                 onClick={onNavigate}
                 aria-current={link.active ? "page" : undefined}
                 className={cn(

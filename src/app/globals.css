@@ -518,6 +518,59 @@
   }
 }
 
+/* Blok sorotan editorial (<aside data-callout="...">) — satu pusat gaya untuk
+ * halaman baca publik (.article-content) sekaligus kanvas editor (.ProseMirror). */
+:is(.article-content, .ProseMirror) aside[data-callout] {
+  --callout-fill: var(--tone-blue);
+  --callout-ink: var(--tone-blue-text);
+  --callout-label: "Catatan";
+  position: relative;
+  margin-block: 1.25rem;
+  border-radius: var(--surface-radius-card);
+  border: 1px solid rgb(var(--callout-fill) / 0.28);
+  border-inline-start-width: 4px;
+  background-color: rgb(var(--callout-fill) / 0.08);
+  padding: 0.875rem 1.125rem;
+}
+
+:is(.article-content, .ProseMirror) aside[data-callout]::before {
+  content: var(--callout-label);
+  display: block;
+  margin-bottom: 0.25rem;
+  color: rgb(var(--callout-ink));
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+:is(.article-content, .ProseMirror) aside[data-callout] > :first-child {
+  margin-top: 0;
+}
+
+:is(.article-content, .ProseMirror) aside[data-callout] > :last-child {
+  margin-bottom: 0;
+}
+
+:is(.article-content, .ProseMirror) aside[data-callout="tips"] {
+  --callout-fill: var(--tone-green);
+  --callout-ink: var(--tone-green-text);
+  --callout-label: "Tips";
+}
+
+:is(.article-content, .ProseMirror) aside[data-callout="penting"] {
+  --callout-fill: var(--tone-purple);
+  --callout-ink: var(--tone-purple-text);
+  --callout-label: "Penting";
+}
+
+:is(.article-content, .ProseMirror) aside[data-callout="peringatan"] {
+  --callout-fill: var(--tone-orange);
+  --callout-ink: var(--tone-orange-text);
+  --callout-label: "Perhatian";
+}
+
 /*
  * Design tokens iOS + Pinterest.
  * Semua warna solid = channel RGB agar util Tailwind (mis. bg-primary/50) tetap jalan.

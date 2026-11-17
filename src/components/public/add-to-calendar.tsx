@@ -5,14 +5,16 @@ import { CalendarPlus, ChevronDown } from "lucide-react";
 import { buttonClass } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 
-/** Satu tombol "Tambah ke Kalender": file .ics (Apple/Outlook/Android) atau Google. */
+/** Satu tombol "Tambah ke Kalender": file .ics, Google Calendar, atau Outlook. */
 export function AddToCalendar({
   icsHref,
   googleHref,
+  outlookHref,
   className,
 }: {
   icsHref: string;
   googleHref: string;
+  outlookHref?: string;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -56,7 +58,7 @@ export function AddToCalendar({
             onClick={() => setOpen(false)}
             className="hover:bg-surface-2 block rounded-xl px-3 py-2.5 text-sm font-medium"
           >
-            Kalender Apple / Outlook (.ics)
+            Apple / Kalender Perangkat (.ics)
           </a>
           <a
             role="menuitem"
@@ -68,6 +70,18 @@ export function AddToCalendar({
           >
             Google Calendar
           </a>
+          {outlookHref && (
+            <a
+              role="menuitem"
+              href={outlookHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setOpen(false)}
+              className="hover:bg-surface-2 block rounded-xl px-3 py-2.5 text-sm font-medium"
+            >
+              Outlook Web
+            </a>
+          )}
         </div>
       )}
     </div>

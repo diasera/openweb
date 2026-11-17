@@ -37,12 +37,15 @@ interface MusicContextValue {
   duration: number;
   enabled: boolean;
   expanded: boolean;
+  queueOpen: boolean;
   isPlaying: boolean;
   status: LibraryStatus;
   error: string | null;
   setEnabled: (value: boolean) => Promise<void>;
   openPlayer: () => Promise<void>;
   closePlayer: () => void;
+  toggleQueue: () => void;
+  playTrackAt: (index: number) => Promise<void>;
   togglePlayback: () => Promise<void>;
   next: () => Promise<void>;
   previous: () => Promise<void>;
@@ -95,6 +98,7 @@ export function MusicProvider({
   const [duration, setDuration] = useState(0);
   const [enabled, setEnabledState] = useState(false);
   const [expandedPath, setExpandedPath] = useState<string | null>(null);
+  const [queueExpandedPath, setQueueExpandedPath] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [status, setStatus] = useState<LibraryStatus>(
     initialTracks.length > 0 ? "ready" : "idle",
@@ -103,6 +107,7 @@ export function MusicProvider({
 
   const currentTrack = tracks[currentIndex] ?? null;
   const expanded = expandedPath === pathname;
+  const queueOpen = expanded && queueExpandedPath === pathname;
 
   useEffect(() => {
     // Presentasi expanded bersifat transient dan tidak boleh hidup kembali
@@ -268,7 +273,21 @@ export function MusicProvider({
     }
   }, [currentTrack?.id, enable, enabled, isPlaying, loadTracks, pathname, selectTrack]);
 
-  const closePlayer = useCallback(() => setExpandedPath(null), []);
+  const closePlayer = useCallback(() => {
+    setQueueExpandedPath(null);
+    setExpandedPath(null);
+  }, []);
+
+  const toggleQueue = useCallback(() => {
+    setQueueExpandedPath((prev) => (prev === pathname ? null : pathname));
+  }, [pathname]);
+
+  const playTrackAt = useCallback(
+    async (index: number) => {
+      await selectTrack(index, true);
+    },
+    [selectTrack],
+  );
 
   useEffect(() => {
     if (!expanded) return;
@@ -371,6 +390,10 @@ export function MusicProvider({
       title: currentTrack.title,
       artist: currentTrack.artist || siteName,
       album: siteName,
+      artwork: [
+        { src: "/api/pwa/192", sizes: "192x192", type: "image/png" },
+        { src: "/api/pwa/512", sizes: "512x512", type: "image/png" },
+      ],
     });
     setMediaSessionAction("play", () => {
       void togglePlayback();
@@ -421,12 +444,15 @@ export function MusicProvider({
       duration,
       enabled,
       expanded,
+      queueOpen,
       isPlaying,
       status,
       error,
       setEnabled,
       openPlayer,
       closePlayer,
+      toggleQueue,
+      playTrackAt,
       togglePlayback,
       next,
       previous,
@@ -440,12 +466,15 @@ export function MusicProvider({
       duration,
       enabled,
       expanded,
+      queueOpen,
       isPlaying,
       status,
       error,
       setEnabled,
       openPlayer,
       closePlayer,
+      toggleQueue,
+      playTrackAt,
       togglePlayback,
       next,
       previous,

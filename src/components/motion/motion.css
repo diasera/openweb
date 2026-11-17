@@ -686,6 +686,29 @@ html:active-view-transition .route-motion {
   }
 }
 
+/* ---- Progres baca artikel (Scroll-Driven, 0 JS) --------------------------- */
+.motion-reading-progress {
+  display: none;
+}
+
+@supports (animation-timeline: scroll()) {
+  .motion-reading-progress {
+    display: block;
+    transform-origin: 0 50%;
+    animation: motion-reading-scale linear both;
+    animation-timeline: scroll(root block);
+  }
+
+  @keyframes motion-reading-scale {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+}
+
 /* ---- Indikator hidup --------------------------------------------------------
  * Titik status berdenyut (Live, menunggu moderasi, acara berlangsung). Gelombang
  * memakai pseudo-elemen yang di-scale: transform+opacity saja. */

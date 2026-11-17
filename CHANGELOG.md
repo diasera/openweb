@@ -33,6 +33,19 @@ dan proyek ini menganut [Semantic Versioning](https://semver.org/lang/id/).
   `src/lib/hooks/use-dialog-focus-trap.ts` (dipakai bersama oleh `Modal` dan
   `MediaLightbox`), serta gestur fisika *rubber-band drag-to-dismiss* dan grabber
   sentuh pada `src/components/ui/modal.tsx`.
+- Navigasi keyboard penuh (`ArrowUp`/`ArrowDown`/`Enter`), lencana pintasan `⌘K`,
+  dan filter kategori instan pada Spotlight Dynamic Island (`expanded-route-view.tsx`),
+  serta daftar antrean lagu (*queue drawer*) elastis dan sampul PWA pada `MediaSession`
+  pemutar musik (`music-island-view.tsx`, `music-provider.tsx`).
+- Pengalaman baca editorial Blog: bilah progres baca 120fps bebas JS (`ReadingProgressBar`),
+  **Daftar Isi otomatis (`ArticleToc`)** dengan pelacak subjudul aktif (`src/lib/blog/toc.ts`),
+  serta ekstensi blok sorotan editorial **`Callout`** (`Catatan`, `Tips`, `Penting`,
+  `Perhatian`) pada editor TipTap v3 (`rich-editor.tsx` & `src/lib/blog/callout-extension.ts`).
+- Peningkatan kartu **Agenda** bergaya Luma (`event-card.tsx`): lencana status waktu nyata
+  (`EventStatusBadge`), tautan lokasi interaktif ke Google Maps, ekspor **Outlook Web**
+  (`calendar.ts`), dan tombol bagikan tautan spesifik acara.
+- Peningkatan **Galeri Pro** (`galeri-browser.tsx` & `masonry.tsx`): filter bentuk visual
+  (`Potret`, `Lanskap`, `Multi-Slide`) dan sakelar kepadatan tampilan (**Nyaman** vs **Padat**).
 
 ### Diubah
 

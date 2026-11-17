@@ -7,6 +7,7 @@ import {
 } from "@/lib/data";
 import { PageShell } from "@/components/public/page-shell";
 import { ArticleContent, ArticleCover } from "@/components/public/article-content";
+import { ArticleToc, ReadingProgressBar } from "@/components/public/article-toc";
 import { MentionedMembers } from "@/components/public/mentioned-members";
 import { PostRow } from "@/components/public/post-row";
 import { ShareButton, SaveButton } from "@/components/public/share-save";
@@ -17,6 +18,7 @@ import { categoryColor } from "@/lib/categories";
 import { readingTime } from "@/lib/utils/reading-time";
 import { formatSiteDate } from "@/lib/utils/time";
 import { normalizeArticleHtml } from "@/lib/blog/content";
+import { prepareArticleToc } from "@/lib/blog/toc";
 import { JsonLd } from "@/components/seo/json-ld";
 import { BLOG_OG_CARD_PATH, buildPageMetadata, plainText } from "@/lib/seo";
 import {
@@ -92,6 +94,9 @@ export default async function ArticlePage({
   if (post.slug !== slug) permanentRedirect(`/blog/${post.slug}`);
   const mentionedMembers = await getMentionedMembersForPost(post);
   const related = pickRelatedPosts(recentPosts, post.slug, post.category);
+  const { html: preparedHtml, headings } = prepareArticleToc(
+    normalizeArticleHtml(post.content_html),
+  );
 
   // Zona situs, bukan zona server: artikel 00.30 WIB tidak tampil sebagai kemarin.
   const dateStr = post.published_at
@@ -122,6 +127,7 @@ export default async function ArticlePage({
           ]),
         ]}
       />
+      <ReadingProgressBar />
       <article className="mx-auto min-w-0 w-full max-w-2xl">
         {post.cover_image_url && (
           <ArticleCover
@@ -164,8 +170,10 @@ export default async function ArticlePage({
           </div>
         </div>
 
+        <ArticleToc headings={headings} />
+
         <ArticleContent
-          html={normalizeArticleHtml(post.content_html)}
+          html={preparedHtml}
           title={post.title}
         />
 
