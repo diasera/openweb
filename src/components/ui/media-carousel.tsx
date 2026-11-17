@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Bookmark, ChevronLeft, ChevronRight } from "lucide-react";
+import { Bookmark, ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -14,6 +14,7 @@ import {
 import type { MediaSlide } from "@/lib/media/slides";
 import { gradientCss } from "@/lib/utils/color";
 import { cn } from "@/lib/utils/cn";
+import { MediaLightbox } from "./media-lightbox";
 import styles from "./media-carousel.module.css";
 
 const DOUBLE_TAP_MS = 300;
@@ -37,6 +38,8 @@ export interface MediaCarouselProps {
   onIndexChange?: (index: number) => void;
   /** Gestur ketuk dua kali (Simpan ala Instagram) beserta animasi burst. */
   onDoubleTap?: () => void;
+  /** Tampilkan tombol kaca untuk membuka Theater Lightbox layar penuh (zoom & pan). */
+  allowFullscreen?: boolean;
   className?: string;
   style?: CSSProperties;
 }
@@ -58,6 +61,7 @@ export function MediaCarousel({
   index,
   onIndexChange,
   onDoubleTap,
+  allowFullscreen = false,
   className,
   style,
 }: MediaCarouselProps) {
@@ -71,8 +75,12 @@ export function MediaCarousel({
   const lastTriggerRef = useRef(0);
   const [active, setActive] = useState(0);
   const [burst, setBurst] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const total = slides.length;
   const multiple = total > 1;
+  const activeSlide = slides[active];
+  const canOpenFullscreen =
+    allowFullscreen && Boolean(activeSlide?.url) && activeSlide?.type === "photo";
 
   const goTo = useCallback(
     (target: number, smooth = true) => {
@@ -239,6 +247,32 @@ export function MediaCarousel({
         >
           <Bookmark className={cn(styles.burst, "size-20 fill-white text-white")} />
         </span>
+      )}
+
+      {canOpenFullscreen && (
+        <button
+          type="button"
+          onClick={() => setLightboxOpen(true)}
+          aria-label="Perbesar foto layar penuh"
+          className={cn(
+            styles.pager,
+            "motion-pressable absolute left-2.5 top-2.5 z-10 grid size-8 place-items-center rounded-full transition-opacity hover:bg-black/45",
+          )}
+        >
+          <Maximize2 className="size-3.75" aria-hidden="true" />
+        </button>
+      )}
+
+      {allowFullscreen && (
+        <MediaLightbox
+          open={lightboxOpen}
+          onClose={() => setLightboxOpen(false)}
+          slides={slides}
+          label={label}
+          initialIndex={active}
+          onIndexChange={(next) => goTo(next, false)}
+          unoptimized={unoptimized}
+        />
       )}
 
       {multiple && (

@@ -205,7 +205,7 @@ export function DynamicIslandViewport({
           aria-hidden="true"
         />
       )}
-      <div className={styles.slot}>
+      <div className={styles.slot} style={{ viewTransitionName: "chrome-island" }}>
         <header
           data-dynamic-island
           data-island-phase={phase}

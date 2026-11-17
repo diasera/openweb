@@ -29,6 +29,7 @@ export function PinMedia({
       aspectRatio={aspectRatio}
       sizes="(max-width: 672px) 100vw, (max-width: 1023px) 512px, 560px"
       preloadFirst
+      allowFullscreen
       onDoubleTap={save}
       className={className}
       style={style}

@@ -85,6 +85,12 @@ html {
   animation: none;
 }
 
+/* Saat View Transition browser aktif (morph elemen bersama), posisi akhir rute
+ * baru harus diambil pada koordinat istirahat tanpa digeser animasi masuk 3D. */
+html:active-view-transition .route-motion {
+  animation: none;
+}
+
 /* Halaman masuk dari kedalaman: push mengayun di sumbu Y seperti kartu
  * navigasi, present naik dari bawah dengan kemiringan X. Sudut kecil agar
  * terasa ruang tanpa memicu mual gerak. */
@@ -338,14 +344,58 @@ html {
   }
 }
 
-/* Morph View Transitions: elemen bernama (kartu pin, avatar anggota)
- * bertransisi antar halaman dengan kurva spring ala iOS. Browser tanpa
- * dukungan tidak pernah sampai sini (aturan tak berlaku). */
-::view-transition-group(*),
-::view-transition-old(*),
-::view-transition-new(*) {
-  animation-duration: 360ms;
+/* Morph View Transitions: elemen bernama (kartu pin, avatar anggota, sampul
+ * artikel) bertransisi antar halaman dengan kurva spring ala iOS. Overlay
+ * dibuat tembus klik agar interaksi cepat tidak tertahan selama animasi. */
+::view-transition {
+  pointer-events: none;
+}
+
+::view-transition-group(.morph),
+::view-transition-old(.morph),
+::view-transition-new(.morph) {
+  animation-duration: 380ms;
   animation-timing-function: var(--motion-spring);
+}
+
+::view-transition-image-pair(.morph) {
+  animation: motion-vt-via-blur 380ms var(--motion-ease-out);
+}
+
+@keyframes motion-vt-via-blur {
+  30% {
+    filter: blur(1.5px);
+  }
+}
+
+/* Jangkar navigasi kaca persisten (Dynamic Island & Tab Bar): tetap tajam di
+ * lapisan teratas tanpa berkedip snapshot ganda atau menghalangi morph foto. */
+::view-transition-group(chrome-island),
+::view-transition-group(chrome-tabbar) {
+  animation: none;
+  z-index: 100;
+}
+
+::view-transition-old(chrome-island),
+::view-transition-old(chrome-tabbar) {
+  display: none;
+}
+
+::view-transition-new(chrome-island),
+::view-transition-new(chrome-tabbar),
+::view-transition-image-pair(chrome-island),
+::view-transition-image-pair(chrome-tabbar) {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-image-pair(*) {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+  }
 }
 
 @keyframes motion-rise {

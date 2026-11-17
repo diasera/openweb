@@ -1,7 +1,7 @@
 import { Avatar } from "@/components/ui/avatar";
 import { cardClass } from "@/components/ui/card";
 import { CountUp } from "@/components/ui/count-up";
-import { KineticWords, blurDelay } from "@/components/motion";
+import { KineticWords, SharedMorph, blurDelay } from "@/components/motion";
 import { getContentLabels, toDisplayLabel } from "@/lib/site-config";
 import { formatSiteDate } from "@/lib/utils/time";
 import { cn } from "@/lib/utils/cn";
@@ -43,18 +43,19 @@ export function MemberHero({
     >
       <div className="liquid-gradient grain relative h-32 sm:h-40" aria-hidden="true" />
       <div className="relative -mt-16 flex justify-center sm:-mt-[4.5rem]">
-        <span
-          className={cn("animate-control-pop rounded-full", member.is_pengurus && "motion-ring-spin")}
-          style={{ viewTransitionName: `member-${member.slug}` }}
-        >
-          <Avatar
-            name={member.name}
-            src={member.photo_url}
-            size={120}
-            ring={member.is_pengurus}
-            className="bg-surface rounded-full p-1"
-          />
-        </span>
+        <SharedMorph name={`member-${member.slug}`}>
+          <span
+            className={cn("animate-control-pop rounded-full", member.is_pengurus && "motion-ring-spin")}
+          >
+            <Avatar
+              name={member.name}
+              src={member.photo_url}
+              size={120}
+              ring={member.is_pengurus}
+              className="bg-surface rounded-full p-1"
+            />
+          </span>
+        </SharedMorph>
       </div>
 
       <div className="px-5 pb-6 pt-3 sm:px-10">

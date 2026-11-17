@@ -16,7 +16,7 @@ import { Chip } from "@/components/ui/chip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { RelativeTime } from "@/components/ui/relative-time";
-import { MotionLink, listReveal } from "@/components/motion";
+import { MotionLink, SharedMorph, listReveal } from "@/components/motion";
 import { JsonLd } from "@/components/seo/json-ld";
 import { buildPageMetadata, PUBLIC_PAGE_SEO } from "@/lib/seo";
 import { breadcrumbStructuredData } from "@/lib/seo/structured-data";
@@ -121,45 +121,50 @@ export default async function BlogListPage({
               href={`/blog/${featured.slug}`}
               className="animate-rise block"
             >
-              <div
-                className="motion-card rounded-ios-lg bg-surface-2 relative block overflow-hidden"
-                style={{ aspectRatio: BLOG_COVER_FRAME.aspectRatio }}
+              <SharedMorph
+                name={`post-cover-${featured.slug}`}
+                enabled={Boolean(featured.cover_image_url)}
               >
-              {featured.cover_image_url ? (
-                <Image
-                  src={featured.cover_image_url}
-                  alt={featured.title}
-                  fill
-                  preload
-                  sizes="(max-width: 672px) 100vw, 672px"
-                  className="motion-parallax"
-                  style={{ objectFit: BLOG_COVER_FRAME.objectFit }}
-                />
-              ) : (
-                <div className="liquid-gradient grain absolute inset-0" />
-              )}
-              <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/15 to-transparent" />
-              {featured.category && (
-                <div className="absolute left-4 top-4">
-                  <Chip variant="glass">{featured.category}</Chip>
+                <div
+                  className="motion-card rounded-ios-lg bg-surface-2 relative block overflow-hidden"
+                  style={{ aspectRatio: BLOG_COVER_FRAME.aspectRatio }}
+                >
+                  {featured.cover_image_url ? (
+                    <Image
+                      src={featured.cover_image_url}
+                      alt={featured.title}
+                      fill
+                      preload
+                      sizes="(max-width: 672px) 100vw, 672px"
+                      className="motion-parallax"
+                      style={{ objectFit: BLOG_COVER_FRAME.objectFit }}
+                    />
+                  ) : (
+                    <div className="liquid-gradient grain absolute inset-0" />
+                  )}
+                  <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/15 to-transparent" />
+                  {featured.category && (
+                    <div className="absolute left-4 top-4">
+                      <Chip variant="glass">{featured.category}</Chip>
+                    </div>
+                  )}
+                  <div className="absolute inset-x-4 bottom-4 text-white">
+                    <h2 className="font-display text-xl font-bold leading-tight">
+                      {featured.title}
+                    </h2>
+                    <p className="mt-1 text-xs text-white/80">
+                      {featured.author_name || "Redaksi"}
+                      {featured.published_at && (
+                        <>
+                          {" · "}
+                          <RelativeTime iso={featured.published_at} />
+                        </>
+                      )}{" "}
+                      · {featured.reading_minutes} mnt baca
+                    </p>
+                  </div>
                 </div>
-              )}
-              <div className="absolute inset-x-4 bottom-4 text-white">
-                <h2 className="font-display text-xl font-bold leading-tight">
-                  {featured.title}
-                </h2>
-                <p className="mt-1 text-xs text-white/80">
-                  {featured.author_name || "Redaksi"}
-                  {featured.published_at && (
-                    <>
-                      {" · "}
-                      <RelativeTime iso={featured.published_at} />
-                    </>
-                  )}{" "}
-                  · {featured.reading_minutes} mnt baca
-                </p>
-              </div>
-              </div>
+              </SharedMorph>
             </MotionLink>
           )}
 

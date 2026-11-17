@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import { notFound, permanentRedirect } from "next/navigation";
 import {
   getPostBySlug,
@@ -7,6 +6,7 @@ import {
   getSettings,
 } from "@/lib/data";
 import { PageShell } from "@/components/public/page-shell";
+import { ArticleContent, ArticleCover } from "@/components/public/article-content";
 import { MentionedMembers } from "@/components/public/mentioned-members";
 import { PostRow } from "@/components/public/post-row";
 import { ShareButton, SaveButton } from "@/components/public/share-save";
@@ -124,20 +124,13 @@ export default async function ArticlePage({
       />
       <article className="mx-auto min-w-0 w-full max-w-2xl">
         {post.cover_image_url && (
-          <div
-            className="rounded-ios-lg bg-surface-2 relative mb-5 overflow-hidden"
-            style={{ aspectRatio: BLOG_COVER_FRAME.aspectRatio }}
-          >
-            <Image
-              src={post.cover_image_url}
-              alt={post.title}
-              fill
-              preload
-              sizes="(max-width: 672px) 100vw, 672px"
-              className="motion-parallax"
-              style={{ objectFit: BLOG_COVER_FRAME.objectFit }}
-            />
-          </div>
+          <ArticleCover
+            slug={post.slug}
+            title={post.title}
+            src={post.cover_image_url}
+            aspectRatio={BLOG_COVER_FRAME.aspectRatio}
+            objectFit={BLOG_COVER_FRAME.objectFit}
+          />
         )}
 
         {(post.category || dateStr) && (
@@ -171,9 +164,9 @@ export default async function ArticlePage({
           </div>
         </div>
 
-        <div
-          className="article-content prose prose-sm sm:prose-base prose-headings:font-display prose-a:text-primary-readable mt-6 max-w-none"
-          dangerouslySetInnerHTML={{ __html: normalizeArticleHtml(post.content_html) }}
+        <ArticleContent
+          html={normalizeArticleHtml(post.content_html)}
+          title={post.title}
         />
 
         {post.tags && post.tags.length > 0 && (

@@ -20,7 +20,7 @@ import { buttonClass } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { Masonry } from "@/components/ui/masonry";
 import { RelativeTime } from "@/components/ui/relative-time";
-import { MotionLink, listReveal } from "@/components/motion";
+import { MotionLink, SharedMorph, listReveal } from "@/components/motion";
 import {
   MEDIA_ASPECT_LIMITS,
   mediaDisplayAspectRatio,
@@ -129,14 +129,15 @@ export default async function PinPage({
       {/* Desktop: media lengket di kiri, detail + komentar di kanan (pola pin
           Pinterest) alih-alih satu kolom sempit yang memaksa gulir panjang. */}
       <div className="mx-auto max-w-lg lg:grid lg:max-w-5xl lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
-        <PinMedia
-          mediaId={media.id}
-          slides={slides}
-          label={title}
-          aspectRatio={ratio}
-          className="rounded-ios-lg lg:sticky lg:top-24 lg:max-h-[calc(100dvh-8rem)]"
-          style={{ viewTransitionName: `pin-${media.id}` }}
-        />
+        <SharedMorph name={`pin-${media.id}`}>
+          <PinMedia
+            mediaId={media.id}
+            slides={slides}
+            label={title}
+            aspectRatio={ratio}
+            className="rounded-ios-lg lg:sticky lg:top-24 lg:max-h-[calc(100dvh-8rem)]"
+          />
+        </SharedMorph>
 
         <div className="min-w-0">
           <div className="mt-4 flex items-center justify-between gap-3 lg:mt-0">

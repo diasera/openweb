@@ -139,6 +139,7 @@ export function TabBar({ profileLabel = "Profil" }: { profileLabel?: string }) {
 
   return (
     <nav
+      style={{ viewTransitionName: "chrome-tabbar" }}
       className={cn(
         "motion-tabbar-shell safe-bottom safe-inline fixed inset-x-0 bottom-0 z-40 flex justify-center",
         compact && "translate-y-1 opacity-[0.96]",

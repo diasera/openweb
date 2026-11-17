@@ -19,6 +19,20 @@ dan proyek ini menganut [Semantic Versioning](https://semver.org/lang/id/).
   serta kerangka hitung mundur awal (`--`) pada `EventCountdown` sebelum hidrasi klien.
 - Parser `User-Agent` + `Sec-CH-UA` Client Hints internal bebas dependensi di
   `src/lib/utils/user-agent.ts`.
+- Pusat morph elemen bersama `SharedMorph` berbasis React 19.3 `<ViewTransition>`
+  di `src/components/motion/shared-morph.tsx` untuk transisi mulus pada kartu Pin
+  (`pin-*`), avatar Anggota (`member-*`), dan sampul Blog (`post-cover-*`), dengan
+  penjangkaran persisten pada Dynamic Island (`chrome-island`) dan Tab Bar (`chrome-tabbar`).
+- Komponen **Theater `MediaLightbox`** layar penuh di `src/components/ui/media-lightbox.tsx`
+  dengan pendaran warna ambient dinamis, pinch-to-zoom, ketuk dua kali `2.4×`, zoom
+  roda mouse/trackpad, geser terbatas saat diperbesar, dan usap ke bawah untuk menutup.
+- Pengayaan artikel blog di `src/components/public/article-content.tsx` (`ArticleCover`
+  & `ArticleContent`): klik foto sampul maupun ilustrasi di dalam isi artikel membuka
+  Theater Lightbox, serta tombol satu klik **"Salin"** pada setiap blok kode `<pre>`.
+- Hook aksesibilitas dialog terpusat `useDialogFocusTrap` di
+  `src/lib/hooks/use-dialog-focus-trap.ts` (dipakai bersama oleh `Modal` dan
+  `MediaLightbox`), serta gestur fisika *rubber-band drag-to-dismiss* dan grabber
+  sentuh pada `src/components/ui/modal.tsx`.
 
 ### Diubah
 

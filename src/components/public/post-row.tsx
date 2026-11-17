@@ -3,25 +3,33 @@ import { categoryColor } from "@/lib/categories";
 import { gradientCss } from "@/lib/utils/color";
 import { cardClass } from "@/components/ui/card";
 import type { PublicPostCard } from "@/lib/data";
-import { MotionLink } from "@/components/motion";
+import { MotionLink, SharedMorph } from "@/components/motion";
 
 /** Baris artikel di daftar blog: thumbnail + kategori + judul + ringkasan + meta. */
-export function PostRow({ post }: { post: PublicPostCard }) {
+export function PostRow({
+  post,
+  enableMorph = true,
+}: {
+  post: PublicPostCard;
+  enableMorph?: boolean;
+}) {
   return (
     <MotionLink
       href={`/blog/${post.slug}`}
-      prefetch={false}
       className={cardClass("interactive", "flex gap-3 p-3")}
     >
-      <div
-        className="bg-surface-2 relative h-20 w-20 shrink-0 overflow-hidden rounded-xl"
+      <SharedMorph
+        name={`post-cover-${post.slug}`}
+        enabled={enableMorph && Boolean(post.cover_image_url)}
       >
-        {post.cover_image_url ? (
-          <Image src={post.cover_image_url} alt="" fill sizes="80px" className="object-cover" />
-        ) : (
-          <div className="absolute inset-0" style={{ background: gradientCss(post.id) }} />
-        )}
-      </div>
+        <div className="bg-surface-2 relative h-20 w-20 shrink-0 overflow-hidden rounded-xl">
+          {post.cover_image_url ? (
+            <Image src={post.cover_image_url} alt="" fill sizes="80px" className="object-cover" />
+          ) : (
+            <div className="absolute inset-0" style={{ background: gradientCss(post.id) }} />
+          )}
+        </div>
+      </SharedMorph>
       <div className="min-w-0 flex-1">
         {post.category && (
           <p

@@ -20,7 +20,6 @@ export function MemoriesRail({ media }: { media: MediaWithSlideCount[] }) {
         <MotionLink
           key={item.id}
           href={`/pin/${item.id}`}
-          prefetch={false}
           className="group animate-rise motion-pressable relative aspect-3/4 w-32 shrink-0 overflow-hidden rounded-pin sm:w-40"
           style={{ animationDelay: staggerDelay(index, 50) }}
         >
