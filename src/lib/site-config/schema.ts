@@ -4,7 +4,12 @@ import {
   normalizeAnalyticsId,
   normalizeVerificationCode,
 } from "./external-identifiers";
-import { hexToRgbChannels } from "@/lib/theme";
+import {
+  DEFAULT_THEME_PRESET,
+  hexToRgbChannels,
+  isThemePresetId,
+  THEME_PRESET_IDS,
+} from "@/lib/theme";
 import type {
   SiteSettingsRow,
   SocialLinks,
@@ -98,6 +103,7 @@ const identityConfigSchema = z.object({
   member_label_plural: memberLabel,
   member_identifier_label: memberLabel,
   member_core_group_label: memberLabel,
+  theme_preset: z.enum(THEME_PRESET_IDS),
   primary_hex: hexColor("Warna utama"),
   accent_hex: hexColor("Warna aksen"),
 });
@@ -196,6 +202,10 @@ const SECTION_PARSERS: {
     member_label_plural: text(formData, "member_label_plural"),
     member_identifier_label: text(formData, "member_identifier_label"),
     member_core_group_label: text(formData, "member_core_group_label"),
+    theme_preset: (() => {
+      const raw = text(formData, "theme_preset").trim();
+      return isThemePresetId(raw) ? raw : DEFAULT_THEME_PRESET;
+    })(),
     primary_hex: text(formData, "primary_hex"),
     accent_hex: text(formData, "accent_hex"),
   }),
@@ -270,6 +280,9 @@ const SECTION_UPDATERS: {
     const primary = hexToRgbChannels(input.primary_hex);
     const accent = hexToRgbChannels(input.accent_hex);
     const theme: ThemeTokens = {};
+    if (input.theme_preset !== DEFAULT_THEME_PRESET) {
+      theme.preset = input.theme_preset;
+    }
     if (primary) theme.primary = primary;
     if (accent) theme.accent = accent;
     return {

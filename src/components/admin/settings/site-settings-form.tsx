@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { SITE_SETTINGS_TABS, type SiteSettingsTabId } from "@/lib/site-config/client";
 import { adminFeatureHref } from "@/lib/constants";
@@ -83,7 +84,7 @@ export function SiteSettingsForm({
           const href = pendingHref;
           setPendingHref(null);
           dirtyRef.current = false;
-          if (href) router.push(href, { scroll: false });
+          if (href) router.push(href as Route, { scroll: false });
         }}
       />
     </div>

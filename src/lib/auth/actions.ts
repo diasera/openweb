@@ -1,5 +1,6 @@
 "use server";
 
+import type { Route } from "next";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
@@ -283,7 +284,7 @@ async function login(formData: FormData): Promise<AuthState> {
 
   // Cegah open redirect: hanya izinkan route pengelolaan di bawah profil.
   const next = String(formData.get("next") ?? "");
-  redirect(isAdminProfileRoute(next) ? next : "/profil");
+  redirect((isAdminProfileRoute(next) ? next : "/profil") as Route);
 }
 
 export async function logoutAction(): Promise<void> {

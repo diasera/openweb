@@ -1,5 +1,6 @@
 "use client";
 
+import type { Route } from "next";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Bell, Search, type LucideIcon } from "lucide-react";
@@ -151,7 +152,7 @@ export function ExpandedRouteView({
           const first = visibleResults[0];
           if (first) {
             onNavigate();
-            router.push(first.href);
+            router.push(first.href as Route);
           } else {
             inputRef.current?.blur();
           }

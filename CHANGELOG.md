@@ -7,6 +7,36 @@ dan proyek ini menganut [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 
+### Ditambahkan
+
+- Mesin warna perseptual **OKLCH** + evaluasi kontras ganda **WCAG 2.2 AA & APCA (`Lc`)**
+  di `src/lib/utils/color.ts` dan `src/lib/theme.ts`, lengkap dengan token wide-gamut
+  Display P3 (`--primary-oklch`, `--accent-oklch`).
+- **5 preset atmosfer tema** siap pilih dari **Admin → Pengaturan → Identitas**
+  (`Liquid Spatial`, `Editorial Paper`, `Midnight Botanical` OLED, `Studio Neo-Bento`,
+  dan `Tactile Zine`) dengan kartu pratinjau dual-mode (terang & gelap berdampingan).
+- Utilitas CSS `@utility concentric` (sudut konsentris iOS 26 HIG) di `src/app/globals.css`,
+  serta kerangka hitung mundur awal (`--`) pada `EventCountdown` sebelum hidrasi klien.
+- Parser `User-Agent` + `Sec-CH-UA` Client Hints internal bebas dependensi di
+  `src/lib/utils/user-agent.ts`.
+
+### Diubah
+
+- Migrasi konfigurasi `next.config.mjs` ke `next.config.ts` bertipe penuh dengan
+  pengaktifan **React Compiler** (`reactCompiler: true` + native Rust compiler
+  `turbopackRustReactCompiler: true`) dan **Typed Routes** (`typedRoutes: true`).
+- Pembaruan seluruh dependensi ke rilis stabil terbaru (`next` `16.4.6`, `react`
+  `19.3.1`, `@tiptap/*` `3.34.0`, `tailwindcss` `4.3.5`, `lucide-react` `1.74.0`,
+  `@supabase/supabase-js` `2.119.0`, `jose` `6.2.17`, `heic-to` `1.6.7`,
+  `sanitize-html` `2.18.2`, dan `@electric-sql/pglite` `0.5.16`).
+- `SectionHeader` memisahkan judul dan lencana jumlah item secara semantik untuk
+  pembaca layar dan mesin pencari.
+
+### Dihapus
+
+- Dependensi `ua-parser-js` (`AGPL-3.0-or-later`) agar pohon dependensi tetap
+  selaras penuh dengan lisensi MIT proyek.
+
 ## [1.1.1] - 2026-11-17
 
 ### Ditambahkan

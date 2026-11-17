@@ -1,3 +1,4 @@
+import type { Route } from "next";
 import Link from "next/link";
 import type { MouseEvent } from "react";
 import { cn } from "@/lib/utils/cn";
@@ -42,7 +43,7 @@ export function AdminTabs({
           return (
             <Link
               key={item.value}
-              href={href}
+              href={href as Route}
               scroll={false}
               onClick={onSelect ? (event) => onSelect(item.value, href, event) : undefined}
               aria-current={isActive ? "page" : undefined}

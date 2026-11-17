@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition, type ReactNode } from "react";
+import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { ImageIcon } from "lucide-react";
 import { SearchInput } from "@/components/ui/search-input";
@@ -41,7 +42,7 @@ export function GaleriBrowser({
         buildQueryHref("/galeri", {
           type: next === "all" ? undefined : next,
           category: activeCategory,
-        }),
+        }) as Route,
       );
       setOptimisticType(null);
     });

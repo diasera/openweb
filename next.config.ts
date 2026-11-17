@@ -1,18 +1,22 @@
+import type { NextConfig } from "next";
+import type { RemotePattern } from "next/dist/shared/lib/image-config";
+
 /**
  * Allowlist `next/image` diturunkan langsung dari proyek Supabase yang aktif
  * (hanya bucket publik `/storage/v1/object/public/**` tanpa query/redirect),
  * sehingga proyek `*.supabase.co` milik pihak luar tidak dapat meminjam
  * endpoint `/_next/image` sebagai open proxy gambar atau membocorkan IP origin.
  */
-function supabaseRemotePatterns() {
+function supabaseRemotePatterns(): RemotePattern[] {
   const raw = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? "";
   if (!raw || /your[-_]|YOUR-PROJECT-REF/i.test(raw)) return [];
   try {
     const url = new URL(raw);
     if (url.protocol !== "https:" && url.protocol !== "http:") return [];
+    const protocol = url.protocol.slice(0, -1) as "https" | "http";
     return [
       {
-        protocol: /** @type {"https" | "http"} */ (url.protocol.slice(0, -1)),
+        protocol,
         hostname: url.hostname,
         ...(url.port ? { port: url.port } : {}),
         pathname: "/storage/v1/object/public/**",
@@ -24,9 +28,12 @@ function supabaseRemotePatterns() {
   }
 }
 
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+const nextConfig: NextConfig = {
   reactStrictMode: true,
+  reactCompiler: true,
+  typedRoutes: true,
+  // Izinkan dev client & HMR saat dibuka lewat 127.0.0.1 atau port preview Codespaces.
+  allowedDevOrigins: ["127.0.0.1", "**.app.github.dev", "**.githubpreview.dev"],
   async headers() {
     return [
       {
@@ -101,6 +108,9 @@ const nextConfig = {
     remotePatterns: supabaseRemotePatterns(),
   },
   experimental: {
+    // Native Rust port dari React Compiler di dalam Turbopack (tanpa Babel).
+    turbopackRustReactCompiler: true,
+    optimizePackageImports: ["lucide-react"],
     // Server Action hanya membawa gambar (cover blog, hero/logo/favicon/SEO,
     // foto anggota). Batasnya = UPLOAD_LIMITS.imageMaxBytes (100 MB) + 10 MB
     // untuk field lain; dicek `npm run check:media-formats`. Body diparse
@@ -110,8 +120,6 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: "110mb",
     },
-    // <ViewTransition> React aktif tanpa flag di Next 16.3+ (opsi lama
-    // `viewTransition` kini ditolak validator konfigurasi).
   },
 };
 

@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     content: parsed.data.content,
     ip_address: access.ip,
     user_agent: userAgent,
-    device: parseDevice(userAgent),
+    device: parseDevice(userAgent, req.headers),
   });
 
   if (error) {

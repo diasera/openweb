@@ -46,11 +46,11 @@
   --font-sans: var(--font-sans), system-ui, sans-serif;
   --font-display: var(--font-display), var(--font-sans), sans-serif;
 
-  --radius-ios: 1.25rem;
-  --radius-ios-lg: 1.75rem;
-  --radius-card: 1.375rem;
-  /* Radius gambar pin Pinterest (16px); kartu/permukaan iOS memakai --radius-card. */
-  --radius-pin: 1rem;
+  --radius-ios: var(--surface-radius-ios);
+  --radius-ios-lg: var(--surface-radius-lg);
+  --radius-card: var(--surface-radius-card);
+  /* Radius gambar pin Pinterest (bawaan 16px); ikut beradaptasi dengan preset tema. */
+  --radius-pin: var(--surface-radius-pin);
 
   --shadow-ios: 0 8px 30px rgb(0 0 0 / 0.08);
   --shadow-ios-sm: 0 2px 10px rgb(0 0 0 / 0.06);
@@ -306,19 +306,25 @@
   }
 }
 
+@utility concentric {
+  /* Matematika sudut konsentris iOS 26 HIG: R_inner = max(0.5rem, R_outer - gap). */
+  border-radius: max(
+    0.5rem,
+    calc(var(--concentric-outer, var(--surface-radius-card)) - var(--concentric-gap, 0.5rem))
+  );
+}
+
 @utility liquid-gradient {
   /* Mesh gradient untuk hero/sampul tanpa foto: sumber cahaya diturunkan dari
-     warna UTAMA dan AKSEN tema (keduanya diatur di Pengaturan → Identitas),
-     jadi ikut berubah saat admin mengganti warna. Bila aksen = utama, hasilnya
-     tetap kaya karena dicampur nada oranye/indigo. Tanpa color-mix, tampil
-     warna utama polos. */
+     warna UTAMA dan AKSEN tema (memakai gamut perseptual OKLCH/Display P3 bila
+     tersedia, lalu jatuh ke sRGB). */
   background-color: rgb(var(--primary));
-  background-color: color-mix(in oklab, rgb(var(--primary)) 72%, black);
+  background-color: color-mix(in oklab, var(--primary-oklch, rgb(var(--primary))) 72%, black);
   background-image:
-    radial-gradient(70% 90% at 12% 16%, color-mix(in oklab, rgb(var(--primary)) 80%, white) 0%, transparent 60%),
-    radial-gradient(60% 80% at 90% 8%, color-mix(in oklab, rgb(var(--accent)) 55%, rgb(var(--tone-orange))) 0%, transparent 62%),
-    radial-gradient(85% 90% at 72% 105%, color-mix(in oklab, rgb(var(--accent)) 45%, rgb(var(--tone-indigo))) 0%, transparent 66%),
-    linear-gradient(150deg, rgb(var(--primary)), color-mix(in oklab, rgb(var(--primary)) 50%, black));
+    radial-gradient(70% 90% at 12% 16%, color-mix(in oklab, var(--primary-oklch, rgb(var(--primary))) 80%, white) 0%, transparent 60%),
+    radial-gradient(60% 80% at 90% 8%, color-mix(in oklab, var(--accent-oklch, rgb(var(--accent))) 55%, rgb(var(--tone-orange))) 0%, transparent 62%),
+    radial-gradient(85% 90% at 72% 105%, color-mix(in oklab, var(--accent-oklch, rgb(var(--accent))) 45%, rgb(var(--tone-indigo))) 0%, transparent 66%),
+    linear-gradient(150deg, var(--primary-oklch, rgb(var(--primary))), color-mix(in oklab, var(--primary-oklch, rgb(var(--primary))) 50%, black));
 }
 
 @utility aurora {
@@ -384,9 +390,8 @@
 }
 
 @utility avatar-ring {
-  /* Cincin anggota inti ala story: gradien conic dari warna utama + aksen.
-     Gradien hidup di ::before agar bisa diputar murni lewat transform
-     (compositor) oleh .motion-ring-spin; elemen memotongnya jadi lingkaran. */
+  /* Cincin anggota inti ala story: gradien conic wide-gamut OKLCH dari warna
+     utama + aksen. Gradien hidup di ::before agar diputar murni lewat transform. */
   position: relative;
   isolation: isolate;
   overflow: hidden;
@@ -399,10 +404,10 @@
     pointer-events: none;
     background-image: conic-gradient(
       from 210deg,
-      rgb(var(--primary)),
-      color-mix(in oklab, rgb(var(--accent)) 55%, rgb(var(--tone-orange))),
-      color-mix(in oklab, rgb(var(--accent)) 60%, rgb(var(--tone-pink))),
-      rgb(var(--primary))
+      var(--primary-oklch, rgb(var(--primary))),
+      color-mix(in oklab, var(--accent-oklch, rgb(var(--accent))) 55%, rgb(var(--tone-orange))),
+      color-mix(in oklab, var(--accent-oklch, rgb(var(--accent))) 60%, rgb(var(--tone-pink))),
+      var(--primary-oklch, rgb(var(--primary)))
     );
   }
 }
@@ -490,6 +495,12 @@
      body tetap font sistem. Tanpa kelas next/font di <html>, jatuh ke sans. */
   --font-display: var(--font-display-face, var(--font-sans)), var(--font-sans);
 
+  /* Geometri permukaan runtime (dapat di-override oleh preset tema di lib/theme.ts). */
+  --surface-radius-ios: 1.25rem;
+  --surface-radius-lg: 1.75rem;
+  --surface-radius-card: 1.375rem;
+  --surface-radius-pin: 1rem;
+
   /* Elevasi kartu (dipetakan ke shadow-soft / shadow-elevated). */
   --elevation-soft:
     0 1px 2px rgb(16 16 20 / 0.03), 0 8px 24px -10px rgb(16 16 20 / 0.06);
@@ -509,10 +520,12 @@
   --foreground: 28 28 30; /* iOS label #1C1C1E */
   --muted: 104 104 110; /* AA (>= 4.5:1) di atas bg, surface, DAN fill surface-2 */
   --primary: 230 0 35; /* Merah #E60023 — HANYA untuk aksi utama (plus/upload/link/aktif) */
-  --primary-readable: 196 5 34; /* teks AA di atas bg/surface + tint bg-primary/10–12 */
+  --primary-readable: 196 5 34; /* teks AA & APCA di atas bg/surface + tint bg-primary/10–12 */
   --primary-strong: 184 0 28; /* merah lebih gelap: gradient FAB, state tekan */
   --primary-foreground: 255 255 255;
   --accent: 230 0 35;
+  --primary-oklch: oklch(0.576 0.236 26.8);
+  --accent-oklch: oklch(0.576 0.236 26.8);
   --role: 122 90 54; /* tan tag "jabatan" (chip Ketua), AA di atas tint 15% */
   /* Kerangka pemuatan (.motion-skeleton): dasar transparan agar kontrasnya
      sama di latar halaman, kartu, maupun kaca island; kilau = pita terang.
@@ -588,10 +601,12 @@
   --foreground: 245 245 247;
   --muted: 174 174 178; /* iOS secondaryLabel dark — kontras nyaman (~7:1) */
   --primary: 240 43 76; /* merah sedikit lebih terang di gelap */
-  --primary-readable: 243 83 110; /* teks AA di atas surface dark + tint primary */
+  --primary-readable: 243 83 110; /* teks AA & APCA di atas surface dark + tint primary */
   --primary-strong: 199 25 58;
   --primary-foreground: 255 255 255;
   --accent: 240 43 76;
+  --primary-oklch: oklch(0.625 0.222 18.2);
+  --accent-oklch: oklch(0.625 0.222 18.2);
   --role: 199 164 111;
 
   --tone-red: 255 66 69;

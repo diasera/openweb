@@ -42,7 +42,26 @@ export function EventCountdown({
   const phase = current === null ? null : eventPhase(event, current);
 
   if (current === null || phase === null) {
-    return <div className={cn("h-[3.75rem]", className)} aria-hidden="true" />;
+    return (
+      <div
+        className={cn("grid grid-cols-4 gap-2 sm:flex", className)}
+        aria-hidden="true"
+      >
+        {UNITS.map(([key, label]) => (
+          <div
+            key={key}
+            className="bg-surface-2 border-border/60 min-w-[3.5rem] rounded-2xl border px-2 py-1.5 text-center sm:min-w-[4.25rem]"
+          >
+            <span className="text-muted/45 block font-display text-2xl font-bold tabular-nums leading-tight sm:text-title1">
+              --
+            </span>
+            <span className="text-muted block text-caption2 font-semibold uppercase tracking-wide">
+              {label}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
   }
   if (phase !== "upcoming") {
     return (

@@ -88,7 +88,7 @@ const ADMIN_CHILD_FEATURES = ADMIN_FEATURES.filter(
   (feature): feature is Exclude<AdminFeature, "stats"> => feature !== "stats",
 );
 
-/** Alias lawas di bawah `/profil` yang dialihkan ke dasbor (lihat next.config.mjs). */
+/** Alias lawas di bawah `/profil` yang dialihkan ke dasbor (lihat next.config.ts). */
 export const ADMIN_LEGACY_PATHS = ["/profil/ringkasan"] as const;
 
 /**
@@ -137,13 +137,13 @@ export const MEDIA_ADMIN_SECTIONS = {
  */
 
 /** Editor "Edit postingan" sebuah pin (media + detail). */
-export function adminMediaEditHref(mediaId: string): string {
-  return `${ADMIN_FEATURE_META.media.href}/${mediaId}/edit`;
+export function adminMediaEditHref(mediaId: string): `/profil/media/${string}/edit` {
+  return `/profil/media/${mediaId}/edit`;
 }
 
 /** Editor artikel blog; tanpa id = tulis artikel baru. */
-export function adminBlogEditorHref(postId?: string): string {
-  return `${ADMIN_FEATURE_META.blog.href}/${postId ?? "new"}`;
+export function adminBlogEditorHref(postId?: string): `/profil/blog/${string}` {
+  return `/profil/blog/${postId ?? "new"}`;
 }
 
 /**
@@ -188,7 +188,7 @@ export const ASSIGNABLE_FEATURES: AdminFeature[] = ADMIN_FEATURES.filter(
 /**
  * Batas upload satu sumber untuk picker, policy signed upload, pesan error,
  * `file_size_limit` bucket di schema.sql, dan `bodySizeLimit` Server Action di
- * next.config.mjs (keduanya dicek `npm run check:media-formats`).
+ * next.config.ts (keduanya dicek `npm run check:media-formats`).
  * Supabase Free membatasi SETIAP file maksimal 50 MB lewat Global file size
  * limit; angka di atas itu baru berlaku pada paket Pro/self-hosted.
  */

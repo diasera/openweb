@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
   const vid = await getVisitorId(true, hdrs);
   if (!vid) return new NextResponse(null, { status: 204 });
-  await recordVisit(vid, ip, userAgent, parseDevice(userAgent));
+  await recordVisit(vid, ip, userAgent, parseDevice(userAgent, hdrs));
   after(runScheduledMaintenance);
   return new NextResponse(null, { status: 204 });
 }

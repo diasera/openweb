@@ -1,7 +1,7 @@
 import "server-only";
 import { isIP } from "node:net";
-import { UAParser } from "ua-parser-js";
 import type { DeviceInfo } from "@/lib/types/database";
+import { parseUserAgentDevice, type ClientHintsInput } from "./user-agent";
 
 const MAX_USER_AGENT_LENGTH = 512;
 
@@ -97,20 +97,20 @@ export function getUserAgent(headers: Headers): string | null {
   return normalizeUserAgent(headers.get("user-agent"));
 }
 
-/** Ubah User-Agent menjadi info device lengkap (browser, OS, tipe, model). */
-export function parseDevice(userAgent: string | null): DeviceInfo | null {
+/** Ubah User-Agent (+ opsional Client Hints) menjadi info device lengkap. */
+export function parseDevice(
+  userAgent: string | null,
+  headers?: Headers,
+): DeviceInfo | null {
   const normalized = normalizeUserAgent(userAgent);
-  if (!normalized) return null;
-  const r = new UAParser(normalized).getResult();
-  const device = [r.device.vendor, r.device.model].filter(Boolean).join(" ");
-  return {
-    browser: r.browser.name ?? null,
-    browserVersion: r.browser.version ?? null,
-    os: r.os.name ?? null,
-    osVersion: r.os.version ?? null,
-    device: device || null,
-    type: r.device.type ?? "desktop",
-  };
+  const hints: ClientHintsInput | undefined = headers
+    ? {
+        ua: normalizeUserAgent(headers.get("sec-ch-ua")),
+        platform: normalizeUserAgent(headers.get("sec-ch-ua-platform")),
+        mobile: normalizeUserAgent(headers.get("sec-ch-ua-mobile")),
+      }
+    : undefined;
+  return parseUserAgentDevice(normalized, hints);
 }
 
 /** Ringkasan device untuk ditampilkan admin, mis. "Chrome • Windows • Desktop". */

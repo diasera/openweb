@@ -1,11 +1,12 @@
 "use client";
 
+import type { Route } from "next";
 import Link from "next/link";
 import type { ComponentProps, MouseEvent } from "react";
 import { useAppMotion } from "./motion-context";
 
 type MotionLinkProps = Omit<ComponentProps<typeof Link>, "href" | "onClick"> & {
-  href: string;
+  href: Route | (string & {});
   onClick?: (event: MouseEvent<HTMLAnchorElement>) => void;
 };
 
@@ -40,6 +41,6 @@ export function MotionLink({ href, onClick, ...props }: MotionLinkProps) {
     navigate(href);
   }
 
-  return <Link href={href} onClick={handleClick} {...props} />;
+  return <Link href={href as Route} onClick={handleClick} {...props} />;
 }
 

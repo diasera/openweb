@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import type { Route } from "next";
 import { usePathname, useRouter } from "next/navigation";
 import { getRouteMotion, type RouteMotionKind } from "./route-motion";
 import { useDepthPointer } from "./use-depth-pointer";
@@ -79,7 +80,7 @@ export function MotionProvider({ children }: { children: ReactNode }) {
     (href: string) => {
       const nextPath = targetPath(href);
       if (nextPath === pathname) {
-        router.push(href, { scroll: true });
+        router.push(href as Route, { scroll: true });
         return;
       }
 
@@ -90,7 +91,7 @@ export function MotionProvider({ children }: { children: ReactNode }) {
       const currentEntry = history.current.at(-1);
       if (currentEntry?.path === pathname) currentEntry.scrollTop = window.scrollY;
       pendingScroll.current = { targetPath: nextPath, top: 0 };
-      router.push(href, { scroll: false });
+      router.push(href as Route, { scroll: false });
     },
     [pathname, router],
   );

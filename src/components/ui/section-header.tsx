@@ -40,9 +40,12 @@ export function SectionHeader({
         <h2 id={id} className="flex items-baseline gap-2 text-title2 font-bold tracking-tight">
           <span className="min-w-0">{title}</span>
           {count !== undefined && count > 0 && (
-            <span className="text-muted font-sans text-subhead font-semibold tabular-nums">
-              {count}
-            </span>
+            <>
+              <span className="sr-only">{" "}</span>
+              <span className="text-muted font-sans text-subhead font-semibold tabular-nums">
+                {count}
+              </span>
+            </>
           )}
         </h2>
         {subtitle && <p className="text-muted mt-1 text-footnote">{subtitle}</p>}

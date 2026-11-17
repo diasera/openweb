@@ -145,7 +145,7 @@ Pembuatan pin publik (`/buat`) dan pengeditan postingan admin memakai komposer c
 Batas ukuran didefinisikan satu kali di `UPLOAD_LIMITS` (`src/lib/constants.ts`: foto **100 MB**, video & audio **500 MB**):
 
 - `file_size_limit` bucket di `supabase/schema.sql` mengikuti angka yang sama.
-- `serverActions.bodySizeLimit` di `next.config.mjs` disetel ke batas foto + 10 MB (video & audio diunggah langsung ke Storage lewat signed URL dan tidak melewati server aplikasi).
+- `serverActions.bodySizeLimit` di `next.config.ts` disetel ke batas foto + 10 MB (video & audio diunggah langsung ke Storage lewat signed URL dan tidak melewati server aplikasi).
 - `src/proxy.ts` mengecualikan request dengan header `next-action` agar tidak terpotong di batas default proxy Next.js (10 MB).
 - Skrip `npm run check:media-formats` memverifikasi bahwa kode TypeScript dan `supabase/schema.sql` tidak pernah drift.
 

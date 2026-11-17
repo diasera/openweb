@@ -122,23 +122,33 @@ export function ColorField({
   error,
   id,
   name,
+  value: controlledValue,
   defaultValue,
   presets = [],
   onValueChange,
 }: FieldMeta & {
   id: string;
   name: string;
+  value?: string;
   defaultValue: string;
   presets?: readonly string[];
   onValueChange?: (hex: string) => void;
 }) {
-  const [value, setValue] = useState(defaultValue.toLowerCase());
-  const [draft, setDraft] = useState(defaultValue.toLowerCase());
+  const [internalValue, setInternalValue] = useState(defaultValue.toLowerCase());
+  const value = controlledValue ? controlledValue.toLowerCase() : internalValue;
+  const [draft, setDraft] = useState(value);
+  const [prevControlled, setPrevControlled] = useState(controlledValue?.toLowerCase());
   const hiddenRef = useRef<HTMLInputElement>(null);
+
+  if (controlledValue && controlledValue.toLowerCase() !== prevControlled) {
+    const normalized = controlledValue.toLowerCase();
+    setPrevControlled(normalized);
+    setDraft(normalized);
+  }
 
   function commit(next: string, notify = true) {
     const hex = next.toLowerCase();
-    setValue(hex);
+    setInternalValue(hex);
     setDraft(hex);
     onValueChange?.(hex);
     if (notify) notifyFormChange(hiddenRef.current);
@@ -171,7 +181,7 @@ export function ColorField({
             const next = event.target.value.trim();
             setDraft(next);
             if (HEX_PATTERN.test(next)) {
-              setValue(next.toLowerCase());
+              setInternalValue(next.toLowerCase());
               onValueChange?.(next.toLowerCase());
             }
           }}

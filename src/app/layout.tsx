@@ -15,7 +15,7 @@ import {
   OG_CARD_PATH,
   socialImageAlt,
 } from "@/lib/seo";
-import { themeBackgroundHex, themeCss } from "@/lib/theme";
+import { resolveThemePreset, themeBackgroundHex, themeCss } from "@/lib/theme";
 import { getContentLabels, toDisplayLabel } from "@/lib/site-config";
 import { ThemeScript } from "@/components/public/theme-script";
 import { AppChromeProvider } from "@/components/public/app-chrome-provider";
@@ -138,6 +138,7 @@ export default async function RootLayout({
   return (
     <html
       lang={settings.locale}
+      data-theme-preset={resolveThemePreset(settings.theme)}
       className={`bg-bg ${displayFont.variable}`}
       suppressHydrationWarning
     >

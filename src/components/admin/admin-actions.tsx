@@ -1,5 +1,6 @@
 "use client";
 
+import type { Route } from "next";
 import Link from "next/link";
 import { useState, type ComponentProps, type ReactNode } from "react";
 import {
@@ -187,8 +188,10 @@ export function IconLink({
   icon,
   tone = "neutral",
   className,
+  href,
   ...props
-}: Omit<ComponentProps<typeof Link>, "children" | "className"> & {
+}: Omit<ComponentProps<typeof Link>, "children" | "className" | "href"> & {
+  href: Route | (string & {});
   label: string;
   icon: IconElement;
   tone?: ActionTone;
@@ -196,6 +199,7 @@ export function IconLink({
 }) {
   return (
     <Link
+      href={href as Route}
       aria-label={label}
       title={label}
       className={actionIconClass(tone, className)}

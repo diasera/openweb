@@ -58,7 +58,7 @@ export async function POST(req: Request) {
     author_name: parsed.data.author_name?.trim() || null,
     ip_address: access.ip,
     user_agent: userAgent,
-    device: parseDevice(userAgent),
+    device: parseDevice(userAgent, req.headers),
   });
   if (error) {
     return NextResponse.json({ error: "Gagal menyimpan komentar" }, { status: 500 });

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
+import type { Route } from "next";
 import Link from "next/link";
 import {
   Archive,
@@ -129,7 +130,7 @@ export function PostEditor({
         errorMessage: "Koneksi terputus saat menyimpan artikel. Coba lagi.",
         onSuccess: () => {
           setDirty(false);
-          if (!post && savedId) router.replace(adminBlogEditorHref(savedId));
+          if (!post && savedId) router.replace(adminBlogEditorHref(savedId) as Route);
           else router.refresh();
         },
       },

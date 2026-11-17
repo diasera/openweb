@@ -110,7 +110,7 @@ export async function setBell(
           visitor_id: vid,
           ip_address: getClientIp(headers),
           user_agent: userAgent,
-          device: parseDevice(userAgent),
+          device: parseDevice(userAgent, headers),
           notifications_enabled: enabled,
         },
         { onConflict: "visitor_id" },

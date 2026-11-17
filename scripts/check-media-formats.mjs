@@ -10,10 +10,10 @@ const sniffPath = join(root, "src/lib/media-formats/sniff.ts");
 const binaryPath = join(root, "src/lib/media/binary.ts");
 const schemaPath = join(root, "supabase/schema.sql");
 const constantsPath = join(root, "src/lib/constants.ts");
-const nextConfigPath = join(root, "next.config.mjs");
+const nextConfigPath = join(root, "next.config.ts");
 const proxyPath = join(root, "src/proxy.ts");
 const MEGABYTE = 1024 * 1024;
-/** Ruang Server Action untuk field selain gambar (lihat next.config.mjs). */
+/** Ruang Server Action untuk field selain gambar (lihat next.config.ts). */
 const SERVER_ACTION_EXTRA_BYTES = 10 * MEGABYTE;
 
 async function typeScriptModuleUrl(path, dependencies = {}) {
@@ -124,12 +124,12 @@ function uploadLimits(source) {
 /** Body Server Action cukup untuk gambar terbesar, tanpa ruang DoS berlebih. */
 function validateServerActionBodyLimit(source, limits) {
   const match = source.match(/bodySizeLimit:\s*["'](\d+)mb["']/i);
-  assert(match, 'next.config.mjs: bodySizeLimit harus berbentuk "<angka>mb".');
+  assert(match, 'next.config.ts: bodySizeLimit harus berbentuk "<angka>mb".');
   const expected = limits.image + SERVER_ACTION_EXTRA_BYTES;
   assert.equal(
     Number(match[1]) * MEGABYTE,
     expected,
-    `next.config.mjs: bodySizeLimit harus "${expected / MEGABYTE}mb" ` +
+    `next.config.ts: bodySizeLimit harus "${expected / MEGABYTE}mb" ` +
       "(UPLOAD_LIMITS.imageMaxBytes + 10 MB).",
   );
 }
