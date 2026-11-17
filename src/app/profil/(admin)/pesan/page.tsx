@@ -10,6 +10,7 @@ import { isOneOf } from "@/lib/admin/guard";
 import { adminFeatureHref } from "@/lib/constants";
 import { buildAdminPageMetadata } from "@/lib/seo";
 import { deviceLabel } from "@/lib/utils/request";
+import { parseSongfessContent } from "@/lib/messages/songfess";
 import { parsePageParam } from "@/lib/utils/url";
 import { pastelTint } from "@/lib/utils/color";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -92,72 +93,76 @@ export default async function PesanPage({
         />
       ) : (
         <AdminList label="Pesan anonim">
-          {result.rows.map((message, index) => (
-            <AdminRow
-              key={message.id}
-              index={index}
-              align="start"
-              highlight={!message.is_read}
-              leading={
-                <span
-                  aria-hidden="true"
-                  className="text-foreground/70 grid size-10 place-items-center rounded-xl"
-                  style={{ backgroundColor: pastelTint(message.id) }}
-                >
-                  <MessageSquare className="size-4.5" />
-                </span>
-              }
-              meta={
-                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <RelativeTime iso={message.created_at} />
-                  <span>·</span>
-                  <span>{deviceLabel(message.device)}</span>
-                  <span>·</span>
-                  <span className="font-mono">{message.ip_address ?? "IP tidak tersedia"}</span>
-                  {!message.is_read && <StatusBadge tone="primary" live>Baru</StatusBadge>}
-                  {message.is_pinned && <StatusBadge tone="success">Di beranda</StatusBadge>}
-                </span>
-              }
-              actions={
-                <>
-                  <IconAction
-                    label={message.is_pinned ? "Lepas dari beranda" : "Sematkan ke beranda"}
-                    icon={message.is_pinned ? <PinOff /> : <Pin />}
-                    tone={message.is_pinned ? "primary" : "neutral"}
-                    pressed={message.is_pinned}
-                    action={togglePinMessage.bind(null, message.id, !message.is_pinned)}
-                    successMessage={
-                      message.is_pinned
-                        ? "Pesan dilepas dari halaman depan"
-                        : "Pesan tampil di halaman depan"
-                    }
-                  />
-                  <IconAction
-                    label={message.is_read ? "Tandai belum dibaca" : "Tandai sudah dibaca"}
-                    icon={message.is_read ? <Mail /> : <MailOpen />}
-                    action={setMessageRead.bind(null, message.id, !message.is_read)}
-                  />
-                  {message.ip_address && (
-                    <BanIpAction
-                      action={banMessageIp}
-                      id={message.id}
-                      message="IP ini diblokir dan semua pesan dari IP tersebut dihapus."
+          {result.rows.map((message, index) => {
+            const parsed = parseSongfessContent(message.content);
+            return (
+              <AdminRow
+                key={message.id}
+                index={index}
+                align="start"
+                highlight={!message.is_read}
+                leading={
+                  <span
+                    aria-hidden="true"
+                    className="text-foreground/70 grid size-10 place-items-center rounded-xl"
+                    style={{ backgroundColor: pastelTint(message.id) }}
+                  >
+                    <MessageSquare className="size-4.5" />
+                  </span>
+                }
+                meta={
+                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <RelativeTime iso={message.created_at} />
+                    <span>·</span>
+                    <span>{deviceLabel(message.device)}</span>
+                    <span>·</span>
+                    <span className="font-mono">{message.ip_address ?? "IP tidak tersedia"}</span>
+                    {!message.is_read && <StatusBadge tone="primary" live>Baru</StatusBadge>}
+                    {parsed.trackId && <StatusBadge tone="neutral">Songfess</StatusBadge>}
+                    {message.is_pinned && <StatusBadge tone="success">Di beranda</StatusBadge>}
+                  </span>
+                }
+                actions={
+                  <>
+                    <IconAction
+                      label={message.is_pinned ? "Lepas dari beranda" : "Sematkan ke beranda"}
+                      icon={message.is_pinned ? <PinOff /> : <Pin />}
+                      tone={message.is_pinned ? "primary" : "neutral"}
+                      pressed={message.is_pinned}
+                      action={togglePinMessage.bind(null, message.id, !message.is_pinned)}
+                      successMessage={
+                        message.is_pinned
+                          ? "Pesan dilepas dari halaman depan"
+                          : "Pesan tampil di halaman depan"
+                      }
                     />
-                  )}
-                  <DeleteAction
-                    action={deleteMessage}
-                    id={message.id}
-                    title="Hapus pesan ini?"
-                    successMessage="Pesan dihapus"
-                  />
-                </>
-              }
-            >
-              <p className="text-sm leading-relaxed whitespace-pre-line wrap-break-word">
-                {message.content}
-              </p>
-            </AdminRow>
-          ))}
+                    <IconAction
+                      label={message.is_read ? "Tandai belum dibaca" : "Tandai sudah dibaca"}
+                      icon={message.is_read ? <Mail /> : <MailOpen />}
+                      action={setMessageRead.bind(null, message.id, !message.is_read)}
+                    />
+                    {message.ip_address && (
+                      <BanIpAction
+                        action={banMessageIp}
+                        id={message.id}
+                        message="IP ini diblokir dan semua pesan dari IP tersebut dihapus."
+                      />
+                    )}
+                    <DeleteAction
+                      action={deleteMessage}
+                      id={message.id}
+                      title="Hapus pesan ini?"
+                      successMessage="Pesan dihapus"
+                    />
+                  </>
+                }
+              >
+                <p className="text-sm leading-relaxed whitespace-pre-line wrap-break-word">
+                  {parsed.text}
+                </p>
+              </AdminRow>
+            );
+          })}
         </AdminList>
       )}
       <Pagination

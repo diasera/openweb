@@ -30,6 +30,7 @@ import type { PublicMusicTrack } from "@/lib/music/types";
 type LibraryStatus = "idle" | "loading" | "ready" | "empty" | "error";
 
 interface MusicContextValue {
+  siteName: string;
   tracks: PublicMusicTrack[];
   currentTrack: PublicMusicTrack | null;
   currentIndex: number;
@@ -46,6 +47,7 @@ interface MusicContextValue {
   closePlayer: () => void;
   toggleQueue: () => void;
   playTrackAt: (index: number) => Promise<void>;
+  playTrackById: (trackId: string) => Promise<void>;
   togglePlayback: () => Promise<void>;
   next: () => Promise<void>;
   previous: () => Promise<void>;
@@ -330,6 +332,29 @@ export function MusicProvider({
     }
   }, [currentTrack, enable, enabled, playAudio]);
 
+  const playTrackById = useCallback(
+    async (trackId: string) => {
+      if (enabled && currentTrack?.id === trackId) {
+        setExpandedPath(pathname);
+        await togglePlayback();
+        return;
+      }
+      let available = tracks;
+      if (available.length === 0) {
+        available = compatibleAudioTracks(await loadTracks(true));
+      }
+      const targetIdx = available.findIndex((item) => item.id === trackId);
+      if (targetIdx < 0) {
+        throw new Error("Lagu ini sudah tidak tersedia di playlist.");
+      }
+      setEnabledState(true);
+      persistMusicEnabled(true);
+      setExpandedPath(pathname);
+      await selectTrack(targetIdx, true, available);
+    },
+    [currentTrack?.id, enabled, loadTracks, pathname, selectTrack, togglePlayback, tracks],
+  );
+
   const next = useCallback(async () => {
     await selectTrack(currentIndex + 1, isPlaying);
   }, [currentIndex, isPlaying, selectTrack]);
@@ -437,6 +462,7 @@ export function MusicProvider({
 
   const context = useMemo<MusicContextValue>(
     () => ({
+      siteName,
       tracks,
       currentTrack,
       currentIndex,
@@ -453,12 +479,14 @@ export function MusicProvider({
       closePlayer,
       toggleQueue,
       playTrackAt,
+      playTrackById,
       togglePlayback,
       next,
       previous,
       seek,
     }),
     [
+      siteName,
       tracks,
       currentTrack,
       currentIndex,
@@ -475,6 +503,7 @@ export function MusicProvider({
       closePlayer,
       toggleQueue,
       playTrackAt,
+      playTrackById,
       togglePlayback,
       next,
       previous,

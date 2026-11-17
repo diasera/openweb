@@ -7,15 +7,20 @@ import { validationErrorMessage } from "@/lib/action-result";
 import { invalidJsonResponse } from "@/lib/api/responses";
 import { readJsonBody } from "@/lib/api/request";
 import { guardPublicMutation } from "@/lib/api/public-mutation";
+import {
+  encodeSongfessContent,
+  MAX_SONGFESS_TEXT_LENGTH,
+} from "@/lib/messages/songfess";
 import { RATE_LIMITS } from "@/lib/security/rate-limit";
 
-/** POST /api/pesan — kirim pesan anonim. IP + device ditangkap di server. */
+/** POST /api/pesan — kirim pesan anonim (opsional beserta lampiran lagu Songfess). */
 const schema = z.object({
   content: z
     .string()
     .trim()
     .min(1, "Pesan tidak boleh kosong")
     .max(500, "Maksimal 500 karakter"),
+  trackId: z.string().uuid("ID lagu tidak sah").optional().nullable(),
 });
 
 export async function POST(req: Request) {
@@ -37,10 +42,41 @@ export async function POST(req: Request) {
     );
   }
 
+  if (parsed.data.trackId && parsed.data.content.length > MAX_SONGFESS_TEXT_LENGTH) {
+    return NextResponse.json(
+      {
+        error: `Pesan dengan lampiran lagu maksimal ${MAX_SONGFESS_TEXT_LENGTH} karakter.`,
+      },
+      { status: 400 },
+    );
+  }
+
   const sb = createAdminSupabase();
+  let verifiedTrackId: string | null = null;
+  if (parsed.data.trackId) {
+    const { data: track } = await sb
+      .from("music_tracks")
+      .select("id")
+      .eq("id", parsed.data.trackId)
+      .eq("is_active", true)
+      .maybeSingle();
+    if (!track) {
+      return NextResponse.json(
+        { error: "Lagu yang dipilih sudah tidak aktif." },
+        { status: 400 },
+      );
+    }
+    verifiedTrackId = track.id;
+  }
+
   const userAgent = getUserAgent(req.headers);
+  const finalContent = encodeSongfessContent(
+    parsed.data.content,
+    verifiedTrackId,
+  );
+
   const { error } = await sb.from("messages").insert({
-    content: parsed.data.content,
+    content: finalContent,
     ip_address: access.ip,
     user_agent: userAgent,
     device: parseDevice(userAgent, req.headers),

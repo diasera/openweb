@@ -12,6 +12,7 @@ interface PublicTextMutationOptions {
   successDescription?: string;
   successNote?: string;
   fallbackError: string;
+  onSuccess?: () => void;
 }
 
 /** State dan alur kirim bersama untuk composer teks publik. */
@@ -39,6 +40,7 @@ export function usePublicTextMutation(options: PublicTextMutationOptions) {
         options.fallbackError,
       );
       setValue("");
+      options.onSuccess?.();
       setNote(options.successNote ?? "");
       toast.success(options.successTitle, {
         description: options.successDescription,

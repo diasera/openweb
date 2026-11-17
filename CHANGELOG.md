@@ -46,6 +46,16 @@ dan proyek ini menganut [Semantic Versioning](https://semver.org/lang/id/).
   (`calendar.ts`), dan tombol bagikan tautan spesifik acara.
 - Peningkatan **Galeri Pro** (`galeri-browser.tsx` & `masonry.tsx`): filter bentuk visual
   (`Potret`, `Lanskap`, `Multi-Slide`) dan sakelar kepadatan tampilan (**Nyaman** vs **Padat**).
+- Generator **Kartu Story `9:16` (`1080×1920` PNG)** terpusat di `src/lib/story-card/index.ts`
+  dan `src/components/public/story-share-button.tsx` (mendukung *Web Share API* langsung ke
+  Instagram/WhatsApp Story di ponsel dan unduhan PNG di desktop), terhubung ke Pesan Anonim,
+  Buku Angkatan, dan Profil Anggota.
+- Fitur **Songfess pada Pesan Anonim** (`src/lib/messages/songfess.ts`, `message-composer.tsx`,
+  `message-card.tsx`, `/api/pesan`, dan panel moderasi admin): pengirim dapat menyematkan lagu
+  aktif dari playlist situs yang dapat diputar langsung ke **Dynamic Island** saat pesan dibaca.
+- **Mode Buku Angkatan (*Yearbook View*)** pada halaman Anggota (`member-browser.tsx`):
+  sakelar tampilan antara grid **Direktori** dan kartu editorial **Buku Angkatan** lengkap
+  dengan kutipan bio anggota dan tombol pembuatan Kartu Story `9:16`.
 
 ### Diubah
 

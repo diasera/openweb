@@ -11,10 +11,12 @@ import {
 } from "@/lib/seo/structured-data";
 import { PageShell } from "@/components/public/page-shell";
 import { ShareButton } from "@/components/public/share-save";
+import { StoryShareButton } from "@/components/public/story-share-button";
 import { MemberHero } from "@/components/public/profil/member-hero";
 import { MemberHeatmap } from "@/components/public/profil/member-heatmap";
 import { MemberTimeline } from "@/components/public/profil/member-timeline";
 import { JsonLd } from "@/components/seo/json-ld";
+import { formatSiteDate } from "@/lib/utils/time";
 
 export const revalidate = 30;
 
@@ -60,6 +62,9 @@ export default async function MemberProfilePage({ params }: MemberProfileParams)
   const memberLabel = toDisplayLabel(labels.memberSingular, settings.locale);
   const mediaCount = activity.filter((item) => item.kind === "media").length;
   const blogCount = activity.length - mediaCount;
+  const roleLabel =
+    member.position ||
+    (member.is_pengurus ? toDisplayLabel(labels.memberCoreGroup, settings.locale) : null);
 
   return (
     <PageShell
@@ -67,7 +72,26 @@ export default async function MemberProfilePage({ params }: MemberProfileParams)
         variant: "sub",
         title: member.name,
         backHref: "/anggota",
-        right: <ShareButton title={`Profil ${member.name}`} />,
+        right: (
+          <>
+            <StoryShareButton
+              variant="icon"
+              spec={{
+                kind: "member",
+                siteName: settings.site_name,
+                name: member.name,
+                role: roleLabel,
+                identifier: member.nim,
+                bio: member.bio,
+                joinedLabel: member.created_at
+                  ? `Bergabung ${formatSiteDate(member.created_at, "monthYear")}`
+                  : null,
+                filename: `kartu-${member.slug}`,
+              }}
+            />
+            <ShareButton title={`Profil ${member.name}`} />
+          </>
+        ),
       }}
     >
       <JsonLd
