@@ -16,6 +16,7 @@ import {
   deviceTrustsUsername,
   signDeviceToken,
   signSession,
+  verifyDeviceToken,
   verifySession,
   SESSION_MAX_AGE,
   type SessionPayload,
@@ -69,12 +70,46 @@ export async function startAdminSession(
 export async function clearSessionCookie(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(SESSION_COOKIE);
+  cookieStore.delete(DEVICE_COOKIE);
+}
+
+/**
+ * Akhiri sesi admin secara tuntas: naikkan `session_version` di server agar
+ * salinan JWT lama langsung tidak berlaku, lalu bersihkan cookie sesi & perangkat.
+ */
+export async function endAdminSession(): Promise<void> {
+  if (isSupabaseConfigured()) {
+    const session = await getSession();
+    if (session) {
+      const supabase = createAdminSupabase();
+      const { error } = await supabase
+        .from("admins")
+        .update({ session_version: session.ver + 1 })
+        .eq("id", session.sub)
+        .eq("session_version", session.ver);
+      if (error) {
+        console.warn("[auth:logout] gagal mencabut versi sesi di server", {
+          code: error.code,
+          message: error.message,
+        });
+      }
+    }
+  }
+  await clearSessionCookie();
 }
 
 /** Apakah perangkat ini pernah login sukses sebagai username tersebut? */
 export async function isTrustedDeviceFor(username: string): Promise<boolean> {
   const cookieStore = await cookies();
   return deviceTrustsUsername(cookieStore.get(DEVICE_COOKIE)?.value, username);
+}
+
+/** Kunci kuota terisolasi bagi perangkat tepercaya yang valid untuk username ini. */
+export async function trustedDeviceKeyFor(
+  username: string,
+): Promise<string | null> {
+  const cookieStore = await cookies();
+  return verifyDeviceToken(cookieStore.get(DEVICE_COOKIE)?.value, username);
 }
 
 async function getSession(): Promise<SessionPayload | null> {
@@ -111,15 +146,31 @@ export async function getCurrentAdmin(): Promise<AdminAccount | null> {
   return data;
 }
 
-/** Apakah owner sudah pernah dibuat? Menentukan alur setup vs login. */
-export async function ownerExists(): Promise<boolean> {
-  if (!isSupabaseConfigured()) return false;
+export type OwnerSetupState = "exists" | "missing" | "unavailable";
+
+/** Periksa status keberadaan owner secara eksplisit agar error DB tidak dianggap instalasi kosong. */
+export async function getOwnerSetupState(): Promise<OwnerSetupState> {
+  if (!isSupabaseConfigured()) return "missing";
   const supabase = createAdminSupabase();
-  const { count } = await supabase
+  const { count, error } = await supabase
     .from("admins")
     .select("id", { count: "exact", head: true })
     .eq("role", "owner");
-  return (count ?? 0) > 0;
+  if (error) {
+    console.error("[auth:owner-check] gagal memeriksa status owner", {
+      code: error.code,
+      message: error.message,
+    });
+    return "unavailable";
+  }
+  return (count ?? 0) > 0 ? "exists" : "missing";
+}
+
+/** Apakah owner sudah pernah dibuat? Menentukan alur setup vs login. */
+export async function ownerExists(): Promise<boolean> {
+  const state = await getOwnerSetupState();
+  // Saat DB sementara bermasalah, fail-safe ke halaman login (bukan form setup owner).
+  return state !== "missing";
 }
 
 /** Wajib login. Dipakai semua halaman dan action profil admin (guard terpusat). */

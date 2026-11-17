@@ -54,7 +54,7 @@ function revalidateMembers(paths: ReadonlyArray<string | null | undefined> = [])
 }
 
 export async function saveMember(formData: FormData): Promise<ActionResult> {
-  await requireFeature("anggota");
+  const admin = await requireFeature("anggota");
   const parsed = schema.safeParse({
     id: formData.get("id") ?? "",
     name: formData.get("name") ?? "",
@@ -96,7 +96,9 @@ export async function saveMember(formData: FormData): Promise<ActionResult> {
   let uploadedPhoto: ManagedImageAsset | undefined;
   const photo = formData.get("photo");
   if (photo instanceof File && photo.size > 0) {
-    const uploaded = await uploadManagedImage("member-photo", photo);
+    const uploaded = await uploadManagedImage("member-photo", photo, {
+      adminId: admin.id,
+    });
     if (!uploaded.ok) return { error: uploaded.error };
     uploadedPhoto = uploaded.asset;
   }

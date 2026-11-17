@@ -88,12 +88,16 @@ const ADMIN_CHILD_FEATURES = ADMIN_FEATURES.filter(
   (feature): feature is Exclude<AdminFeature, "stats"> => feature !== "stats",
 );
 
+/** Alias lawas di bawah `/profil` yang dialihkan ke dasbor (lihat next.config.mjs). */
+export const ADMIN_LEGACY_PATHS = ["/profil/ringkasan"] as const;
+
 /**
  * Seluruh path yang dimiliki area admin/auth di bawah `/profil`.
  * Dipakai guard route, robots, dan generator slug agar daftar route tidak drift.
  */
 export const ADMIN_MANAGED_PATHS: readonly string[] = [
   ...Object.values(ADMIN_AUTH_PATHS),
+  ...ADMIN_LEGACY_PATHS,
   ...ADMIN_CHILD_FEATURES.map(adminFeatureHref),
 ];
 

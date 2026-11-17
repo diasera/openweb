@@ -1,5 +1,5 @@
 import { ExternalLink, FolderOpen } from "lucide-react";
-import { requireFeature } from "@/lib/auth";
+import { canAccess, requireFeature } from "@/lib/auth";
 import { getAdminAlbums } from "@/lib/admin/albums";
 import { getAdminEventOptions } from "@/lib/admin/events";
 import { isSchemaOutdatedError, SCHEMA_OUTDATED_MESSAGE } from "@/lib/database/errors";
@@ -15,10 +15,11 @@ import { deleteAlbum } from "./actions";
 export const metadata = buildAdminPageMetadata("Album");
 
 export default async function AlbumAdminPage() {
-  await requireFeature("media");
+  const admin = await requireFeature("media");
+  const canReadAgendaDrafts = canAccess(admin, "agenda");
   const [{ albums, error }, events] = await Promise.all([
-    getAdminAlbums(),
-    getAdminEventOptions(),
+    getAdminAlbums({ includeDraftEvents: canReadAgendaDrafts }),
+    getAdminEventOptions({ includeDrafts: canReadAgendaDrafts }),
   ]);
   const eventOptions = events.map((event) => ({
     id: event.id,

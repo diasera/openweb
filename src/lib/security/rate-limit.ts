@@ -20,6 +20,12 @@ export const RATE_LIMITS = {
   // Hanya berlaku untuk perangkat yang belum pernah login sukses sebagai akun ini.
   loginAccount: { scope: "auth:login-account", limit: 50, windowSeconds: 15 * 60 },
   loginIp: { scope: "auth:login-ip", limit: 40, windowSeconds: 15 * 60 },
+  // Kuota terisolasi bagi pemegang DEVICE_COOKIE sah agar tidak dikunci NAT/IP bersama.
+  loginTrustedDevice: {
+    scope: "auth:login-device",
+    limit: 15,
+    windowSeconds: 15 * 60,
+  },
   accountUpdate: {
     scope: "auth:account-update",
     limit: 10,
@@ -47,6 +53,12 @@ export const RATE_LIMITS = {
     windowSeconds: 60 * 60,
   },
   search: { scope: "public:search", limit: 90, windowSeconds: 5 * 60 },
+  savedItems: { scope: "public:saved-items", limit: 60, windowSeconds: 5 * 60 },
+  visitorIssue: {
+    scope: "public:visitor-issue",
+    limit: 30,
+    windowSeconds: 60 * 60,
+  },
   trackVisitor: {
     scope: "public:track-visitor",
     limit: 60,
@@ -54,6 +66,11 @@ export const RATE_LIMITS = {
   },
   trackIp: { scope: "public:track-ip", limit: 1000, windowSeconds: 60 * 60 },
   adminUpload: { scope: "admin:upload", limit: 120, windowSeconds: 60 * 60 },
+  adminBroadcast: {
+    scope: "admin:broadcast",
+    limit: 15,
+    windowSeconds: 60 * 60,
+  },
   // Dipakai sebagai kunci global: sapuan objek yatim paling sering sekali per 15 menit.
   uploadSweep: {
     scope: "maintenance:upload-sweep",

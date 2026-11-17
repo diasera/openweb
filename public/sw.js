@@ -4,12 +4,14 @@
  */
 const CACHE = "app-shell-v2";
 const OFFLINE_URL = "/offline";
-// Sinkron dengan src/lib/share-target.ts (dicek `npm run check:share-target`).
+// Sinkron dengan src/lib/pwa/share-target.ts (dicek `npm run check:share-target`).
 const SHARE_ACTION = "/buat/terima";
 const SHARE_FIELD = "media";
 const SHARE_CACHE = "shared-media-v1";
 const SHARE_ENTRY = "/buat/berbagi";
 const SHARE_PARAM = "berbagi";
+const SHARE_MAX_FILES = 10;
+const SHARE_MAX_FILE_BYTES = 524288000;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -48,11 +50,18 @@ async function receiveShare(request) {
     const form = await request.formData();
     const files = form
       .getAll(SHARE_FIELD)
-      .filter((file) => file instanceof File && file.size > 0);
+      .filter(
+        (file) =>
+          file instanceof File &&
+          file.size > 0 &&
+          file.size <= SHARE_MAX_FILE_BYTES,
+      )
+      .slice(0, SHARE_MAX_FILES);
     if (files.length === 0) return done("kosong");
     const cache = await caches.open(SHARE_CACHE);
     const stale = await cache.keys();
     await Promise.all(stale.map((entry) => cache.delete(entry)));
+    const sharedAt = String(Date.now());
     await Promise.all(
       files.map((file, index) =>
         cache.put(
@@ -61,6 +70,7 @@ async function receiveShare(request) {
             headers: {
               "Content-Type": file.type || "application/octet-stream",
               "X-File-Name": encodeURIComponent(file.name || "berbagi"),
+              "X-Shared-At": sharedAt,
             },
           }),
         ),
@@ -76,6 +86,7 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (
     event.request.method === "POST" &&
+    event.request.mode === "navigate" &&
     url.origin === self.location.origin &&
     url.pathname === SHARE_ACTION
   ) {
@@ -112,7 +123,15 @@ self.addEventListener("notificationclick", (event) => {
 });
 
 async function openNotificationTarget(url) {
-  const target = new URL(url, self.location.origin);
+  let target;
+  try {
+    target = new URL(url, self.location.origin);
+  } catch {
+    target = new URL("/", self.location.origin);
+  }
+  if (target.origin !== self.location.origin && target.protocol !== "https:") {
+    target = new URL("/", self.location.origin);
+  }
   if (target.origin === self.location.origin) {
     const windows = await self.clients.matchAll({
       type: "window",

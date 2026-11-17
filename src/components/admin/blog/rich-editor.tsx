@@ -38,29 +38,19 @@ import { PhotoEditor } from "@/components/media-editor";
 import { SkeletonEditor, SkeletonScreen } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import { requestJson } from "@/lib/api/client";
+import { isProseMirrorDoc } from "@/lib/blog/doc";
 import { IMAGE_UPLOAD_ACCEPT } from "@/lib/constants";
 import { canEditPhoto } from "@/lib/media-editor";
 import { prepareImageFile } from "@/lib/media-formats";
 import { validateImageFile } from "@/lib/uploads/policy";
 import { readingTime, wordCount } from "@/lib/utils/reading-time";
+import { normalizeArticleResourceHref } from "@/lib/utils/url";
 import { cn } from "@/lib/utils/cn";
 
-const LINK_PROTOCOLS = new Set(["https:", "http:", "mailto:"]);
-
-/**
- * Tautan artikel: path internal, web, atau email. Tanpa skema dianggap
- * https ("contoh.org"); javascript:/data: dan lainnya ditolak di sini
- * (server tetap menyaring ulang lewat normalizeArticleHtml).
- */
-function safeLinkHref(value: string): string | null {
-  if (value.startsWith("/") && !value.startsWith("//")) return value;
-  const candidate = /^[a-z][a-z0-9+.-]*:/i.test(value) ? value : `https://${value}`;
-  try {
-    const url = new URL(candidate);
-    return LINK_PROTOCOLS.has(url.protocol) ? url.toString() : null;
-  } catch {
-    return null;
-  }
+function safeEditorInitialContent(value: unknown): object | string {
+  if (isProseMirrorDoc(value)) return value;
+  if (typeof value === "string") return value;
+  return "";
 }
 
 /**
@@ -141,13 +131,17 @@ export function RichEditor({
 
   const editor = useEditor({
     immediatelyRender: false,
+    enableContentCheck: true,
+    onContentError: ({ editor: current }) => {
+      current.commands.setContent("");
+    },
     extensions: [
       StarterKit.configure({ link: { openOnClick: false } }),
       Image,
       Placeholder.configure({ placeholder: "Mulai menulis cerita…" }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
     ],
-    content: (initialContent as object | string) ?? "",
+    content: safeEditorInitialContent(initialContent),
     editorProps: {
       attributes: {
         "aria-label": "Isi artikel",
@@ -231,7 +225,7 @@ export function RichEditor({
       setLinkDraft(null);
       return;
     }
-    const href = safeLinkHref(value);
+    const href = normalizeArticleResourceHref(value, { autoHttps: true });
     if (!href) {
       toast.error("Tautan harus berupa URL web atau path internal.");
       return;

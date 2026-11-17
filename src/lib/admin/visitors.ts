@@ -5,17 +5,21 @@ import { getBlockedIpSet } from "@/lib/admin/ip-bans";
 import { countPushSubscriptions } from "@/lib/push/subscriptions";
 import { pageBounds, toPaged, type Paged } from "./paging";
 
-export type AdminVisitorRow = VisitorRow & { is_banned: boolean };
+export type AdminVisitorRow = Omit<VisitorRow, "visitor_id" | "user_agent"> & {
+  is_banned: boolean;
+};
 
 const ADMIN_VISITORS_PAGE_SIZE = 50;
+const ADMIN_VISITOR_COLUMNS =
+  "id, ip_address, device, notifications_enabled, visit_count, first_seen_at, last_seen_at" as const;
 
-/** Data pengunjung untuk halaman pengelolaan admin. */
+/** Data pengunjung untuk halaman pengelolaan admin (tanpa kunci internal `visitor_id`). */
 export async function getVisitors(page = 1): Promise<Paged<AdminVisitorRow>> {
   const sb = createAdminSupabase();
   const { from, to } = pageBounds(page, ADMIN_VISITORS_PAGE_SIZE);
   const { data, count } = await sb
     .from("visitors")
-    .select("*", { count: "exact" })
+    .select(ADMIN_VISITOR_COLUMNS, { count: "exact" })
     .order("last_seen_at", { ascending: false })
     .range(from, to);
   const visitors = data ?? [];

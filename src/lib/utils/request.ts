@@ -23,13 +23,36 @@ function normalizeIp(value: string | null): string | null {
   return (mapped?.[1] ?? candidate).toLowerCase();
 }
 
-function firstForwardedIp(value: string | null): string | null {
-  if (!value) return null;
-  for (const part of value.split(",").slice(0, 10)) {
+function parseForwardedIps(value: string | null): string[] {
+  if (!value) return [];
+  const ips: string[] = [];
+  for (const part of value.split(",").slice(-10)) {
     const ip = normalizeIp(part);
-    if (ip) return ip;
+    if (ip) ips.push(ip);
   }
-  return null;
+  return ips;
+}
+
+/**
+ * Ambil hop IP klien dari kanan sesuai jumlah reverse proxy tepercaya di depan
+ * server (default 1 = proxy terluar yang langsung meneruskan ke aplikasi).
+ * Mengambil elemen paling kiri rentan pemalsuan header `X-Forwarded-For` klien.
+ */
+function trustedForwardedIp(value: string | null): string | null {
+  const ips = parseForwardedIps(value);
+  if (ips.length === 0) return null;
+  const rawHops = Number.parseInt(process.env.TRUSTED_PROXY_HOPS ?? "1", 10);
+  const hops = Number.isInteger(rawHops) && rawHops >= 1 ? Math.min(rawHops, 10) : 1;
+  return ips[Math.max(0, ips.length - hops)] ?? null;
+}
+
+/** Apakah aplikasi berjalan di balik platform/reverse proxy yang mensterilkan header? */
+export function isBehindTrustedProxy(): boolean {
+  return (
+    process.env.VERCEL === "1" ||
+    process.env.CF_PAGES === "1" ||
+    Boolean(process.env.TRUSTED_PROXY?.trim())
+  );
 }
 
 /**
@@ -37,13 +60,10 @@ function firstForwardedIp(value: string | null): string | null {
  * Dipakai ulang oleh endpoint pesan, upload, & tracking pengunjung.
  */
 export function getClientIp(headers: Headers): string | null {
-  // Vercel menetapkan x-vercel-forwarded-for di edge. Jangan membiarkan XFF
-  // generik yang dikirim klien mengalahkannya.
+  // Vercel menetapkan dan menimpa x-vercel-forwarded-for di edge.
   if (process.env.VERCEL === "1") {
-    return (
-      firstForwardedIp(headers.get("x-vercel-forwarded-for")) ??
-      firstForwardedIp(headers.get("x-forwarded-for"))
-    );
+    const vercelIps = parseForwardedIps(headers.get("x-vercel-forwarded-for"));
+    return vercelIps[0] ?? null;
   }
 
   const trustedProxy = process.env.TRUSTED_PROXY?.trim().toLowerCase();
@@ -54,7 +74,7 @@ export function getClientIp(headers: Headers): string | null {
     return normalizeIp(headers.get("x-real-ip"));
   }
   if (trustedProxy === "x-forwarded-for") {
-    return firstForwardedIp(headers.get("x-forwarded-for"));
+    return trustedForwardedIp(headers.get("x-forwarded-for"));
   }
 
   // Tanpa proxy tepercaya, lebih aman tidak menetapkan IP daripada menerima

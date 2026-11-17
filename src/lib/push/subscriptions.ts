@@ -1,4 +1,5 @@
 import "server-only";
+import { isIP } from "node:net";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import {
   checkedDatabaseCall,
@@ -6,6 +7,115 @@ import {
 } from "@/lib/database/mutation";
 import type { ActionResult } from "@/lib/action-result";
 import type { PushSubscriptionRow } from "@/lib/types/database";
+
+const MAX_ENDPOINT_LENGTH = 500;
+const MAX_KEY_LENGTH = 200;
+const P256DH_BYTE_LENGTH = 65;
+const AUTH_SECRET_BYTE_LENGTH = 16;
+const MAX_DEVICES_PER_VISITOR = 5;
+
+const ALLOWED_PUSH_EXACT_HOSTS: ReadonlySet<string> = new Set([
+  "fcm.googleapis.com",
+  "updates.push.services.mozilla.com",
+]);
+
+const ALLOWED_PUSH_HOST_SUFFIXES = [
+  ".push.googleapis.com",
+  ".push.services.mozilla.com",
+  ".push.apple.com",
+  ".notify.windows.com",
+] as const;
+
+function isAllowedPushHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (!host || isIP(host) !== 0) return false;
+  if (ALLOWED_PUSH_EXACT_HOSTS.has(host)) return true;
+  return ALLOWED_PUSH_HOST_SUFFIXES.some(
+    (suffix) => host.endsWith(suffix) && host.length > suffix.length,
+  );
+}
+
+/**
+ * Validasi ketat URL endpoint Web Push (anti-SSRF). Hanya menerima HTTPS port
+ * standar (443) tanpa kredensial URL pada domain layanan push resmi browser.
+ */
+export function normalizePushEndpoint(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (
+    !trimmed ||
+    trimmed.length > MAX_ENDPOINT_LENGTH ||
+    /[\u0000-\u001f\u007f]/.test(trimmed)
+  ) {
+    return null;
+  }
+  try {
+    const url = new URL(trimmed);
+    if (
+      url.protocol !== "https:" ||
+      url.username ||
+      url.password ||
+      url.port !== "" ||
+      url.hash ||
+      url.pathname === "/" ||
+      !isAllowedPushHost(url.hostname)
+    ) {
+      return null;
+    }
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function decodeBase64UrlBytes(raw: unknown): Buffer | null {
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (
+    !trimmed ||
+    trimmed.length > MAX_KEY_LENGTH ||
+    !/^[A-Za-z0-9+/_-]+={0,2}$/.test(trimmed)
+  ) {
+    return null;
+  }
+  try {
+    const normalized = trimmed.replace(/-/g, "+").replace(/_/g, "/");
+    return Buffer.from(normalized, "base64");
+  } catch {
+    return null;
+  }
+}
+
+/** Validasi satu pintu payload langganan Web Push dari browser/service worker. */
+export function validatePushSubscriptionPayload(body: unknown): {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+} | null {
+  if (!body || typeof body !== "object") return null;
+  const candidate = body as {
+    endpoint?: unknown;
+    keys?: { p256dh?: unknown; auth?: unknown } | null;
+  };
+  const endpoint = normalizePushEndpoint(candidate.endpoint);
+  const p256dhBytes = decodeBase64UrlBytes(candidate.keys?.p256dh);
+  const authBytes = decodeBase64UrlBytes(candidate.keys?.auth);
+  if (
+    !endpoint ||
+    !p256dhBytes ||
+    p256dhBytes.byteLength !== P256DH_BYTE_LENGTH ||
+    p256dhBytes[0] !== 0x04 ||
+    !authBytes ||
+    authBytes.byteLength !== AUTH_SECRET_BYTE_LENGTH
+  ) {
+    return null;
+  }
+  return {
+    endpoint,
+    p256dh: p256dhBytes.toString("base64url"),
+    auth: authBytes.toString("base64url"),
+  };
+}
 
 export interface PushSubscriptionInput {
   visitorId: string;
@@ -20,6 +130,9 @@ export interface PushSubscriptionInput {
 export async function savePushSubscription(
   input: PushSubscriptionInput,
 ): Promise<ActionResult> {
+  const endpoint = normalizePushEndpoint(input.endpoint);
+  if (!endpoint) return { error: "Langganan push tidak valid." };
+
   const sb = createAdminSupabase();
   const saved = await checkedMutation(
     "push-subscriptions.upsert",
@@ -29,7 +142,7 @@ export async function savePushSubscription(
       .upsert(
         {
           visitor_id: input.visitorId,
-          endpoint: input.endpoint,
+          endpoint,
           p256dh: input.p256dh,
           auth: input.auth,
           user_agent: input.userAgent,
@@ -39,7 +152,25 @@ export async function savePushSubscription(
       .select("id")
       .maybeSingle(),
   );
-  return saved.ok ? {} : { error: saved.error };
+  if (!saved.ok) return { error: saved.error };
+
+  // Batasi jumlah perangkat aktif per pengunjung agar tabel tidak dibanjiri.
+  const { data: owned } = await sb
+    .from("push_subscriptions")
+    .select("id")
+    .eq("visitor_id", input.visitorId)
+    .order("created_at", { ascending: false })
+    .range(MAX_DEVICES_PER_VISITOR, MAX_DEVICES_PER_VISITOR + 20);
+  if (owned && owned.length > 0) {
+    await sb
+      .from("push_subscriptions")
+      .delete()
+      .in(
+        "id",
+        owned.map((row) => row.id),
+      );
+  }
+  return {};
 }
 
 /** Hapus semua langganan milik satu pengunjung (lonceng dimatikan). */

@@ -36,11 +36,36 @@ exception when duplicate_object then null; end $$;
 
 -- ---- Trigger updated_at (dipakai ulang beberapa tabel) ---------------------
 create or replace function public.set_updated_at()
-returns trigger language plpgsql as $$
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
 begin
   new.updated_at = now();
   return new;
 end; $$;
+revoke all on function public.set_updated_at() from public, anon, authenticated;
+
+-- Satu sumber validasi URL tujuan publik (notifikasi & agenda): path internal
+-- absolut atau HTTPS tanpa userinfo/port nonstandar maupun karakter kontrol.
+create or replace function public.is_safe_notification_url(p_url text)
+returns boolean
+language sql
+immutable
+parallel safe
+set search_path = ''
+as $$
+  select p_url is null
+    or (
+      char_length(p_url) <= 500
+      and p_url !~ '[[:cntrl:]]'
+      and (
+        p_url ~ '^/($|[^/\\])'
+        or p_url ~ '^https://[a-zA-Z0-9.-]+([/?#].*|$)'
+      )
+    );
+$$;
+revoke all on function public.is_safe_notification_url(text) from public, anon, authenticated;
 
 -- ---- site_settings (singleton, dikendalikan menu Setting) ------------------
 create table if not exists public.site_settings (
@@ -77,17 +102,7 @@ create table if not exists public.site_settings (
   google_analytics_id text,
   google_adsense_client_id text,
   google_adsense_auto_ads boolean not null default false,
-  updated_at timestamptz not null default now(),
-  constraint site_settings_hero_image_dimensions_check check (
-    (hero_image_width is null and hero_image_height is null)
-    or (
-      hero_image_url is not null
-      and hero_image_width is not null
-      and hero_image_height is not null
-      and hero_image_width between 1 and 20000
-      and hero_image_height between 1 and 20000
-    )
-  )
+  updated_at timestamptz not null default now()
 );
 drop trigger if exists trg_site_settings_updated on public.site_settings;
 create trigger trg_site_settings_updated before update on public.site_settings
@@ -123,6 +138,7 @@ set search_path = ''
 as $$
 begin
   if new.password_hash is distinct from old.password_hash
+    or new.role is distinct from old.role
     or (old.is_active and not new.is_active)
   then
     new.session_version := old.session_version + 1;
@@ -187,7 +203,7 @@ set search_path = ''
 as $$
   select array[
     'admin', 'agenda', 'anggota', 'blog', 'login', 'media',
-    'music', 'pengunjung', 'pesan', 'setting', 'setup'
+    'music', 'pengunjung', 'pesan', 'ringkasan', 'setting', 'setup'
   ]::text[];
 $$;
 
@@ -648,6 +664,13 @@ create table if not exists public.notifications (
   created_at timestamptz not null default now()
 );
 create index if not exists notifications_created_idx on public.notifications (created_at desc);
+update public.notifications
+  set url = null
+  where url is not null and not public.is_safe_notification_url(url);
+alter table public.notifications
+  drop constraint if exists notifications_url_safe_check;
+alter table public.notifications
+  add constraint notifications_url_safe_check check (public.is_safe_notification_url(url));
 
 -- ---- push_subscriptions (kanal Web Push per perangkat) ---------------------
 -- Satu pengunjung bisa punya banyak perangkat; endpoint unik agar upsert
@@ -663,6 +686,18 @@ create table if not exists public.push_subscriptions (
 );
 create index if not exists push_subscriptions_visitor_idx
   on public.push_subscriptions (visitor_id);
+delete from public.push_subscriptions
+  where endpoint !~ '^https://[a-zA-Z0-9.-]+/.+'
+     or endpoint ~ '[[:cntrl:]]'
+     or char_length(endpoint) > 500;
+alter table public.push_subscriptions
+  drop constraint if exists push_subscriptions_endpoint_https_check;
+alter table public.push_subscriptions
+  add constraint push_subscriptions_endpoint_https_check check (
+    char_length(endpoint) <= 500
+    and endpoint ~ '^https://[a-zA-Z0-9.-]+/.+'
+    and endpoint !~ '[[:cntrl:]]'
+  );
 
 -- ---- blog_posts ------------------------------------------------------------
 create table if not exists public.blog_posts (
@@ -753,6 +788,13 @@ create trigger trg_events_updated before update on public.events
   for each row execute function public.set_updated_at();
 create index if not exists events_published_starts_idx
   on public.events (is_published, starts_at);
+update public.events
+  set url = null
+  where url is not null and not public.is_safe_notification_url(url);
+alter table public.events
+  drop constraint if exists events_url_safe_check;
+alter table public.events
+  add constraint events_url_safe_check check (public.is_safe_notification_url(url));
 
 -- ---- albums (album per acara) --------------------------------------------
 create table if not exists public.albums (
@@ -944,6 +986,38 @@ begin
   end if;
 end;
 $$;
+
+-- Indeks GIN full-text search agar RPC search_site publik tetap cepat & tahan DoS.
+create index if not exists members_search_gin_idx on public.members using gin (
+  to_tsvector('public.app_search', name || ' ' || coalesce(position, ''))
+);
+create index if not exists media_search_gin_idx on public.media using gin (
+  to_tsvector(
+    'public.app_search',
+    coalesce(title, '') || ' ' || coalesce(caption, '') || ' ' ||
+    coalesce(category, '') || ' ' || coalesce(uploader_name, '')
+  )
+) where status = 'approved';
+create index if not exists blog_posts_search_gin_idx on public.blog_posts using gin (
+  (
+    setweight(to_tsvector('public.app_search', title), 'A') ||
+    setweight(to_tsvector('public.app_search', coalesce(excerpt, '')), 'B') ||
+    setweight(to_tsvector('public.app_search', content_html), 'C')
+  )
+) where status = 'published';
+create index if not exists albums_search_gin_idx on public.albums using gin (
+  (
+    setweight(to_tsvector('public.app_search', title), 'A') ||
+    setweight(to_tsvector('public.app_search', coalesce(description, '')), 'B')
+  )
+);
+create index if not exists events_search_gin_idx on public.events using gin (
+  (
+    setweight(to_tsvector('public.app_search', title), 'A') ||
+    setweight(to_tsvector('public.app_search', coalesce(location, '')), 'B') ||
+    setweight(to_tsvector('public.app_search', coalesce(description, '')), 'C')
+  )
+) where is_published = true;
 
 -- Spotlight: awalan kata (ketik "kem" -> "kemah") + cadangan substring.
 -- SECURITY INVOKER: RLS dan grant kolom anon tetap berlaku.
@@ -1210,6 +1284,10 @@ begin
       select 1 from public.visitors as visitor
       where visitor.visitor_id = subscription.visitor_id
     );
+
+  -- Blokir IP ikut masa simpan data teknis yang dijanjikan halaman Privasi.
+  delete from public.banned_ips
+  where created_at < v_cutoff;
 end;
 $$;
 
@@ -1333,12 +1411,15 @@ alter table public.blog_posts   drop column if exists views;
 alter table public.media        drop column if exists thumbnail_url;
 alter table public.media_slides drop column if exists thumbnail_url;
 
--- RLS membatasi BARIS, bukan KOLOM. Cabut SELECT tabel penuh agar anon tidak
--- dapat mengambil IP/device lewat PostgREST langsung dengan anon key.
-revoke select on public.media, public.comments, public.blog_posts,
-  public.notifications, public.music_tracks, public.events, public.albums,
-  public.media_slides
-  from public, anon, authenticated;
+-- Default privilege skema public di Supabase memberi GRANT ALL (termasuk
+-- TRUNCATE & eksposur skema OpenAPI) ke anon/authenticated. Cabut SEMUA hak
+-- tabel terlebih dahulu, berikan penuh hanya ke service_role, lalu buka SELECT
+-- secara eksplisit hanya pada tabel dan kolom publik yang aman.
+revoke all on all tables in schema public from public, anon, authenticated;
+grant all on all tables in schema public to service_role;
+
+grant select on public.site_settings, public.members, public.member_mentions
+  to anon, authenticated;
 
 grant select (
   id, type, title, category, url, mime_type, caption, uploader_name,

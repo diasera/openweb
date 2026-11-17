@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
+import { rateLimitResponse } from "@/lib/api/responses";
 import { getMediaByIds, getPublishedPostsByIds } from "@/lib/data";
 import { SAVED_ITEM_LIMITS } from "@/lib/constants";
+import {
+  consumeRateLimit,
+  RATE_LIMITS,
+  requestRateLimitIdentity,
+} from "@/lib/security/rate-limit";
+import { isSupabaseConfigured } from "@/lib/supabase/public";
 
 const ID_PATTERN = /^[A-Za-z0-9-]{1,64}$/;
 
@@ -14,6 +21,14 @@ function parseIds(value: string | null): string[] {
 
 /** GET /api/tersimpan?pins=a,b&posts=c — data publik koleksi Tersimpan. */
 export async function GET(request: Request) {
+  if (isSupabaseConfigured()) {
+    const limited = await consumeRateLimit(
+      RATE_LIMITS.savedItems,
+      requestRateLimitIdentity(request.headers),
+    );
+    if (!limited.ok || !limited.allowed) return rateLimitResponse(limited);
+  }
+
   const params = new URL(request.url).searchParams;
   const pinIds = parseIds(params.get("pins"));
   const postIds = parseIds(params.get("posts"));

@@ -11,7 +11,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { buildPageMetadata, PUBLIC_PAGE_SEO } from "@/lib/seo";
-import { normalizeNotificationHref } from "@/lib/utils/url";
+import { isExternalHref, normalizeNotificationHref } from "@/lib/utils/url";
 
 export const dynamic = "force-dynamic"; // membaca cookie pengunjung (status lonceng)
 export async function generateMetadata(): Promise<Metadata> {
@@ -55,6 +55,9 @@ export default async function NotifikasiPage() {
                   {href && (
                     <a
                       href={href}
+                      {...(isExternalHref(href)
+                        ? { target: "_blank", rel: "noopener noreferrer" }
+                        : {})}
                       className="text-primary-readable mt-1 inline-block text-sm font-medium"
                     >
                       Buka →

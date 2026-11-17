@@ -16,6 +16,7 @@ import {
 import { normalizeNotificationHref } from "@/lib/utils/url";
 import { dispatchPushNotification } from "@/lib/push/send";
 import { removePushSubscriptionsByVisitor } from "@/lib/push/subscriptions";
+import { consumeRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 
 const notificationSchema = z.object({
   title: z.string().trim().min(1, "Judul wajib diisi").max(120),
@@ -42,6 +43,15 @@ export async function sendNotification(formData: FormData): Promise<ActionResult
     url: formData.get("url") ?? "",
   });
   if (!parsed.success) return { error: validationErrorMessage(parsed) };
+
+  const limited = await consumeRateLimit(RATE_LIMITS.adminBroadcast, [admin.id]);
+  if (!limited.ok) return { error: limited.error };
+  if (!limited.allowed) {
+    return {
+      error: `Terlalu banyak pengiriman notifikasi. Coba lagi dalam ${limited.retryAfterSeconds} detik.`,
+    };
+  }
+
   const url = normalizeNotificationHref(parsed.data.url);
   const sent = await checkedMutation(
     "notifications.create",

@@ -28,6 +28,7 @@ import { ensureMemberSlugs } from "@/lib/members/slug";
 import { normalizeSiteSettings, normalizeStringList } from "@/lib/site-config";
 import { isUuid } from "@/lib/utils/id";
 import { isSchemaOutdatedError } from "@/lib/database/errors";
+import { readingTime } from "@/lib/utils/reading-time";
 import { SITE_TIME_ZONE, zonedParts } from "@/lib/utils/time";
 import { isLookupSlug, optionalRead, unwrap, unwrapCount, unwrapFeature } from "./read";
 import {
@@ -143,7 +144,7 @@ function publicPostRow(
   return { ...row, content_json: null, author_id: null, previous_slugs: [] };
 }
 
-/** Kartu artikel di daftar blog (kolom yang diperlukan; content utk waktu baca). */
+/** Kartu artikel di daftar blog & koleksi tersimpan (tanpa mengirim HTML penuh ke klien). */
 export type PublicPostCard = Pick<
   BlogPostRow,
   | "id"
@@ -155,8 +156,18 @@ export type PublicPostCard = Pick<
   | "published_at"
   | "updated_at"
   | "author_name"
-  | "content_html"
->;
+> & {
+  reading_minutes: number;
+};
+
+type PostCardSource = Omit<PublicPostCard, "reading_minutes"> & {
+  content_html: string;
+};
+
+function toPublicPostCard(source: PostCardSource): PublicPostCard {
+  const { content_html, ...card } = source;
+  return { ...card, reading_minutes: readingTime(content_html) };
+}
 
 /** Komentar versi publik: tanpa IP/device. */
 export type PublicComment = Pick<
@@ -493,10 +504,9 @@ export async function getPublishedPosts(
   filter?: PublishedPostFilter,
 ): Promise<PublicPostCard[]> {
   if (!isSupabaseConfigured()) {
-    return DEMO_POSTS.filter((post) => matchesPostFilter(post, filter)).slice(
-      offset,
-      offset + limit,
-    );
+    return DEMO_POSTS.filter((post) => matchesPostFilter(post, filter))
+      .slice(offset, offset + limit)
+      .map(toPublicPostCard);
   }
   let query = createPublicSupabase()
     .from("blog_posts")
@@ -510,7 +520,7 @@ export async function getPublishedPosts(
       .order("published_at", { ascending: false })
       .range(offset, offset + limit - 1),
   );
-  return data ?? [];
+  return (data ?? []).map(toPublicPostCard);
 }
 
 /** Artikel terbit berdasarkan daftar id, mengikuti urutan permintaan. */
@@ -520,7 +530,9 @@ export async function getPublishedPostsByIds(
   const unique = [...new Set(ids)].slice(0, SAVED_ITEM_LIMITS.idsPerRequest);
   if (unique.length === 0) return [];
   if (!isSupabaseConfigured()) {
-    return unique.flatMap((id) => DEMO_POSTS.find((post) => post.id === id) ?? []);
+    return unique
+      .flatMap((id) => DEMO_POSTS.find((post) => post.id === id) ?? [])
+      .map(toPublicPostCard);
   }
   const valid = unique.filter(isUuid);
   if (valid.length === 0) return [];
@@ -532,7 +544,9 @@ export async function getPublishedPostsByIds(
       .eq("status", "published")
       .in("id", valid),
   );
-  const byId = new Map((data ?? []).map((row) => [row.id, row]));
+  const byId = new Map(
+    (data ?? []).map((row) => [row.id, toPublicPostCard(row)]),
+  );
   return valid.flatMap((id) => byId.get(id) ?? []);
 }
 
@@ -578,6 +592,7 @@ export async function getComments(
     const comments = DEMO_COMMENTS.filter((c) => c.media_id === mediaId);
     return { comments, total: comments.length };
   }
+  if (!isUuid(mediaId)) return { comments: [], total: 0 };
   const sb = createPublicSupabase();
   const [rows, total] = await Promise.all([
     sb

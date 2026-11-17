@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { STORAGE_BUCKETS, UPLOAD_LIMITS } from "@/lib/constants";
 import {
+  extractStorageObjectPath,
   getStoragePublicUrl,
   getSignedReadUrls,
   moveStorageObject,
@@ -27,11 +28,7 @@ import { syncMediaMentions } from "@/lib/members/mentions";
  * sehingga unique index tetap menjadi pengaman replay finalisasi.
  */
 function mediaPathFromUrl(publicUrl: string): string | null {
-  const marker = `/${STORAGE_BUCKETS.media}/`;
-  const idx = publicUrl.indexOf(marker);
-  if (idx === -1) return null;
-  const rawPath = publicUrl.slice(idx + marker.length).split("?")[0];
-  return rawPath ? decodeURIComponent(rawPath) : null;
+  return extractStorageObjectPath(STORAGE_BUCKETS.media, publicUrl);
 }
 
 /** Pindahkan objek media ke bucket publik (true) atau kembali ke inbox privat. */

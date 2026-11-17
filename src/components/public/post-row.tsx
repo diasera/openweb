@@ -1,6 +1,5 @@
 import Image from "next/image";
 import { categoryColor } from "@/lib/categories";
-import { readingTime } from "@/lib/utils/reading-time";
 import { gradientCss } from "@/lib/utils/color";
 import { cardClass } from "@/components/ui/card";
 import type { PublicPostCard } from "@/lib/data";
@@ -37,7 +36,7 @@ export function PostRow({ post }: { post: PublicPostCard }) {
           <p className="text-muted line-clamp-2 text-xs">{post.excerpt}</p>
         )}
         <p className="text-muted mt-1 text-caption2">
-          {post.author_name || "Redaksi"} · {readingTime(post.content_html)} mnt
+          {post.author_name || "Redaksi"} · {post.reading_minutes} mnt
         </p>
       </div>
     </MotionLink>

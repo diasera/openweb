@@ -145,7 +145,9 @@ export async function savePost(formData: FormData): Promise<ActionResult & { id?
   let uploadedCover: ManagedImageAsset | undefined;
   const cover = formData.get("cover");
   if (cover instanceof File && cover.size > 0) {
-    const uploaded = await uploadManagedImage("blog-cover", cover);
+    const uploaded = await uploadManagedImage("blog-cover", cover, {
+      adminId: admin.id,
+    });
     if (!uploaded.ok) return { error: uploaded.error };
     uploadedCover = uploaded.asset;
   }
@@ -181,7 +183,7 @@ export async function savePost(formData: FormData): Promise<ActionResult & { id?
     tags,
     // Artikel baru ditulis admin ini; artikel lama memakai penulis tersimpan.
     author_name: current ? current.data.author_name : admin.name,
-    content_html: d.content_html,
+    content_html: contentHtml,
   });
 
   if (id) {

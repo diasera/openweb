@@ -9,7 +9,7 @@ body:
         Terima kasih sudah meluangkan waktu melapor! Pastikan bug ini belum
         pernah dilaporkan dengan [mencari issue yang ada](https://github.com/diasera/openweb/issues?q=is%3Aissue).
 
-        ⚠️ Celah keamanan **jangan** dilaporkan di sini — ikuti [SECURITY.md](https://github.com/diasera/openweb/blob/main/SECURITY.md).
+        ⚠️ Celah keamanan **jangan** dilaporkan di sini — ikuti [SECURITY.md](https://github.com/diasera/openweb/blob/main/.github/SECURITY.md).
   - type: textarea
     id: description
     attributes:

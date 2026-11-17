@@ -28,7 +28,12 @@ export function MotionLink({ href, onClick, ...props }: MotionLinkProps) {
       return;
     }
 
-    const url = new URL(href, window.location.href);
+    let url: URL;
+    try {
+      url = new URL(href, window.location.href);
+    } catch {
+      return;
+    }
     if (url.origin !== window.location.origin) return;
 
     event.preventDefault();

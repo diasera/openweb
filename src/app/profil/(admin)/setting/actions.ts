@@ -113,7 +113,7 @@ async function persistSiteSection(
   section: SiteSettingsSection,
   formData: FormData,
 ): Promise<ActionResult> {
-  await requireFeature("setting");
+  const admin = await requireFeature("setting");
 
   const parsed = parseSiteSectionFormData(section, formData);
   if (!parsed.success) {
@@ -155,7 +155,9 @@ async function persistSiteSection(
     const file = formData.get(field.formKey);
     const isHero = field === SITE_HERO_IMAGE_FIELD;
     if (file instanceof File && file.size > 0) {
-      const uploaded = await uploadManagedImage(field.kind, file);
+      const uploaded = await uploadManagedImage(field.kind, file, {
+        adminId: admin.id,
+      });
       if (!uploaded.ok) {
         await removeManagedImagesIfUnused(uploadedAssets, isSiteImageReferenced);
         return { error: uploaded.error };

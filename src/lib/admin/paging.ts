@@ -6,8 +6,13 @@ export interface Paged<T> {
   totalPages: number;
 }
 
+function normalizePageNumber(page: number): number {
+  return Number.isSafeInteger(page) && page >= 1 ? page : 1;
+}
+
 export function pageBounds(page: number, size: number) {
-  const from = (Math.max(1, page) - 1) * size;
+  const safePage = normalizePageNumber(page);
+  const from = (safePage - 1) * size;
   return { from, to: from + size - 1 };
 }
 
@@ -21,7 +26,7 @@ export function toPaged<T>(
   return {
     rows,
     total: count,
-    page,
+    page: normalizePageNumber(page),
     totalPages: Math.max(1, Math.ceil(count / size)),
   };
 }

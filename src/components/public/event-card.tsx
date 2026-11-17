@@ -11,6 +11,7 @@ import {
   eventPagePath,
 } from "@/lib/agenda/calendar";
 import { eventDateTile, formatEventSchedule } from "@/lib/utils/time";
+import { isExternalHref, normalizeNotificationHref } from "@/lib/utils/url";
 import { cn } from "@/lib/utils/cn";
 
 /** Kartu acara: ubin tanggal, jadwal, lokasi, hitung mundur, dan tombol kalender. */
@@ -29,7 +30,8 @@ export function EventCard({
 }) {
   const tile = eventDateTile(event.starts_at);
   const pageUrl = new URL(eventPagePath(event.id), siteUrl).toString();
-  const externalLink = event.url?.startsWith("http");
+  const safeHref = normalizeNotificationHref(event.url);
+  const externalLink = safeHref ? isExternalHref(safeHref) : false;
 
   return (
     <article
@@ -98,9 +100,9 @@ export function EventCard({
             googleHref={googleCalendarUrl(event, pageUrl)}
           />
         )}
-        {event.url && (
+        {safeHref && (
           <a
-            href={event.url}
+            href={safeHref}
             {...(externalLink ? { target: "_blank", rel: "noopener noreferrer" } : {})}
             className="text-primary-readable inline-flex items-center gap-1 px-2 text-sm font-semibold"
           >

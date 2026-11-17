@@ -1,4 +1,5 @@
 import "server-only";
+import { isBehindTrustedProxy } from "@/lib/utils/request";
 
 export type JsonBodyResult<T> =
   | { ok: true; data: T }
@@ -12,15 +13,15 @@ function requestOrigins(request: Request): Set<string> {
     // URL Request dari Next normalnya selalu absolut.
   }
 
-  const forwardedHost = request.headers
-    .get("x-forwarded-host")
-    ?.split(",")[0]
-    ?.trim();
+  // Hanya percayai header X-Forwarded-* bila berjalan di balik proxy tepercaya.
+  const trustForwarded = isBehindTrustedProxy();
+  const forwardedHost = trustForwarded
+    ? request.headers.get("x-forwarded-host")?.split(",")[0]?.trim()
+    : undefined;
   const host = forwardedHost ?? request.headers.get("host")?.trim();
-  const forwardedProtocol = request.headers
-    .get("x-forwarded-proto")
-    ?.split(",")[0]
-    ?.trim();
+  const forwardedProtocol = trustForwarded
+    ? request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim()
+    : undefined;
   if (
     host &&
     /^[a-z0-9.-]+(?::\d{1,5})?$/i.test(host) &&
@@ -31,10 +32,11 @@ function requestOrigins(request: Request): Set<string> {
   return origins;
 }
 
-/** Tolak browser cross-site; klien non-browser tanpa Origin tetap didukung. */
+/** Tolak browser lintas-origin (termasuk subdomain `same-site`); klien non-browser tetap didukung. */
 export function validateMutationOrigin(request: Request): string | null {
-  if (request.headers.get("sec-fetch-site") === "cross-site") {
-    return "Permintaan lintas situs tidak diizinkan.";
+  const fetchSite = request.headers.get("sec-fetch-site")?.trim().toLowerCase();
+  if (fetchSite && fetchSite !== "same-origin" && fetchSite !== "none") {
+    return "Permintaan lintas origin tidak diizinkan.";
   }
   const origin = request.headers.get("origin");
   if (!origin) return null;

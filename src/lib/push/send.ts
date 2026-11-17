@@ -3,12 +3,17 @@ import webpush from "web-push";
 import { getVapidConfig } from "./vapid";
 import {
   getPushSubscriptions,
+  normalizePushEndpoint,
   removePushSubscriptionsByEndpoints,
 } from "./subscriptions";
 
 /** Ukuran paralel per gagang pengiriman — cukup kecil agar tidak membanjiri
  *  event loop, cukup besar untuk ratusan perangkat. */
 const SEND_CHUNK = 25;
+const PUSH_REQUEST_TIMEOUT_MS = 10_000;
+const PRUNABLE_PUSH_STATUS_CODES: ReadonlySet<number> = new Set([
+  400, 401, 403, 404, 410,
+]);
 
 export interface PushDispatchResult {
   skipped: boolean;
@@ -60,14 +65,21 @@ export async function dispatchPushNotification(
   let sent = 0;
   let failed = 0;
   const deadEndpoints: string[] = [];
+  const validSubscriptions = subscriptions.filter((row) => {
+    if (normalizePushEndpoint(row.endpoint)) return true;
+    failed += 1;
+    deadEndpoints.push(row.endpoint);
+    return false;
+  });
 
-  for (let offset = 0; offset < subscriptions.length; offset += SEND_CHUNK) {
-    const chunk = subscriptions.slice(offset, offset + SEND_CHUNK);
+  for (let offset = 0; offset < validSubscriptions.length; offset += SEND_CHUNK) {
+    const chunk = validSubscriptions.slice(offset, offset + SEND_CHUNK);
     const results = await Promise.allSettled(
       chunk.map((row) =>
         webpush.sendNotification(
           { endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } },
           body,
+          { timeout: PUSH_REQUEST_TIMEOUT_MS },
         ),
       ),
     );
@@ -79,7 +91,7 @@ export async function dispatchPushNotification(
       failed += 1;
       const status = (result.reason as { statusCode?: number } | undefined)
         ?.statusCode;
-      if (status === 404 || status === 410) {
+      if (status !== undefined && PRUNABLE_PUSH_STATUS_CODES.has(status)) {
         deadEndpoints.push(chunk[index]!.endpoint);
       }
     });

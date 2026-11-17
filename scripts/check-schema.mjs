@@ -128,6 +128,20 @@ const events = await asRole("anon", "select title from public.events order by st
 assert.deepEqual(events.map((r) => r.title), ["Study Tour"]);
 await rejects("anon", "select created_by from public.events", /permission denied/);
 await rejects("anon", "select ip_address from public.media", /permission denied/);
+await rejects("anon", "select password_hash from public.admins", /permission denied/);
+await rejects("anon", "truncate public.admins", /permission denied/);
+await assert.rejects(
+  rows("insert into public.notifications (title, url) values ('Uji', 'javascript:alert(1)')"),
+  /notifications_url_safe_check/,
+);
+await assert.rejects(
+  rows("insert into public.events (title, starts_at, url) values ('Uji', now(), 'data:text/html,1')"),
+  /events_url_safe_check/,
+);
+await assert.rejects(
+  rows("insert into public.push_subscriptions (visitor_id, endpoint, p256dh, auth) values ('v', 'http://127.0.0.1/x', 'k', 'a')"),
+  /push_subscriptions_endpoint_https_check/,
+);
 const albums = await asRole("anon", "select slug, media_count from public.album_summaries()");
 assert.deepEqual(albums.map((r) => [r.slug, Number(r.media_count)]), [["study-tour", 2]]);
 const studySearch = await asRole("anon", "select kind, title from public.search_site('Study', 5)");

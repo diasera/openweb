@@ -1,35 +1,59 @@
 import "server-only";
-import { cookies } from "next/headers";
+import { cookies, headers as readRequestHeaders } from "next/headers";
 import { VISITOR_COOKIE } from "@/lib/constants";
+import {
+  signVisitorToken,
+  verifyVisitorToken,
+  VISITOR_MAX_AGE,
+} from "@/lib/auth/session";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { getClientIp, getUserAgent, parseDevice } from "@/lib/utils/request";
-import { isUuid } from "@/lib/utils/id";
 import {
   checkedDatabaseCall,
   checkedMutation,
 } from "@/lib/database/mutation";
 import type { DeviceInfo } from "@/lib/types/database";
 import type { ActionResult } from "@/lib/action-result";
-import { RATE_LIMITS, rateLimitKeyHash } from "@/lib/security/rate-limit";
+import {
+  consumeRateLimit,
+  RATE_LIMITS,
+  rateLimitKeyHash,
+  requestRateLimitIdentity,
+} from "@/lib/security/rate-limit";
 import { SCHEMA_OUTDATED_MESSAGE } from "@/lib/database/errors";
 
-const ONE_YEAR = 60 * 60 * 24 * 365;
-
-/** Ambil id pengunjung dari cookie; buat + set bila belum ada (opsional). */
-export async function getVisitorId(create = false): Promise<string | null> {
+/**
+ * Ambil id pengunjung dari cookie bertanda tangan HMAC; terbitkan token baru
+ * bila diminta (`create = true`) selama kuota alokasi IP masih tersedia.
+ * Cookie UUID polos tanpa tanda tangan ditolak agar pengunjung tidak dapat
+ * memalsukan `visitor_id` orang lain (IDOR) atau memutar identitas acak.
+ */
+export async function getVisitorId(
+  create = false,
+  requestHeaders?: Headers,
+): Promise<string | null> {
   const store = await cookies();
-  let vid = store.get(VISITOR_COOKIE)?.value ?? null;
-  if (vid && !isUuid(vid)) vid = null;
-  if (!vid && create) {
-    vid = crypto.randomUUID();
-    store.set(VISITOR_COOKIE, vid, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: ONE_YEAR,
-    });
-  }
+  const existing = await verifyVisitorToken(store.get(VISITOR_COOKIE)?.value);
+  if (existing || !create) return existing;
+
+  const hdrs = requestHeaders ?? (await readRequestHeaders());
+  const issued = await consumeRateLimit(
+    RATE_LIMITS.visitorIssue,
+    requestRateLimitIdentity(hdrs),
+  );
+  if (!issued.ok || !issued.allowed) return null;
+
+  const vid = crypto.randomUUID();
+  const signed = await signVisitorToken(vid);
+  if (!signed) return null;
+
+  store.set(VISITOR_COOKIE, signed, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: VISITOR_MAX_AGE,
+  });
   return vid;
 }
 

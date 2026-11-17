@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireFeature } from "@/lib/auth";
+import { canAccess, requireFeature } from "@/lib/auth";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { checkedMutation } from "@/lib/database/mutation";
 import { findAvailableSlug } from "@/lib/database/unique-slug";
@@ -53,11 +53,23 @@ export async function saveAlbum(formData: FormData): Promise<ActionResult> {
     ? await checkedMutation(
         "albums.load",
         "Gagal membaca album.",
-        sb.from("albums").select("id, slug, previous_slugs").eq("id", id).maybeSingle(),
+        sb.from("albums").select("id, slug, previous_slugs, event_id").eq("id", id).maybeSingle(),
         { notFoundMessage: "Album tidak ditemukan." },
       )
     : null;
   if (current && !current.ok) return { error: current.error };
+
+  // Admin khusus media tidak boleh mengintip/menautkan acara draf baru tanpa izin agenda.
+  if (event_id && !canAccess(admin, "agenda") && event_id !== current?.data.event_id) {
+    const { data: pubEvent, error: eventErr } = await sb
+      .from("events")
+      .select("id")
+      .eq("id", event_id)
+      .eq("is_published", true)
+      .maybeSingle();
+    if (eventErr) return { error: "Gagal memverifikasi acara." };
+    if (!pubEvent) return { error: "Acara tidak ditemukan atau belum diterbitkan." };
+  }
 
   const slug = await findAvailableSlug(
     "albums",

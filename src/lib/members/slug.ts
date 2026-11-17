@@ -1,10 +1,13 @@
 import type { MemberRow } from "@/lib/types/database";
 import { ADMIN_MANAGED_PATHS } from "@/lib/constants";
-import { isSlugVariantOf, normalizeSlugSource } from "@/lib/utils/slug";
+import {
+  CANONICAL_SLUG_PATTERN,
+  isSlugVariantOf,
+  normalizeSlugSource,
+} from "@/lib/utils/slug";
 
 const SLUG_SEPARATOR = /[^a-z0-9]+/g;
 const EDGE_SEPARATOR = /^-+|-+$/g;
-const VALID_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 type MemberWithOptionalSlug = {
   name: string;
@@ -24,7 +27,7 @@ function isReservedMemberSlug(slug: string): boolean {
 }
 
 function isUsableStoredSlug(slug: string): boolean {
-  return VALID_SLUG.test(slug) && !isReservedMemberSlug(slug);
+  return CANONICAL_SLUG_PATTERN.test(slug) && !isReservedMemberSlug(slug);
 }
 
 /**

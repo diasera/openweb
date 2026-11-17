@@ -1,5 +1,7 @@
 import "server-only";
 import sanitizeHtml from "sanitize-html";
+import { normalizeArticleResourceHref } from "@/lib/utils/url";
+import { isProseMirrorDoc } from "./doc";
 
 function normalizeSpaces(value: string) {
   return value
@@ -34,24 +36,12 @@ const ARTICLE_TAGS = [
   "img",
 ] as const;
 
-function safeArticleResource(value: string, image = false): string {
-  const href = value.trim();
-  if (!href || /[\u0000-\u001f\u007f]/.test(href)) return "";
-  if (href.startsWith("/") && !href.startsWith("//") && !href.startsWith("/\\")) {
-    return href;
-  }
-  if (!image && href.startsWith("#")) return href;
-
-  try {
-    const url = new URL(href);
-    const protocols = image
-      ? new Set(["https:", "http:"])
-      : new Set(["https:", "http:", "mailto:", "tel:"]);
-    return protocols.has(url.protocol) ? href : "";
-  } catch {
-    return "";
-  }
-}
+const UNSAFE_OBJECT_KEYS: ReadonlySet<string> = new Set([
+  "__proto__",
+  "constructor",
+  "prototype",
+]);
+const MAX_ARTICLE_JSON_DEPTH = 32;
 
 /**
  * Membersihkan HTML TipTap di satu pintu. Fungsi ini dipakai saat penyimpanan
@@ -74,6 +64,9 @@ export function normalizeArticleHtml(html: string) {
       h6: ["style"],
       code: ["class"],
     },
+    allowedClasses: {
+      code: [/^language-[a-z0-9-]+$/i],
+    },
     allowedStyles: {
       "*": {
         "text-align": [/^(?:left|center|right|justify)$/],
@@ -84,7 +77,7 @@ export function normalizeArticleHtml(html: string) {
     allowProtocolRelative: false,
     transformTags: {
       a: (_tagName, attributes) => {
-        const href = safeArticleResource(attributes.href ?? "");
+        const href = normalizeArticleResourceHref(attributes.href);
         if (!href) return { tagName: "a", attribs: {} };
         const target = attributes.target === "_blank" ? "_blank" : "";
         return {
@@ -98,7 +91,7 @@ export function normalizeArticleHtml(html: string) {
         };
       },
       img: (_tagName, attributes) => {
-        const src = safeArticleResource(attributes.src ?? "", true);
+        const src = normalizeArticleResourceHref(attributes.src, { image: true });
         if (!src) return { tagName: "img", attribs: {} };
         return {
           tagName: "img",
@@ -115,26 +108,43 @@ export function normalizeArticleHtml(html: string) {
   });
 }
 
-/** JSON TipTap ikut dinormalisasi agar edit berikutnya tidak menghidupkan bug lama. */
-export function normalizeArticleJson(value: unknown, key = ""): unknown {
+function normalizeArticleJsonNode(
+  value: unknown,
+  key = "",
+  depth = 0,
+): unknown {
+  if (depth > MAX_ARTICLE_JSON_DEPTH) {
+    throw new RangeError("Struktur JSON artikel terlalu dalam.");
+  }
   if (typeof value === "string") {
     const normalized = normalizeSpaces(value);
-    if (key === "href") return safeArticleResource(normalized);
-    if (key === "src") return safeArticleResource(normalized, true);
+    if (key === "href") return normalizeArticleResourceHref(normalized);
+    if (key === "src") {
+      return normalizeArticleResourceHref(normalized, { image: true });
+    }
     return normalized;
   }
   if (Array.isArray(value)) {
-    return value.map((item) => normalizeArticleJson(item));
+    return value.map((item) => normalizeArticleJsonNode(item, "", depth + 1));
   }
   if (value && typeof value === "object") {
     return Object.fromEntries(
-      Object.entries(value).map(([itemKey, item]) => [
-        itemKey,
-        normalizeArticleJson(item, itemKey),
-      ]),
+      Object.entries(value)
+        .filter(([itemKey]) => !UNSAFE_OBJECT_KEYS.has(itemKey))
+        .map(([itemKey, item]) => [
+          itemKey,
+          normalizeArticleJsonNode(item, itemKey, depth + 1),
+        ]),
     );
   }
   return value;
+}
+
+/** JSON TipTap ikut dinormalisasi & divalidasi sebagai dokumen ProseMirror sah. */
+export function normalizeArticleJson(value: unknown): unknown {
+  if (!isProseMirrorDoc(value)) return null;
+  const normalized = normalizeArticleJsonNode(value);
+  return isProseMirrorDoc(normalized) ? normalized : null;
 }
 
 const IMAGE_SOURCE = /<img\b[^>]*?\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;

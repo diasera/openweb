@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   const ip = getClientIp(hdrs);
   const userAgent = getUserAgent(hdrs);
 
-  const vid = await getVisitorId(true);
+  const vid = await getVisitorId(true, hdrs);
   if (!vid) return new NextResponse(null, { status: 204 });
   await recordVisit(vid, ip, userAgent, parseDevice(userAgent));
   after(runScheduledMaintenance);

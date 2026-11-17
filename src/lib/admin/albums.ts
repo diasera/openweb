@@ -10,15 +10,21 @@ export type AdminAlbum = AlbumRow & {
 export type AlbumOption = Pick<AlbumRow, "id" | "title">;
 
 /** Daftar album admin + jumlah media tampil + judul acara terkait. */
-export async function getAdminAlbums(): Promise<{
+export async function getAdminAlbums(options: {
+  includeDraftEvents?: boolean;
+} = {}): Promise<{
   albums: AdminAlbum[];
   error: { code?: string; message: string } | null;
 }> {
   const sb = createAdminSupabase();
+  let eventsQuery = sb.from("events").select("id, title");
+  if (!options.includeDraftEvents) {
+    eventsQuery = eventsQuery.eq("is_published", true);
+  }
   const [albums, summaries, events] = await Promise.all([
     sb.from("albums").select("*").order("created_at", { ascending: false }),
     sb.rpc("album_summaries"),
-    sb.from("events").select("id, title"),
+    eventsQuery,
   ]);
   if (albums.error) return { albums: [], error: albums.error };
   const counts = new Map(

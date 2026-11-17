@@ -13,13 +13,13 @@ export async function GET(
 ) {
   const { slug } = await params;
   const [settings, post] = await Promise.all([getSettings(), getPostBySlug(slug)]);
+  if (!post) return new Response("Artikel tidak ditemukan.", { status: 404 });
   const primaryHex = themePrimaryHex(settings.theme);
   return new ImageResponse(
     renderOgCard({
       siteName: settings.site_name,
-      title: post?.title ?? settings.site_name,
-      description:
-        post?.excerpt ?? (post ? plainText(post.content_html, 180) : settings.tagline),
+      title: post.title,
+      description: post.excerpt ?? plainText(post.content_html, 180),
       primaryHex,
     }),
     { width: OG_CARD_WIDTH, height: OG_CARD_HEIGHT },

@@ -2,6 +2,7 @@ import {
   isSchemaOutdatedError,
   SCHEMA_OUTDATED_MESSAGE,
 } from "@/lib/database/errors";
+import { CANONICAL_SLUG_PATTERN } from "@/lib/utils/slug";
 
 /**
  * Primitive baca bersama lapisan data publik. Error database DILEMPAR, bukan
@@ -76,9 +77,7 @@ export async function optionalRead<T>(
   }
 }
 
-const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
 /** Hanya slug kanonis yang boleh dipakai mencari alias URL lama. */
 export function isLookupSlug(value: string): boolean {
-  return value.length <= 120 && SLUG_PATTERN.test(value);
+  return value.length <= 120 && CANONICAL_SLUG_PATTERN.test(value);
 }

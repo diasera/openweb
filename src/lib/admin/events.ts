@@ -27,12 +27,16 @@ export async function getAdminEvents(page = 1): Promise<{
   };
 }
 
-/** Pilihan acara untuk dialog album. */
-export async function getAdminEventOptions(): Promise<EventOption[]> {
-  const { data } = await createAdminSupabase()
+/** Pilihan acara untuk dialog album; acara draf hanya tampil bila admin punya izin agenda. */
+export async function getAdminEventOptions(options: {
+  includeDrafts?: boolean;
+} = {}): Promise<EventOption[]> {
+  let query = createAdminSupabase()
     .from("events")
     .select("id, title, starts_at")
     .order("starts_at", { ascending: false })
     .limit(100);
+  if (!options.includeDrafts) query = query.eq("is_published", true);
+  const { data } = await query;
   return data ?? [];
 }

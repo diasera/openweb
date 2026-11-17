@@ -1,5 +1,6 @@
 "use client";
 
+import { UPLOAD_LIMITS } from "@/lib/constants";
 import { prepareImageFile, type PreparedMediaFile } from "./prepare";
 
 /** Segmen terakhir path URL sebagai nama file; fallback bila kosong/rusak. */
@@ -34,6 +35,13 @@ export async function prepareRemoteImage(
     signal,
   });
   if (!response.ok) throw new Error(errorMessage);
+  const declaredLength = Number(response.headers.get("content-length"));
+  if (
+    Number.isFinite(declaredLength) &&
+    declaredLength > UPLOAD_LIMITS.imageMaxBytes
+  ) {
+    throw new Error("Ukuran gambar melebihi batas yang diizinkan.");
+  }
   const blob = await response.blob();
   const file = new File([blob], fileNameFromUrl(url, fallbackName), {
     type: blob.type,

@@ -40,7 +40,11 @@ interface MotionContextValue {
 const MotionContext = createContext<MotionContextValue | null>(null);
 
 function targetPath(href: string) {
-  return new URL(href, window.location.href).pathname || "/";
+  try {
+    return new URL(href, window.location.href).pathname || "/";
+  } catch {
+    return "/";
+  }
 }
 
 function restoreScroll(pathname: string, top: number) {

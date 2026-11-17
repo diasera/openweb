@@ -31,8 +31,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "ID tidak valid" }, { status: 400 });
   }
 
-  const vid = await getVisitorId(true);
-  if (!vid) return NextResponse.json({ error: "Gagal" }, { status: 400 });
+  const vid = await getVisitorId(true, req.headers);
+  if (!vid) {
+    return NextResponse.json(
+      { error: "Terlalu banyak permintaan. Coba lagi sebentar." },
+      { status: 429 },
+    );
+  }
 
   const { data, error } = await createAdminSupabase().rpc("like_message", {
     p_message_id: parsed.data.id,

@@ -19,11 +19,11 @@ import {
 } from "@/lib/auth/credentials";
 import {
   ADMIN_ACCOUNT_COLUMNS,
-  clearSessionCookie,
-  isTrustedDeviceFor,
-  ownerExists,
+  endAdminSession,
+  getOwnerSetupState,
   requireAdmin,
   startAdminSession,
+  trustedDeviceKeyFor,
 } from "@/lib/auth";
 import {
   validationErrorMessage,
@@ -138,8 +138,12 @@ async function setupOwner(formData: FormData): Promise<AuthState> {
   }
 
   // Cegah pembuatan owner kedua (idempoten & aman).
-  if (await ownerExists()) {
+  const ownerState = await getOwnerSetupState();
+  if (ownerState === "exists") {
     return { error: "Owner sudah ada. Silakan login." };
+  }
+  if (ownerState === "unavailable") {
+    return { error: "Database belum dapat dihubungi. Periksa konfigurasi server." };
   }
 
   const supabase = createAdminSupabase();
@@ -219,19 +223,24 @@ async function login(formData: FormData): Promise<AuthState> {
   const normalizedUsername = parsed.data.username.toLowerCase();
   const requestHeaders = await headers();
   const identity = requestRateLimitIdentity(requestHeaders);
-  // Perangkat yang pernah login sukses tidak ikut kuota per-akun, sehingga
-  // serangan tebak password dari luar tidak bisa mengunci pemilik akun.
-  const trustedDevice = await isTrustedDeviceFor(normalizedUsername);
-  const limits = await Promise.all([
-    consumeRateLimit(RATE_LIMITS.loginPair, [
-      ...identity,
-      normalizedUsername,
-    ]),
-    trustedDevice
-      ? null
-      : consumeRateLimit(RATE_LIMITS.loginAccount, [normalizedUsername]),
-    consumeRateLimit(RATE_LIMITS.loginIp, identity),
-  ]);
+  // Perangkat yang pernah login sukses memakai kuota terisolasi per-perangkat,
+  // sehingga serangan dari luar pada IP/NAT bersama tidak bisa mengunci pemilik akun.
+  const trustedDeviceKey = await trustedDeviceKeyFor(normalizedUsername);
+  const limits = trustedDeviceKey
+    ? [
+        await consumeRateLimit(RATE_LIMITS.loginTrustedDevice, [
+          trustedDeviceKey,
+          normalizedUsername,
+        ]),
+      ]
+    : await Promise.all([
+        consumeRateLimit(RATE_LIMITS.loginPair, [
+          ...identity,
+          normalizedUsername,
+        ]),
+        consumeRateLimit(RATE_LIMITS.loginAccount, [normalizedUsername]),
+        consumeRateLimit(RATE_LIMITS.loginIp, identity),
+      ]);
   const limited = rateLimitFailure(limits);
   if (limited && "error" in limited) return { error: limited.error };
   if (limited) {
@@ -278,7 +287,7 @@ async function login(formData: FormData): Promise<AuthState> {
 }
 
 export async function logoutAction(): Promise<void> {
-  await clearSessionCookie();
+  await endAdminSession();
   redirect("/profil");
 }
 

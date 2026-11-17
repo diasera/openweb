@@ -1,3 +1,29 @@
+/**
+ * Allowlist `next/image` diturunkan langsung dari proyek Supabase yang aktif
+ * (hanya bucket publik `/storage/v1/object/public/**` tanpa query/redirect),
+ * sehingga proyek `*.supabase.co` milik pihak luar tidak dapat meminjam
+ * endpoint `/_next/image` sebagai open proxy gambar atau membocorkan IP origin.
+ */
+function supabaseRemotePatterns() {
+  const raw = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? "";
+  if (!raw || /your[-_]|YOUR-PROJECT-REF/i.test(raw)) return [];
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return [];
+    return [
+      {
+        protocol: /** @type {"https" | "http"} */ (url.protocol.slice(0, -1)),
+        hostname: url.hostname,
+        ...(url.port ? { port: url.port } : {}),
+        pathname: "/storage/v1/object/public/**",
+        search: "",
+      },
+    ];
+  } catch {
+    return [];
+  }
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -8,6 +34,19 @@ const nextConfig = {
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains",
+          },
+          {
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin-allow-popups",
+          },
+          {
+            key: "Content-Security-Policy",
+            value:
+              "base-uri 'self'; frame-ancestors 'self'; object-src 'none'; form-action 'self'",
+          },
           {
             key: "Referrer-Policy",
             value: "strict-origin-when-cross-origin",
@@ -56,11 +95,10 @@ const nextConfig = {
     // Nama objek storage bersifat unik/immutable. Pertahankan hasil optimasi
     // Next Image agar cold request hero dan kartu tidak berulang tiap 4 jam.
     minimumCacheTTL: 31_536_000,
-    // Supabase Storage public URLs live under <project-ref>.supabase.co/storage/...
-    remotePatterns: [
-      { protocol: "https", hostname: "*.supabase.co" },
-      { protocol: "https", hostname: "*.supabase.in" },
-    ],
+    maximumRedirects: 0,
+    contentDispositionType: "attachment",
+    contentSecurityPolicy: "default-src 'none'; frame-src 'none'; sandbox;",
+    remotePatterns: supabaseRemotePatterns(),
   },
   experimental: {
     // Server Action hanya membawa gambar (cover blog, hero/logo/favicon/SEO,

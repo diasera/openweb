@@ -1,3 +1,6 @@
+/** Pola satu sumber untuk slug kanonis (huruf kecil ASCII + angka + strip tunggal). */
+export const CANONICAL_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
 /** Normalisasi Unicode bersama sebelum aturan slug per-domain diterapkan. */
 export function normalizeSlugSource(text: string): string {
   return text

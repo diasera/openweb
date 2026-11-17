@@ -10,7 +10,10 @@ import type {
   SiteSettingsRow,
   SocialLinks,
 } from "@/lib/types/database";
+import { plainText } from "@/lib/utils/reading-time";
 import { formatSiteDate } from "@/lib/utils/time";
+
+export { plainText };
 
 export {
   normalizeAdsenseClientId,
@@ -143,20 +146,6 @@ export function mediaTitle(
   const kind = media.type === "video" ? "Video" : "Foto";
   const subject = media.category?.trim() || settings.site_name;
   return `${kind} ${subject} · ${formatSiteDate(media.created_at)}`;
-}
-
-export function plainText(value: string | null | undefined, max = 170) {
-  if (!value) return "";
-  const text = value
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&#39;|&apos;/gi, "'")
-    .replace(/&quot;/gi, '"')
-    .replace(/\s+/g, " ")
-    .trim();
-  if (text.length <= max) return text;
-  return `${text.slice(0, Math.max(0, max - 1)).trimEnd()}…`;
 }
 
 interface PageMetadataInput {

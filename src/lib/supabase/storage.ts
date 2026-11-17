@@ -52,7 +52,7 @@ export async function uploadToBucket(
     .from(bucket)
     .upload(path, file, {
       cacheControl: PUBLIC_UPLOAD_CACHE_CONTROL,
-      contentType: file.type,
+      contentType: canonicalMimeForFormat(resolved.format),
       upsert: false,
     });
   if (error) return { error: "Gagal mengunggah gambar" };
@@ -155,6 +155,47 @@ export async function verifyStoredObject(
 export function getStoragePublicUrl(bucket: string, path: string): string {
   return createAdminSupabase().storage.from(bucket).getPublicUrl(path).data
     .publicUrl;
+}
+
+/**
+ * Ekstrak path objek relatif dari public URL Supabase yang benar-benar milik
+ * bucket aplikasi. Menolak URL eksternal, kredensial URL, backslash, segmen
+ * kosong, path traversal (`..`), dan encoding persen yang rusak.
+ */
+export function extractStorageObjectPath(
+  bucket: string,
+  rawUrl: string,
+): string | null {
+  try {
+    const candidate = new URL(rawUrl);
+    const marker = "__storage_object_root__";
+    const bucketRoot = new URL(getStoragePublicUrl(bucket, marker));
+    const rootPath = bucketRoot.pathname.slice(0, -marker.length);
+    if (
+      candidate.origin !== bucketRoot.origin ||
+      candidate.username ||
+      candidate.password ||
+      !candidate.pathname.startsWith(rootPath)
+    ) {
+      return null;
+    }
+    const encodedPath = candidate.pathname.slice(rootPath.length);
+    const path = decodeURIComponent(encodedPath);
+    if (
+      !path ||
+      path.includes("\\") ||
+      /[\u0000-\u001f\u007f]/.test(path)
+    ) {
+      return null;
+    }
+    const segments = path.split("/");
+    if (segments.some((segment) => !segment || segment === "." || segment === "..")) {
+      return null;
+    }
+    return path;
+  } catch {
+    return null;
+  }
 }
 
 /** URL baca: public URL untuk bucket publik, signed URL berumur pendek untuk bucket privat. */

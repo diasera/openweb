@@ -15,7 +15,6 @@ import { Pagination } from "@/components/public/pagination";
 import { Chip } from "@/components/ui/chip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
-import { readingTime } from "@/lib/utils/reading-time";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { MotionLink, listReveal } from "@/components/motion";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -157,7 +156,7 @@ export default async function BlogListPage({
                       <RelativeTime iso={featured.published_at} />
                     </>
                   )}{" "}
-                  · {readingTime(featured.content_html)} mnt baca
+                  · {featured.reading_minutes} mnt baca
                 </p>
               </div>
               </div>

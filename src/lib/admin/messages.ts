@@ -4,21 +4,25 @@ import type { MessageRow } from "@/lib/types/database";
 import { pageBounds, toPaged, type Paged } from "./paging";
 
 const ADMIN_MESSAGES_PAGE_SIZE = 30;
+const ADMIN_MESSAGE_COLUMNS =
+  "id, content, ip_address, device, likes, is_read, is_pinned, created_at" as const;
+
+export type AdminMessageRow = Omit<MessageRow, "user_agent">;
 
 /** Filter kotak pesan admin; satu daftar untuk tab dan validasi URL. */
 export const MESSAGE_FILTERS = ["all", "unread", "pinned"] as const;
 export type MessageFilter = (typeof MESSAGE_FILTERS)[number];
 
-/** Pesan anonim untuk profil admin — semua kolom (IP, device) via service role. */
+/** Pesan anonim untuk profil admin — tanpa user_agent mentah via service role. */
 export async function getAdminMessages(
   page = 1,
   filter: MessageFilter = "all",
-): Promise<Paged<MessageRow>> {
+): Promise<Paged<AdminMessageRow>> {
   const sb = createAdminSupabase();
   const { from, to } = pageBounds(page, ADMIN_MESSAGES_PAGE_SIZE);
   let query = sb
     .from("messages")
-    .select("*", { count: "exact" })
+    .select(ADMIN_MESSAGE_COLUMNS, { count: "exact" })
     .order("created_at", { ascending: false })
     .range(from, to);
   if (filter === "unread") query = query.eq("is_read", false);

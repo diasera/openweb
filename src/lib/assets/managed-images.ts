@@ -2,7 +2,11 @@ import "server-only";
 
 import { STORAGE_BUCKETS } from "@/lib/constants";
 import {
-  getStoragePublicUrl,
+  consumeRateLimit,
+  RATE_LIMITS,
+} from "@/lib/security/rate-limit";
+import {
+  extractStorageObjectPath,
   removeStorageObject,
   uploadToBucket,
 } from "@/lib/supabase/storage";
@@ -40,36 +44,14 @@ function escapeRegExp(value: string): string {
  */
 function trustedManagedPath(kind: ManagedImageKind, rawUrl: string): string | null {
   const spec = MANAGED_IMAGE_SPECS[kind];
+  const path = extractStorageObjectPath(spec.bucket, rawUrl);
+  if (!path || path.includes("/")) return null;
 
-  try {
-    const candidate = new URL(rawUrl);
-    const marker = "__managed_image_root__";
-    const bucketRoot = new URL(getStoragePublicUrl(spec.bucket, marker));
-    const rootPath = bucketRoot.pathname.slice(0, -marker.length);
-
-    if (
-      candidate.origin !== bucketRoot.origin ||
-      candidate.username ||
-      candidate.password ||
-      !candidate.pathname.startsWith(rootPath)
-    ) {
-      return null;
-    }
-
-    const encodedPath = candidate.pathname.slice(rootPath.length);
-    const path = decodeURIComponent(encodedPath);
-    if (!path || path.includes("/") || path.includes("\\") || path.includes("..")) {
-      return null;
-    }
-
-    const expected = new RegExp(
-      `^${escapeRegExp(spec.prefix)}${UUID_REGEX_SOURCE}\\.[a-z0-9]{1,10}$`,
-      "i",
-    );
-    return expected.test(path) ? path : null;
-  } catch {
-    return null;
-  }
+  const expected = new RegExp(
+    `^${escapeRegExp(spec.prefix)}${UUID_REGEX_SOURCE}\\.[a-z0-9]{1,10}$`,
+    "i",
+  );
+  return expected.test(path) ? path : null;
 }
 
 /** Apakah URL ini objek milik aplikasi untuk jenis gambar tersebut? */
@@ -81,7 +63,20 @@ export function isManagedImageUrl(kind: ManagedImageKind, url: string): boolean 
 export async function uploadManagedImage(
   kind: ManagedImageKind,
   file: File,
+  options: { adminId?: string } = {},
 ): Promise<UploadManagedImageResult> {
+  if (options.adminId) {
+    const limited = await consumeRateLimit(RATE_LIMITS.adminUpload, [
+      options.adminId,
+    ]);
+    if (!limited.ok) return { ok: false, error: limited.error };
+    if (!limited.allowed) {
+      return {
+        ok: false,
+        error: `Kuota unggah admin tercapai. Coba lagi dalam ${limited.retryAfterSeconds} detik.`,
+      };
+    }
+  }
   const spec = MANAGED_IMAGE_SPECS[kind];
   const uploaded = await uploadToBucket(spec.bucket, file, spec.prefix);
   if (uploaded.error || !uploaded.url) {

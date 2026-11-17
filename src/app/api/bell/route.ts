@@ -1,32 +1,20 @@
 import { NextResponse } from "next/server";
-import { mutationPrerequisiteResponse } from "@/lib/api/public-mutation";
-import {
-  invalidJsonResponse,
-  rateLimitResponse,
-} from "@/lib/api/responses";
+import { guardPublicMutation } from "@/lib/api/public-mutation";
+import { invalidJsonResponse } from "@/lib/api/responses";
 import { getVisitorId, setBell } from "@/lib/visitors";
 import { readJsonBody } from "@/lib/api/request";
-import {
-  consumeRateLimit,
-  RATE_LIMITS,
-  requestRateLimitIdentity,
-} from "@/lib/security/rate-limit";
+import { RATE_LIMITS } from "@/lib/security/rate-limit";
 import { removePushSubscriptionsByVisitor } from "@/lib/push/subscriptions";
 
 /** POST /api/bell — nyalakan/matikan langganan notifikasi (lonceng).
  *  Mematikan lonceng sekaligus melepas semua perangkat push pengunjung. */
 export async function POST(req: Request) {
-  const prerequisite = mutationPrerequisiteResponse(req);
-  if (prerequisite) return prerequisite;
-
-  const limited = await consumeRateLimit(
+  const guarded = await guardPublicMutation(
+    req,
     RATE_LIMITS.bell,
-    requestRateLimitIdentity(req.headers),
+    "Kamu tidak dapat mengubah pengaturan notifikasi.",
   );
-  if (!limited.ok || !limited.allowed) return rateLimitResponse(limited);
-
-  const vid = await getVisitorId(true);
-  if (!vid) return NextResponse.json({ error: "Gagal" }, { status: 400 });
+  if (!guarded.ok) return guarded.response;
 
   const body = await readJsonBody<{ enabled?: unknown }>(req, 1024);
   if (!body.ok) return invalidJsonResponse(body);
@@ -34,9 +22,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Status tidak valid" }, { status: 400 });
   }
   const enabled = body.data.enabled;
+
+  // Mematikan lonceng tidak perlu mengalokasikan identitas baru bila belum ada.
+  const vid = await getVisitorId(enabled, req.headers);
+  if (!vid) {
+    return enabled
+      ? NextResponse.json(
+          { error: "Terlalu banyak permintaan. Coba lagi sebentar." },
+          { status: 429 },
+        )
+      : NextResponse.json({ ok: true, enabled: false });
+  }
+
   const result = await setBell(vid, enabled, req.headers);
   if (result.error) {
-    return NextResponse.json({ error: result.error }, { status: 500 });
+    return NextResponse.json(
+      { error: "Gagal mengubah status notifikasi." },
+      { status: 500 },
+    );
   }
   if (!enabled) {
     await removePushSubscriptionsByVisitor(vid);

@@ -16,18 +16,15 @@ export async function GET(
     getSettings(),
     getMemberByProfileKey(slug),
   ]);
+  if (!member) return new Response("Anggota tidak ditemukan.", { status: 404 });
   const primaryHex = themePrimaryHex(settings.theme);
   return new ImageResponse(
     renderOgCard({
       siteName: settings.site_name,
-      title: member
-        ? `${member.name}${member.position ? ` — ${member.position}` : ""}`
-        : settings.site_name,
+      title: `${member.name}${member.position ? ` — ${member.position}` : ""}`,
       description:
-        (member && plainText(member.bio, 180)) ||
-        (member
-          ? `Profil dan riwayat karya ${member.name} di ${settings.site_name}.`
-          : settings.tagline),
+        plainText(member.bio, 180) ||
+        `Profil dan riwayat karya ${member.name} di ${settings.site_name}.`,
       primaryHex,
     }),
     { width: OG_CARD_WIDTH, height: OG_CARD_HEIGHT },

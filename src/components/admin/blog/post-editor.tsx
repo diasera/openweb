@@ -18,12 +18,14 @@ import { useIslandActions } from "@/components/public/dynamic-island";
 import { buttonClass } from "@/components/ui/button";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { useToast } from "@/components/ui/toast";
+import { isProseMirrorDoc } from "@/lib/blog/doc";
 import { BLOG_CATEGORIES, categoryOptions } from "@/lib/categories";
 import { adminBlogEditorHref } from "@/lib/constants";
 import { useFormDirty } from "@/lib/hooks/use-form-dirty";
 import { hasPreparingImageDraft } from "@/lib/hooks/use-image-draft";
 import { useSaveShortcut } from "@/lib/hooks/use-save-shortcut";
 import type { BlogPostRow, PostStatus } from "@/lib/types/database";
+import { plainText } from "@/lib/utils/reading-time";
 import { slugify } from "@/lib/utils/slug";
 import { ChoiceChip, FormSection, SelectField, TextAreaField, TextField } from "../form-controls";
 import { ImageField } from "../image-field";
@@ -66,10 +68,6 @@ function primaryAction(saved: PostStatus | null, next: PostStatus): PrimaryActio
   };
 }
 
-function excerptFromHtml(html: string) {
-  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160);
-}
-
 /**
  * Editor artikel: judul besar + editor kaya sebagai fokus utama; publikasi
  * (status Draf/Terbit/Arsip), cover, kategori, tag, ringkasan, dan pratinjau
@@ -95,9 +93,10 @@ export function PostEditor({
   const { dirty, setDirty } = useFormDirty(formRef);
   const { pending, run } = useAdminAction();
   const savedStatus = post?.status ?? null;
+  const validJson = isProseMirrorDoc(post?.content_json) ? post.content_json : null;
   const [status, setStatus] = useState<PostStatus>(post?.status ?? "draft");
   const [html, setHtml] = useState(post?.content_html ?? "");
-  const [json, setJson] = useState(post?.content_json ? JSON.stringify(post.content_json) : "");
+  const [json, setJson] = useState(validJson ? JSON.stringify(validJson) : "");
   const [title, setTitle] = useState(post?.title ?? "");
   const [excerpt, setExcerpt] = useState(post?.excerpt ?? "");
   const action = primaryAction(savedStatus, status);
@@ -207,7 +206,7 @@ export function PostEditor({
             className="font-display placeholder:text-muted/60 w-full resize-none overflow-hidden bg-transparent text-title1 font-bold leading-tight tracking-tight outline-hidden sm:text-large-title"
           />
           <RichEditor
-            initialContent={post?.content_json ?? post?.content_html}
+            initialContent={validJson ?? post?.content_html}
             onChange={(nextHtml, nextJson) => {
               setHtml(nextHtml);
               setJson(nextJson);
@@ -251,6 +250,7 @@ export function PostEditor({
                   <Link
                     href={`/blog/${post.slug}`}
                     target="_blank"
+                    rel="noopener noreferrer"
                     className={buttonClass({ variant: "ghost", size: "sm", className: "ml-auto -my-1 h-8" })}
                   >
                     <ExternalLink className="size-3.5" aria-hidden="true" /> Lihat di situs
@@ -304,7 +304,7 @@ export function PostEditor({
               logoUrl={logoUrl}
               url={`${siteUrl}/blog/${post?.status === "published" ? post.slug : slug}`}
               title={`${title || "Judul artikel"} · ${siteName}`}
-              description={excerpt || excerptFromHtml(html)}
+              description={excerpt || plainText(html, 160)}
             />
             <p className="text-muted text-caption1 leading-relaxed">
               Ringkasan kosong memakai paragraf pertama. URL lama otomatis dialihkan bila

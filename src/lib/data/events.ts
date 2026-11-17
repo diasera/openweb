@@ -82,7 +82,7 @@ export const getNextEvent = cache(
 
 export const getEventById = cache(async (id: string): Promise<PublicEvent | null> => {
   if (!isSupabaseConfigured()) {
-    return DEMO_EVENTS.find((event) => event.id === id) ?? null;
+    return DEMO_EVENTS.find((event) => event.is_published && event.id === id) ?? null;
   }
   if (!isUuid(id)) return null;
   return unwrapFeature(

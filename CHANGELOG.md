@@ -7,6 +7,8 @@ dan proyek ini menganut [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-17
+
 ### Ditambahkan
 
 - Dokumentasi arsitektur teknis lengkap di [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
@@ -16,6 +18,9 @@ dan proyek ini menganut [Semantic Versioning](https://semver.org/lang/id/).
 - Konstanta `MEMBER_OG_CARD_PATH` di `src/lib/seo/index.ts` agar kartu OG profil
   anggota otomatis mewarisi dimensi metadata `1200×630`.
 - Metadata `repository`, `homepage`, `bugs`, dan `keywords` di `package.json`.
+- Token cookie pengunjung bertanda tangan HMAC (`signVisitorToken` / `verifyVisitorToken`),
+  validator terpusat dokumen ProseMirror (`src/lib/blog/doc.ts`), serta 5 indeks
+  GIN full-text search dan constraint validasi URL/endpoint pada `supabase/schema.sql`.
 
 ### Diubah
 
@@ -33,12 +38,30 @@ dan proyek ini menganut [Semantic Versioning](https://semver.org/lang/id/).
 - Workflow CI dipindah dari `docs/ci-workflow.yml` ke
   `.github/workflows/ci.yml` agar berjalan otomatis di setiap push dan pull
   request.
+- `PublicPostCard` menghitung `reading_minutes` di server tanpa menyertakan HTML
+  penuh pada endpoint `/api/tersimpan` dan daftar artikel; rute `/api/og/*`
+  mengembalikan `404` untuk slug yang tidak ditemukan.
 
 ### Keamanan
 
 - Pembaruan dependensi produksi (`next` & `eslint-config-next` ke `^16.4.5`,
   `zod` ke `^4.6.7`, serta `sanitize-html` ke `^2.18.1`) untuk menutup
   advisory keamanan terbaru pada `npm run audit:prod`.
+- Validasi domain layanan Web Push resmi, kunci publik P-256 (`p256dh`/`auth`),
+  timeout pengiriman, dan penegakan `banned_ips` pada pendaftaran notifikasi.
+- Penguncian `images.remotePatterns` hanya ke host project Supabase aktif tanpa
+  redirect, penambahan header HSTS/COOP/CSP dasar, pembacaan hop tepercaya
+  `X-Forwarded-For`, serta penolakan mutasi lintas-subdomain `Sec-Fetch-Site`.
+- Isolasi kuota percobaan login perangkat tepercaya (`DEVICE_COOKIE`), pencabutan
+  `session_version` di server saat logout, pembatasan atribut `class` pada `<code>`
+  artikel, isolasi acara draf lintas izin admin, batas kuota PWA Share Target,
+  dan pencabutan hak default tabel PostgreSQL (`REVOKE ALL`) di `schema.sql`.
+
+### Migrasi
+
+- Jalankan ulang `supabase/schema.sql` di SQL Editor (idempoten) untuk menerapkan
+  pencabutan hak akses default tabel, constraint URL/Web Push, reservasi slug
+  `'ringkasan'`, dan indeks pencarian GIN.
 
 ## [1.1.0] - 2026-11-09
 
@@ -94,6 +117,7 @@ Rilis publik pertama.
 - Supabase Postgres + Storage dengan RLS, signed upload, dan bucket inbox
   privat untuk kiriman yang belum dimoderasi.
 
-[Unreleased]: https://github.com/diasera/openweb/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/diasera/openweb/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/diasera/openweb/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/diasera/openweb/compare/661ecf5...v1.1.0
 [1.0.0]: https://github.com/diasera/openweb/commit/661ecf5

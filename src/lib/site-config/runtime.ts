@@ -33,6 +33,15 @@ export function toAbsoluteSiteUrl(
   path: string,
   settings?: Pick<SiteSettingsRow, "site_url">,
 ): string {
-  return new URL(path, `${getSiteOrigin(settings)}/`).toString();
+  const base = `${getSiteOrigin(settings)}/`;
+  try {
+    const resolved = new URL(path, base);
+    if (resolved.protocol !== "https:" && resolved.protocol !== "http:") {
+      return base;
+    }
+    return resolved.toString();
+  } catch {
+    return base;
+  }
 }
 
