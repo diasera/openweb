@@ -58,12 +58,12 @@ Aturan praktis saat menambah atau mengubah fitur:
 src/
 ├─ proxy.ts                      # Edge/Node proxy (mengecualikan header next-action agar body foto tidak terpotong)
 ├─ app/                          # App Router: halaman publik, area profil/admin, SEO endpoints, dan API routes
-│  ├─ (halaman publik)           # /, /galeri, /album, /blog, /agenda, /anggota, /buat, /pesan, /pin/[id], /tersimpan, ...
+│  ├─ (halaman publik)           # /, /galeri, /album, /blog, /agenda, /anggota, /kilas-balik, /buat, /pesan, /pin/[id], /tersimpan, ...
 │  ├─ profil/
 │  │  ├─ [slug]/                 # profil publik anggota (kanonis via redirect permanen dari UUID)
 │  │  ├─ (auth)/                 # login & setup owner pertama
 │  │  └─ (admin)/                # dashboard, settings, media, albums, blog, agenda, members, messages, comments, music, visitors, accounts
-│  └─ api/                       # agenda, bell, blog-image, comments, media, og, pesan, push, pwa, search, tersimpan, track, uploads
+│  └─ api/                       # agenda, bell, blog-image, comments, media, og, pesan, push, pwa, reactions, search, tersimpan, track, uploads
 ├─ components/
 │  ├─ ui/                        # primitif desain (Button, Card, Chip, Avatar, MediaCarousel, MediaLightbox, Modal, Skeleton, ...)
 │  ├─ motion/                    # motion.css, SharedMorph (<ViewTransition>), KineticWords, depth pointer, dan RouteSkeleton
@@ -98,14 +98,17 @@ src/
    ├─ og/                        # komponen kartu Open Graph 1200×630 (Satori/ImageResponse)
    ├─ push/                      # langganan & pengiriman Web Push (VAPID)
    ├─ pwa/                       # registrasi Service Worker & protokol Web Share Target
+   ├─ qr/                        # encoder QR Code Byte-mode offline murni TypeScript (SVG & Canvas)
+   ├─ reactions/                 # definisi kunci reaksi emoji cepat & skema validasi Zod
    ├─ security/                  # moderasi IP, rate-limit Postgres atomik, jadwal pembersihan retensi data
    ├─ seo/                       # metadata halaman, JSON-LD, feed RSS/JSON, dan revalidasi sitemap
    ├─ site-config/               # skema, normalisasi, defaults, dan resolver hero konfigurasi situs
-   ├─ story-card/                # generator kanvas Kartu Story 9:16 (1080×1920 PNG) sisi klien
+   ├─ story-card/                # generator kanvas Kartu Story 9:16 (1080×1920 PNG) untuk pesan, anggota, pin & kilas balik
    ├─ supabase/                  # client publik (RLS), browser, service-role admin, dan operasi Storage
    ├─ types/                     # definisi tipe TypeScript selaras supabase/schema.sql
    ├─ uploads/                   # kebijakan ukuran/tipe, tiket tanda tangan unggah, finalisasi & penyapuan yatim
-   └─ utils/                     # cn (tailwind-merge), warna OKLCH/WCAG/APCA, parser perangkat MIT, format waktu, localStorage aman
+   ├─ utils/                     # cn (tailwind-merge), warna OKLCH/WCAG/APCA, parser perangkat MIT, format waktu, localStorage aman
+   └─ wrapped/                   # agregator data Kilas Balik komunitas lintas tabel (zero-migration)
 ```
 
 ---

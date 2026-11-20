@@ -7,6 +7,82 @@ dan proyek ini menganut [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-20
+
+### Ditambahkan
+
+- **Generator QR Matrix Offline** murni TypeScript bebas dependensi di `src/lib/qr/index.ts`
+  dan komponen vektor `QrCodeSvg` di `src/components/ui/qr-code.tsx` (ISO/IEC 18004,
+  Byte-mode, koreksi galat level M, versi 1–10) sehingga bekerja 100% offline pada PWA.
+- **Kartu Anggota Digital Holografik 3D (`MemberPassModal`)** di
+  `src/components/public/profil/member-pass-modal.tsx`: kartu ID dua sisi (flip 3D) dengan
+  kilau foil holografik berbasis `--depth-px/--depth-py`, kode QR profil offline di sisi
+  belakang, salin tautan cepat, dan ekspor **Kartu Story `9:16`** lengkap dengan foto profil
+  nyata & lencana QR.
+- **Siaran Pengumuman *Live Activity* di Dynamic Island**
+  (`src/components/public/dynamic-island/views/announcement-activity.tsx`): notifikasi terbaru
+  (≤ 72 jam) yang belum dibaca tampil otomatis sebagai chip *Live Activity* dan kartu panel
+  cepat dengan tombol *"Tandai dibaca"* yang sinkron lintas tab dengan `/notifikasi`
+  (`STORAGE_KEYS.notificationLastSeen`).
+- **Halaman Kilas Balik Komunitas (`/kilas-balik`)** (`src/lib/wrapped/index.ts`,
+  `src/components/public/wrapped-showcase.tsx`, `src/app/kilas-balik/page.tsx`): rangkuman
+  perjalanan komunitas tanpa tabel baru dengan filter periode tahun, ubin statistik
+  beranimasi, grafik ritme 12 bulan murni CSS, topik teraktif, album terpadat, anggota paling
+  sering terekam, pesan terpopuler, tombol putar **Songfess terfavorit** langsung ke Dynamic
+  Island, dan ekspor **Kartu Story `9:16` (`kind: "wrapped"`)**.
+- **Reaksi Emoji Cepat untuk Pin Galeri & Artikel Blog (`public.content_reactions`)**:
+  - Skema tabel idempoten + RLS tertutup (`visitor_id` tidak pernah terbuka ke `anon`) +
+    dua RPC atomik `SECURITY DEFINER` (`get_reaction_counts` & `toggle_content_reaction`) di
+    `supabase/schema.sql`, lengkap dengan uji otomatis PGlite di `scripts/check-schema.mjs`.
+  - Endpoint terproteksi `POST /api/reactions` (`guardPublicMutation`, `RATE_LIMITS.reaction`,
+    cookie pengunjung HMAC) serta komponen terpusat `ReactionBar` di `/pin/[id]` dan
+    `/blog/[slug]` dengan degradasi anggun pra-migrasi dan mode demo interaktif.
+- Primitif bersama **`CopyButton`** (`src/components/ui/copy-button.tsx`) dan toolbar grid
+  media **`MediaGridControls`** (`src/components/public/media-grid-controls.tsx`) yang dipakai
+  ulang lintas Galeri, Detail Album, Tersimpan, Tentang, Profil Anggota, dan Pengaturan Admin.
+- Varian baru **`kind: "pin"`** dan **`kind: "wrapped"`** beserta foto profil & QR Code pada
+  mesin **Kartu Story `9:16`** (`src/lib/story-card/index.ts`).
+
+### Diubah
+
+- **Profil Anggota Interaktif (`/profil/[slug]`)**: `MemberActivityExplorer` menyambungkan
+  klik sel pada `MemberHeatmap` (lengkap dengan label bulan/hari, hari aktif, dan rentetan
+  beruntun) langsung ke `MemberTimeline` dengan filter `Semua / Media / Artikel`, pengelompokan
+  bulanan, mode tampilan `Grid`, zoom foto profil via `MediaLightbox`, dan `CopyButton` pada
+  nomor identitas.
+- **Detail Pin & Komentar (`/pin/[id]`)**: aktivasi nama tampilan opsional pada komentar
+  (`author_name` tersimpan lokal), tombol balas `@Nama`, urutan `Terbaru / Terlama`,
+  penghitung karakter mendekati batas 500, respons `{ ok: true, comment }` dari `/api/comments`,
+  tombol **Kartu Story `9:16`**, navigasi Sebelumnya/Berikutnya dalam album, tautan media asli,
+  dan `ReactionBar`.
+- **Album & Koleksi Tersimpan (`/album`, `/album/[slug]`, `/tersimpan`)**: pencarian & sortir
+  album (`AlbumBrowser`), tombol **Slideshow** (`MediaLightbox`) + `MediaGridControls` +
+  `ShareButton` + `EventStatusBadge` pada detail album, serta **Tersimpan Pro** (cari, tab
+  Pin/Artikel, sortir tanggal simpan, tombol coba lagi, slideshow pin, ekspor cadangan JSON,
+  dan kosongkan dengan konfirmasi `Modal`).
+- **Beranda, Tentang, Notifikasi & Pesan Anonim**:
+  - Beranda (`/`) kini menampilkan seksi **Artikel terbaru**, tautan album pada kartu Agenda
+    unggulan, serta kartu pintu cepat **Kilas Balik**.
+  - Halaman Tentang (`/tentang`) menghadirkan strip statistik komunitas, kontak klik-aktif
+    (`mailto:`, `tel:`, tautan Google Maps), `CopyButton`, `ShareButton`, dan handle sosial
+    ringkas.
+  - Halaman Notifikasi (`/notifikasi`) beralih ke `<MotionLink>` untuk tautan internal (tanpa
+    memutus transisi halaman & musik), pengelompokan waktu (`Hari ini / Minggu ini / Sebelumnya`),
+    filter `Semua / Baru`, kartu status Web Push perangkat, dan dukungan `DEMO_NOTIFICATIONS`.
+  - `NotifPrompt` otomatis sembunyi di Mode Demo maupun saat izin browser sudah diputuskan,
+    serta menunda pengingat 7 hari saat ditutup.
+  - `MessageLike` menyelaraskan jumlah suka terhadap pembaruan prop terbaru dengan mikro-animasi
+    burst hati.
+- **Panel Admin (`/profil`, `/profil/pengunjung`, `/profil/setting`)**:
+  - Dasbor Admin mendukung triase cepat pesan terbaru langsung di tempat (*Tandai dibaca*,
+    *Pin/Lepas pin*, *Baca semua*) serta kartu status kanal **Web Push VAPID**.
+  - Halaman Pengunjung menghadirkan **Quick Link Picker** dari artikel/agenda/album terbaru,
+    pratinjau notifikasi responsif di ponsel, dialog konfirmasi `ConfirmSheet` sebelum siaran
+    massal Web Push, tombol *"Gunakan ulang"* riwayat notifikasi, serta tab filter `AdminTabs`
+    (`Semua / Lonceng aktif / Diblokir`).
+  - Tab Pengaturan Beranda dilengkapi sakelar pratinjau Hero **Desktop / Ponsel** serta
+    *builder* daftar Misi interaktif; `SeoHealth` dan `ContactSection` memakai ulang `CopyButton`.
+
 ## [1.2.0] - 2026-11-20
 
 ### Ditambahkan
