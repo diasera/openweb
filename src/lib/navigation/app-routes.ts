@@ -248,6 +248,18 @@ const APP_ROUTE_REGISTRY: readonly AppRouteDefinition[] = [
     skeleton: "grid",
   },
   {
+    id: "wrapped",
+    path: "/kilas-balik",
+    match: "exact",
+    chrome: {
+      island: { variant: "sub", title: "Kilas Balik", backHref: "/profil" },
+      tabBarVisible: true,
+      notificationPromptVisible: true,
+    },
+    motion: { level: 1, parent: "/profil" },
+    skeleton: "cards",
+  },
+  {
     id: "saved",
     path: "/tersimpan",
     match: "exact",

@@ -20,6 +20,7 @@ const STATIC_PAGES = [
   { path: "/anggota", priority: 0.8, changeFrequency: "weekly" },
   { path: "/album", priority: 0.7, changeFrequency: "weekly" },
   { path: "/agenda", priority: 0.7, changeFrequency: "daily" },
+  { path: "/kilas-balik", priority: 0.7, changeFrequency: "weekly" },
   { path: "/tentang", priority: 0.6, changeFrequency: "monthly" },
   { path: "/profil", priority: 0.5, changeFrequency: "weekly" },
   { path: "/pesan", priority: 0.5, changeFrequency: "weekly" },

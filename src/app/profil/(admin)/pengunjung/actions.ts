@@ -89,6 +89,7 @@ export async function sendNotification(formData: FormData): Promise<ActionResult
 
   revalidateVisitors();
   revalidatePath("/notifikasi");
+  revalidatePath("/", "layout");
   return {};
 }
 
@@ -143,5 +144,6 @@ export async function deleteNotification(id: string): Promise<ActionResult> {
   if (!deleted.ok) return { error: deleted.error };
   revalidateVisitors();
   revalidatePath("/notifikasi");
+  revalidatePath("/", "layout");
   return {};
 }

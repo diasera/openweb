@@ -872,6 +872,107 @@ html:active-view-transition .route-motion {
   content: counter(motion-count);
 }
 
+/* ---- Kartu ID Digital Holografik 3D ---------------------------------------
+ * Memakai --depth-px/--depth-py dari useDepthPointer agar foil pelangi
+ * bergeser mengikuti sudut pointer tanpa listener tambahan. */
+.holo-card-scene {
+  perspective: 1200px;
+}
+
+.holo-card-inner {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 640ms var(--motion-spring);
+}
+
+.holo-card-inner[data-flipped="true"] {
+  transform: rotateY(180deg);
+}
+
+.holo-card-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.holo-card-face-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}
+
+.holo-foil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  mix-blend-mode: color-dodge;
+  opacity: 0.32;
+  background:
+    radial-gradient(
+      circle at calc(50% + var(--depth-px, 0) * 48%)
+        calc(50% + var(--depth-py, 0) * 48%),
+      rgb(255 255 255 / 0.55),
+      transparent 55%
+    ),
+    linear-gradient(
+      calc(115deg + var(--depth-px, 0) * 28deg),
+      rgb(99 102 241 / 0) 15%,
+      rgb(56 189 248 / 0.42) 34%,
+      rgb(244 114 182 / 0.42) 50%,
+      rgb(250 204 21 / 0.36) 66%,
+      rgb(99 102 241 / 0) 85%
+    );
+  transition: opacity var(--motion-control) var(--motion-ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .holo-card-scene:hover .holo-foil {
+    opacity: 0.52;
+  }
+}
+
+/* ---- Mikro-animasi Reaksi & Suka ------------------------------------------ */
+@keyframes motion-reaction-pop {
+  0% {
+    transform: scale(0.84);
+  }
+  50% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-reaction-pop {
+  animation: motion-reaction-pop 320ms var(--motion-spring-bouncy);
+}
+
+@keyframes motion-heart-ring {
+  0% {
+    opacity: 0.75;
+    transform: scale(0.5);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+
+.motion-heart-burst {
+  position: relative;
+}
+
+.motion-heart-burst::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  border: 2px solid currentColor;
+  pointer-events: none;
+  animation: motion-heart-ring 420ms var(--motion-ease-out) forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .route-motion:not([data-motion="initial"]) {
     --route-x: 0px;
@@ -892,6 +993,8 @@ html:active-view-transition .route-motion {
   .animate-tab-pop,
   .animate-control-pop,
   .animate-symbol-bounce,
+  .animate-reaction-pop,
+  .motion-heart-burst::after,
   .animate-rise,
   .motion-reveal,
   .motion-parallax,
@@ -903,6 +1006,14 @@ html:active-view-transition .route-motion {
   .motion-live-dot::after,
   .avatar-ring::before {
     animation: none !important;
+  }
+
+  .holo-card-inner {
+    transition-duration: 160ms !important;
+  }
+
+  .holo-foil {
+    opacity: 0.16 !important;
   }
 
   /* Kerangka tetap tampil sebagai bentuk diam; hanya kilau yang berhenti. */

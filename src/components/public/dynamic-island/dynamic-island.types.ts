@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { FeedbackStatus } from "@/lib/feedback/types";
-import type { EventRow } from "@/lib/types/database";
+import type { EventRow, NotificationRow } from "@/lib/types/database";
 
 /** Isi dasar island yang mengikuti halaman publik aktif. */
 export type IslandRouteConfig =
@@ -35,6 +35,12 @@ export interface IslandBrand {
 
 /** Acara terdekat untuk Live Activity hitung mundur di island. */
 export type IslandEvent = Pick<EventRow, "id" | "title" | "starts_at" | "ends_at" | "location">;
+
+/** Pengumuman terbaru (≤ 72 jam) untuk Live Activity siaran di island. */
+export type IslandAnnouncement = Pick<
+  NotificationRow,
+  "id" | "title" | "body" | "url" | "created_at"
+>;
 
 /** Cara quick panel dibuka; `focusSearch` langsung menyiapkan Spotlight. */
 export interface IslandExpandOptions {

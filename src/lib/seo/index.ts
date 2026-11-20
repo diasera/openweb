@@ -72,6 +72,12 @@ export const PUBLIC_PAGE_SEO = {
     description: "Album foto dan video per acara dari {siteName}.",
     path: "/album",
   },
+  kilasBalik: {
+    title: "Kilas Balik",
+    description:
+      "Rangkuman perjalanan, statistik karya, sorotan {memberPlural}, dan lagu terfavorit di {siteName}.",
+    path: "/kilas-balik",
+  },
 } as const;
 
 /** Ukuran kartu sosial yang dirender /api/og (rasio OG 1.91:1). */

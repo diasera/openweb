@@ -20,6 +20,7 @@ import { DynamicIslandContext } from "./dynamic-island/dynamic-island-context";
 import { DynamicIslandViewport } from "./dynamic-island/dynamic-island-viewport";
 import { ToastProvider } from "@/components/ui/toast";
 import type {
+  IslandAnnouncement,
   IslandEvent,
   IslandNotice,
   IslandNoticeInput,
@@ -87,6 +88,8 @@ export function AppChromeProvider({
   tagline,
   memberLabel,
   nextEvent = null,
+  latestAnnouncement = null,
+  canSubscribePush = true,
   children,
 }: {
   siteName: string;
@@ -95,6 +98,8 @@ export function AppChromeProvider({
   tagline?: string | null;
   memberLabel?: string;
   nextEvent?: IslandEvent | null;
+  latestAnnouncement?: IslandAnnouncement | null;
+  canSubscribePush?: boolean;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -222,6 +227,7 @@ export function AppChromeProvider({
             notice={notice}
             brand={{ siteName, logoUrl, tagline }}
             event={nextEvent}
+            announcement={latestAnnouncement}
           />
         )}
         {children}
@@ -229,7 +235,7 @@ export function AppChromeProvider({
           <TabBar profileLabel={page.profileTabLabel} />
         )}
         {visible && page.notificationPromptVisible && (
-          <NotifPrompt siteName={siteName} />
+          <NotifPrompt siteName={siteName} canSubscribe={canSubscribePush} />
         )}
       </ToastProvider>
     </DynamicIslandContext>

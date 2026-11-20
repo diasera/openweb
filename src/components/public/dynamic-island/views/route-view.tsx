@@ -10,11 +10,18 @@ import {
   IconButton,
   iconButtonClass,
 } from "@/components/ui/icon-button";
+import { eventPhase } from "@/lib/agenda/status";
+import { useNow } from "@/lib/hooks/use-now";
 import type {
+  IslandAnnouncement,
   IslandEvent,
   IslandExpandOptions,
   IslandRouteConfig,
 } from "../dynamic-island.types";
+import {
+  IslandAnnouncementChip,
+  useUnreadAnnouncement,
+} from "./announcement-activity";
 import { IslandEventChip } from "./event-activity";
 import styles from "../dynamic-island.module.css";
 
@@ -51,13 +58,45 @@ function ExpandTrigger({
 export function RouteView({
   config,
   event,
+  announcement = null,
   onExpand,
 }: {
   config: IslandRouteConfig;
   event: IslandEvent | null;
+  announcement?: IslandAnnouncement | null;
   onExpand: (options?: IslandExpandOptions) => void;
 }) {
   const { goBack } = useAppMotion();
+  const now = useNow();
+  const { unread: hasUnreadAnnouncement } = useUnreadAnnouncement(announcement);
+  const eventOngoing = Boolean(
+    event && now !== null && eventPhase(event, now) === "ongoing",
+  );
+
+  function renderLiveChip(fallback: React.ReactNode = null) {
+    if (eventOngoing) {
+      return (
+        <IslandEventChip
+          event={event}
+          onExpand={() => onExpand()}
+          fallback={fallback}
+        />
+      );
+    }
+    return (
+      <IslandAnnouncementChip
+        announcement={announcement}
+        onExpand={() => onExpand()}
+        fallback={
+          <IslandEventChip
+            event={event}
+            onExpand={() => onExpand()}
+            fallback={fallback}
+          />
+        }
+      />
+    );
+  }
 
   if (config.variant === "main") {
     return (
@@ -73,11 +112,7 @@ export function RouteView({
           </span>
         </ExpandTrigger>
 
-        <IslandEventChip
-          event={event}
-          onExpand={() => onExpand()}
-          fallback={<span className={styles.lens} aria-hidden="true" />}
-        />
+        {renderLiveChip(<span className={styles.lens} aria-hidden="true" />)}
 
         <nav className="flex shrink-0 items-center gap-0.5">
           <MusicQuickButton />
@@ -93,10 +128,13 @@ export function RouteView({
           </IconButton>
           <MotionLink
             href="/notifikasi"
-            aria-label="Notifikasi"
-            className={iconButtonClass()}
+            aria-label={hasUnreadAnnouncement ? "Notifikasi baru" : "Notifikasi"}
+            className={cn(iconButtonClass(), "relative")}
           >
             <Bell className="size-4.5" />
+            {hasUnreadAnnouncement && (
+              <span className={styles.bellDot} aria-hidden="true" />
+            )}
           </MotionLink>
           <ThemeToggle />
         </nav>
@@ -153,7 +191,7 @@ export function RouteView({
         {config.title}
       </ExpandTrigger>
       <div className="flex shrink-0 items-center gap-0.5">
-        <IslandEventChip event={event} onExpand={() => onExpand()} />
+        {renderLiveChip()}
         {config.right}
         <MusicQuickButton />
         <ThemeToggle />

@@ -9,6 +9,7 @@ import { SearchInput } from "@/components/ui/search-input";
 import { Segmented } from "@/components/ui/segmented";
 import { MemberCard } from "@/components/public/member-card";
 import { useMusic } from "@/components/public/music";
+import { MemberPassButton } from "@/components/public/profil/member-pass-modal";
 import { StoryShareButton } from "@/components/public/story-share-button";
 import { MotionLink, SharedMorph, listReveal } from "@/components/motion";
 import { memberProfilePath } from "@/lib/members/slug";
@@ -162,18 +163,31 @@ export function MemberBrowser({
                       </SharedMorph>
                     </MotionLink>
 
-                    <StoryShareButton
-                      spec={{
-                        kind: "member",
-                        siteName,
-                        name: member.name,
-                        role: roleLabel,
-                        identifier: member.nim,
-                        bio: member.bio,
-                        joinedLabel: joined,
-                        filename: `kartu-${member.slug ?? member.id.slice(0, 8)}`,
-                      }}
-                    />
+                    <div className="flex items-center gap-0.5">
+                      <MemberPassButton
+                        variant="subtle"
+                        data={{
+                          member,
+                          siteName,
+                          roleLabel,
+                          identifierLabel: labels.memberIdentifier,
+                        }}
+                      />
+                      <StoryShareButton
+                        spec={{
+                          kind: "member",
+                          siteName,
+                          name: member.name,
+                          role: roleLabel,
+                          identifier: member.nim,
+                          bio: member.bio,
+                          joinedLabel: joined,
+                          photoUrl: member.photo_url,
+                          qrUrl: memberProfilePath(member),
+                          filename: `kartu-${member.slug ?? member.id.slice(0, 8)}`,
+                        }}
+                      />
+                    </div>
                   </div>
 
                   <div className="mt-2.5">

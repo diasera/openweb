@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { ViewTransition } from "react";
 import Script from "next/script";
-import { getNextEvent, getSettings } from "@/lib/data";
+import { getLatestAnnouncement, getNextEvent, getSettings } from "@/lib/data";
 import { getPublicMusicTracks } from "@/lib/data/music";
+import { isSupabaseConfigured } from "@/lib/supabase/public";
 import {
   getHomeSeoDescription,
   getHomeSeoTitle,
@@ -123,10 +124,11 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [settings, initialTracks, nextEvent] = await Promise.all([
+  const [settings, initialTracks, nextEvent, latestAnnouncement] = await Promise.all([
     getSettings(),
     getPublicMusicTracks(),
     getNextEvent(),
+    getLatestAnnouncement(),
   ]);
   const theme = themeCss(settings.theme);
   const labels = getContentLabels(settings);
@@ -164,6 +166,8 @@ export default async function RootLayout({
                   location: nextEvent.location,
                 }
               }
+              latestAnnouncement={latestAnnouncement}
+              canSubscribePush={isSupabaseConfigured()}
             >
               {/* Island & tab bar milik AppChromeProvider tetap di luar
                   transisi; hanya konten halaman yang bermorph antar rute. */}

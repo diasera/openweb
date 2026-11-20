@@ -10,6 +10,7 @@ import {
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
 import type {
+  IslandAnnouncement,
   IslandBrand,
   IslandEvent,
   IslandExpandOptions,
@@ -20,6 +21,7 @@ import { NoticeView } from "./views/notice-view";
 import { RouteView } from "./views/route-view";
 import { ExpandedRouteView } from "./views/expanded-route-view";
 import { MusicIslandView } from "./views/music-island-view";
+import { useUnreadAnnouncement } from "./views/announcement-activity";
 import { useMusic } from "@/components/public/music";
 import styles from "./dynamic-island.module.css";
 
@@ -45,6 +47,7 @@ function renderView(
   view: IslandView,
   brand: IslandBrand,
   event: IslandEvent | null,
+  announcement: IslandAnnouncement | null,
   onExpand: (options?: IslandExpandOptions) => void,
   onCollapse: () => void,
   focusSearch: boolean,
@@ -56,12 +59,20 @@ function renderView(
       <ExpandedRouteView
         brand={brand}
         event={event}
+        announcement={announcement}
         onNavigate={onCollapse}
         autoFocusSearch={focusSearch}
       />
     );
   }
-  return <RouteView config={view.config} event={event} onExpand={onExpand} />;
+  return (
+    <RouteView
+      config={view.config}
+      event={event}
+      announcement={announcement}
+      onExpand={onExpand}
+    />
+  );
 }
 
 /** Pintasan Spotlight tidak boleh mencuri ketikan di kolom input/editor. */
@@ -85,14 +96,17 @@ export function DynamicIslandViewport({
   notice,
   brand,
   event = null,
+  announcement = null,
 }: {
   route: IslandRouteConfig;
   notice: IslandNotice | null;
   brand: IslandBrand;
   event?: IslandEvent | null;
+  announcement?: IslandAnnouncement | null;
 }) {
   const music = useMusic();
   const pathname = usePathname();
+  const { unread: hasUnreadAnnouncement } = useUnreadAnnouncement(announcement);
   // Pathname saat panel dibuka: navigasi apa pun otomatis menutup panel karena
   // routeExpanded menjadi derived state, tanpa setState di effect.
   const [expanded, setExpanded] = useState<{
@@ -185,7 +199,7 @@ export function DynamicIslandViewport({
   const activity = shellView.kind !== "route";
   // Wilayah live selalu terpasang: pembaca layar hanya mengumumkan perubahan
   // isi, bukan region yang baru disisipkan bersamaan dengan kontennya.
-  const announcement = notice
+  const liveAnnouncement = notice
     ? [notice.title, notice.description].filter(Boolean).join(". ")
     : "";
   const errorNotice = notice?.status === "error";
@@ -193,10 +207,10 @@ export function DynamicIslandViewport({
   return (
     <>
       <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
-        {errorNotice ? "" : announcement}
+        {errorNotice ? "" : liveAnnouncement}
       </p>
       <p className="sr-only" role="alert" aria-atomic="true">
-        {errorNotice ? announcement : ""}
+        {errorNotice ? liveAnnouncement : ""}
       </p>
       {routeExpanded && (
         <div
@@ -221,7 +235,13 @@ export function DynamicIslandViewport({
               music.tracks.length > 1 &&
               styles.musicActivityQueue,
             shellView.kind === "expandedRoute" && styles.expandedRoute,
-            shellView.kind === "expandedRoute" && event && styles.expandedRouteEvent,
+            shellView.kind === "expandedRoute" &&
+              Boolean(event) !== hasUnreadAnnouncement &&
+              styles.expandedRouteEvent,
+            shellView.kind === "expandedRoute" &&
+              Boolean(event) &&
+              hasUnreadAnnouncement &&
+              styles.expandedRouteBoth,
           )}
         >
           <div
@@ -236,6 +256,7 @@ export function DynamicIslandViewport({
               shown,
               brand,
               event,
+              announcement,
               (options) =>
                 setExpanded({
                   path: pathname,

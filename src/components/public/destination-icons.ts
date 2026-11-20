@@ -10,6 +10,7 @@ import {
   Newspaper,
   Plus,
   ShieldCheck,
+  Sparkles,
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
@@ -27,6 +28,7 @@ export const DESTINATION_ICONS = {
   "/buat": Plus,
   "/agenda": CalendarDays,
   "/album": BookImage,
+  "/kilas-balik": Sparkles,
   "/tersimpan": Bookmark,
   "/pesan": MessagesSquare,
   "/anggota": UsersRound,

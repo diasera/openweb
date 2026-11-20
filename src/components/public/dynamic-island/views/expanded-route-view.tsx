@@ -17,7 +17,15 @@ import { ApiError, requestJson } from "@/lib/api/client";
 import { APP_TAB_ROUTES } from "@/lib/navigation/app-routes";
 import { cn } from "@/lib/utils/cn";
 import type { SiteSearchResult } from "@/lib/data";
-import type { IslandBrand, IslandEvent } from "../dynamic-island.types";
+import type {
+  IslandAnnouncement,
+  IslandBrand,
+  IslandEvent,
+} from "../dynamic-island.types";
+import {
+  IslandAnnouncementCard,
+  useUnreadAnnouncement,
+} from "./announcement-activity";
 import { IslandEventCard } from "./event-activity";
 import styles from "../dynamic-island.module.css";
 
@@ -26,6 +34,7 @@ const EXTRA_LINKS: ReadonlyArray<{ href: string; label: string }> = [
   { href: "/buat", label: "Buat Pin" },
   { href: "/agenda", label: "Agenda" },
   { href: "/album", label: "Album" },
+  { href: "/kilas-balik", label: "Kilas Balik" },
   { href: "/tersimpan", label: "Tersimpan" },
   { href: "/tentang", label: "Tentang" },
 ];
@@ -62,17 +71,20 @@ type KindFilter = "all" | SiteSearchResult["kind"];
 export function ExpandedRouteView({
   brand,
   event,
+  announcement = null,
   onNavigate,
   autoFocusSearch = false,
 }: {
   brand: IslandBrand;
   event: IslandEvent | null;
+  announcement?: IslandAnnouncement | null;
   onNavigate: () => void;
   /** Dibuka dari tombol Cari/pintasan: kursor langsung di kolom Spotlight. */
   autoFocusSearch?: boolean;
 }) {
   const pathname = usePathname();
   const { navigate } = useAppMotion();
+  const { unread: hasUnreadAnnouncement } = useUnreadAnnouncement(announcement);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsListRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
@@ -302,6 +314,12 @@ export function ExpandedRouteView({
       )}
 
       <div className={styles.panelBody}>
+        {!spotlightActive && announcement && (
+          <IslandAnnouncementCard
+            announcement={announcement}
+            onNavigate={onNavigate}
+          />
+        )}
         {!spotlightActive && event && (
           <IslandEventCard event={event} onNavigate={onNavigate} />
         )}
@@ -404,10 +422,13 @@ export function ExpandedRouteView({
         <MotionLink
           href="/notifikasi"
           onClick={onNavigate}
-          aria-label="Notifikasi"
-          className={iconButtonClass()}
+          aria-label={hasUnreadAnnouncement ? "Notifikasi baru" : "Notifikasi"}
+          className={cn(iconButtonClass(), "relative")}
         >
           <Bell className="size-4.5" />
+          {hasUnreadAnnouncement && (
+            <span className={styles.bellDot} aria-hidden="true" />
+          )}
         </MotionLink>
         <ThemeToggle />
       </div>

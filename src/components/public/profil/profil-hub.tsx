@@ -32,6 +32,7 @@ const DESTINATIONS: ReadonlyArray<{
   { href: "/blog", label: "Blog", description: "Artikel & kabar", plate: "bg-tone-teal text-white" },
   { href: "/agenda", label: "Agenda", description: "Jadwal kegiatan", plate: "bg-tone-orange text-white" },
   { href: "/album", label: "Album", description: "Koleksi per acara", plate: "bg-tone-indigo text-white" },
+  { href: "/kilas-balik", label: "Kilas Balik", description: "Rangkuman perjalanan", plate: "bg-primary text-primary-foreground" },
   { href: "/anggota", label: "Anggota", description: "Kenali semuanya", plate: "bg-tone-green text-white" },
   { href: "/pesan", label: "Pesan Anonim", description: "Kirim tanpa nama", plate: "bg-tone-purple text-white" },
   { href: "/tersimpan", label: "Tersimpan", description: "Pin & artikel favoritmu", plate: "bg-tone-pink text-white" },
