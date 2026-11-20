@@ -7,6 +7,8 @@ dan proyek ini menganut [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-20
+
 ### Ditambahkan
 
 - Mesin warna perseptual **OKLCH** + evaluasi kontras ganda **WCAG 2.2 AA & APCA (`Lc`)**

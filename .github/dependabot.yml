@@ -3,23 +3,26 @@ updates:
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
       timezone: Asia/Jakarta
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 2
     commit-message:
       prefix: chore(deps)
     groups:
-      next-react:
-        patterns: ["next", "eslint-config-next", "react", "react-dom", "@types/react", "@types/react-dom"]
-      tiptap:
-        patterns: ["@tiptap/*"]
-      supabase:
-        patterns: ["@supabase/*"]
-      tailwind:
-        patterns: ["tailwindcss", "@tailwindcss/*"]
+      npm-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      next-react-major:
+        patterns:
+          - "next"
+          - "eslint-config-next"
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+        update-types: ["major"]
     ignore:
-      # Sengaja ditahan; alasannya ada di README → "Versi yang sengaja ditahan".
+      # Sengaja ditahan; alasannya ada di docs/ARCHITECTURE.md → "Catatan versi dependensi".
       - dependency-name: typescript
         update-types: ["version-update:semver-major"]
       - dependency-name: eslint
@@ -30,5 +33,9 @@ updates:
     schedule:
       interval: monthly
       timezone: Asia/Jakarta
+    open-pull-requests-limit: 1
     commit-message:
       prefix: ci
+    groups:
+      github-actions:
+        patterns: ["*"]

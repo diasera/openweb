@@ -4,7 +4,7 @@
 
 # Ruang Bersama
 
-**Platform web komunitas open source — kelola seluruh identitas, galeri, artikel, agenda, dan anggota langsung dari panel admin, tanpa menyentuh kode.**
+**Platform web komunitas open source — kelola identitas, tema, galeri, blog, agenda, dan anggota langsung dari panel admin, tanpa menyentuh kode.**
 
 [![CI](https://github.com/diasera/openweb/actions/workflows/ci.yml/badge.svg)](https://github.com/diasera/openweb/actions/workflows/ci.yml)
 [![Versi](https://img.shields.io/github/package-json/v/diasera/openweb?label=versi&color=ff2d55)](./CHANGELOG.md)
@@ -29,7 +29,11 @@
 
 ---
 
-**Ruang Bersama** dirancang untuk kelas kuliah, sekolah, himpunan, komunitas hobi, organisasi, hingga portofolio kolektif. Antarmukanya memadukan susunan visual **Pinterest** (masonry & pin carousel) dengan pola interaksi **iOS** (Dynamic Island, spring motion CSS murni, dan tema adaptif terang/gelap).
+| Mode Terang | Mode Gelap |
+| :---: | :---: |
+| ![Pratinjau Mode Terang Ruang Bersama](./docs/screenshots/preview-light.webp) | ![Pratinjau Mode Gelap Ruang Bersama](./docs/screenshots/preview-dark.webp) |
+
+**Ruang Bersama** dirancang untuk kelas kuliah, sekolah, himpunan, komunitas hobi, organisasi, hingga portofolio kolektif. Antarmukanya memadukan susunan visual **Pinterest** (masonry & pin carousel) dengan interaksi halus ala **iOS** (Dynamic Island, *View Transitions*, kurva pegas CSS murni, dan tema adaptif terang/gelap).
 
 > *Proyek independen berlisensi MIT — tidak berafiliasi dengan Apple maupun Pinterest.*
 
@@ -39,14 +43,15 @@
 
 | Fitur | Apa yang kamu dapatkan |
 | :--- | :--- |
-| 🎛️ **Kustomisasi penuh tanpa kode** | Nama situs, warna merek (kontras WCAG AA otomatis), logo, hero beranda, sebutan anggota (*mahasiswa / siswa / pengurus*), kontak, dan SEO diatur langsung dari **Profil Admin → Pengaturan**. |
-| 🖼️ **Galeri Masonry & Pin Carousel** | Unggahan publik ber-moderasi dengan hingga **10 foto/video per pin**, editor foto bawaan (crop, rotasi, filter, konversi HEIC iPhone otomatis), album kegiatan, dan fitur *Kenangan hari ini*. |
-| 🏝️ **Dynamic Island serbaguna** | Satu pusat kendali untuk navigasi cepat, progres unggah real-time, lonceng notifikasi, **Live Activity** hitung mundur agenda (H-7), dan pemutar musik latar lintas-halaman. |
-| 🔎 **Spotlight bahasa Indonesia** | Pencarian instan (`⌘K` / `Ctrl+K`) dengan *full-text stemming* bahasa Indonesia lintas pin galeri, artikel blog, profil anggota (termasuk NIM/nomor identitas), album, dan agenda. |
-| ✍️ **Blog, Agenda & Mention dua arah** | Editor artikel rich-text, filter kategori & `#tag` lintas halaman, ekspor kalender `.ics` / Google Calendar, serta tautan otomatis antara profil anggota dan pin/artikel yang menyebut mereka. |
+| 🎨 **Mesin Tema OKLCH & 5 Preset Atmosfer** | Pilih 1-klik dari 5 gaya visual (*Liquid Spatial*, *Editorial Paper*, *Midnight Botanical* OLED, *Studio Neo-Bento*, *Tactile Zine*) plus warna merek kustom dengan perhitungan kontras ganda **WCAG 2.2 AA & APCA (`Lc`)** otomatis. |
+| 🖼️ **Galeri Masonry, Carousel & Theater Lightbox** | Unggahan publik ber-moderasi hingga **10 foto/video per pin**, editor foto non-destruktif (crop, filter, konversi HEIC iPhone), *Theater Lightbox* layar penuh (*ambient glow*, *pinch/wheel zoom*), filter bentuk & kepadatan grid, serta *Kenangan hari ini*. |
+| 🏝️ **Dynamic Island, Spotlight `⌘K` & Musik** | Satu pusat kendali untuk navigasi cepat, pencarian instan lintas konten (`⌘K` / `/` dengan navigasi panah keyboard & filter jenis), *Live Activity* hitung mundur agenda, serta pemutar musik berantrean dengan dukungan **MediaSession** OS. |
+| ✍️ **Blog Editorial & Editor TipTap v3** | Dilengkapi **Daftar Isi otomatis**, pita progres baca bebas JS, blok sorotan **Callout** (*Catatan*, *Tips*, *Penting*, *Perhatian*), tombol salin blok kode, *Lightbox* ilustrasi, serta *mention* dua arah ke profil anggota. |
+| 📅 **Agenda Bergaya Luma** | Ubin tanggal iOS, lencana status waktu nyata (*Berlangsung*, *Besok*, *H-N*), hitung mundur *flip-clock*, tautan lokasi langsung ke Google Maps, tombol bagikan acara, serta ekspor ke **Apple Calendar (`.ics`)**, **Google Calendar**, dan **Outlook Web**. |
+| ✨ **Interaksi Komunitas: Songfess, Buku Angkatan & Story `9:16`** | Pesan anonim dengan lampiran lagu (**Songfess**) yang dapat diputar langsung ke Dynamic Island, mode **Buku Angkatan** di direktori anggota, serta generator **Kartu Story `9:16` (`1080×1920` PNG)** siap pasang ke IG/WA Story. |
 | 📱 **PWA & Web Share Target** | Dapat dipasang ke layar utama, menerima kiriman foto/video langsung dari menu **Bagikan** galeri Android ke komposer pin, dan mendukung notifikasi **Web Push (VAPID)**. |
-| 🛡️ **Keamanan berlapis sejak awal** | Row Level Security (RLS) ketat, karantina kiriman publik di bucket privat `media-inbox`, verifikasi *magic-bytes* file, rate-limit atomik di Postgres, sesi admin `HttpOnly`, dan retensi privasi 180 hari. |
-| 🧪 **Jalan instan dengan Mode Demo** | Tanpa konfigurasi Supabase pun aplikasi langsung menyala memakai data demo — ideal untuk eksplorasi desain dan pengembangan UI lokal. |
+| 🛡️ **Keamanan Berlapis Sejak Awal** | Row Level Security (RLS) ketat, karantina kiriman di bucket privat `media-inbox`, verifikasi *magic-bytes*, rate-limit atomik di Postgres, cookie sesi & pengunjung bertanda tangan HMAC, validasi domain Web Push, dan retensi privasi 180 hari. |
+| 🧪 **Jalan Instan dengan Mode Demo** | Tanpa konfigurasi Supabase pun aplikasi langsung menyala memakai data demo — ideal untuk eksplorasi desain dan pengembangan UI lokal. |
 
 ---
 
@@ -78,7 +83,7 @@ Untuk mengaktifkan penyimpanan database, unggahan media, dan panel admin:
 2. Buka **SQL Editor**, salin seluruh isi [`supabase/schema.sql`](./supabase/schema.sql), lalu klik **Run**.
    *(Skrip ini 100% idempoten: membuat tabel, indeks pencarian, bucket Storage, fungsi RPC, dan kebijakan RLS sekaligus — serta aman dijalankan ulang setiap kali kamu memperbarui versi aplikasi).*
 3. Isi variabel di `.env.local` sesuai bagian [Environment](#-environment) di bawah.
-4. Jalankan `npm run dev`, buka **Profil**, buat akun **Owner pertama**, lalu masuk ke **Pengaturan** untuk mengganti seluruh identitas situs.
+4. Jalankan `npm run dev`, buka **Profil**, buat akun **Owner pertama**, lalu masuk ke **Pengaturan** untuk menyesuaikan seluruh identitas dan preset tema situs.
 
 ---
 
@@ -91,7 +96,7 @@ Salin `.env.local.example` ke `.env.local` lalu sesuaikan nilainya:
 | `NEXT_PUBLIC_SUPABASE_URL` | Ya* | Tidak | URL project Supabase (`https://<ref>.supabase.co`). |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Ya* | Tidak | Anon public key Supabase (dibatasi penuh oleh RLS). |
 | `SUPABASE_SERVICE_ROLE_KEY` | Ya* | **Ya** | Service role key khusus server untuk mutasi tervalidasi & signed upload. |
-| `AUTH_SECRET` | Ya* | **Ya** | Kunci HMAC cookie sesi admin (minimal 32 karakter acak, mis. `openssl rand -base64 32`). |
+| `AUTH_SECRET` | Ya* | **Ya** | Kunci HMAC cookie sesi admin & token pengunjung (minimal 32 karakter acak, mis. `openssl rand -base64 32`). |
 | `NEXT_PUBLIC_SITE_URL` | Opsional | Tidak | Fallback origin kanonis sebelum URL utama disimpan di menu Pengaturan SEO. |
 | `NEXT_PUBLIC_SITE_TIME_ZONE` | Opsional | Tidak | Zona waktu IANA untuk agenda & *Kenangan hari ini* (bawaan: `Asia/Jakarta`). |
 | `TRUSTED_PROXY` | Opsional | Tidak | Sumber header IP untuk *self-hosted* (`cloudflare` \| `x-real-ip` \| `x-forwarded-for`). Vercel terdeteksi otomatis; biarkan kosong bila ragu. |
@@ -117,7 +122,7 @@ Salin `.env.local.example` ke `.env.local` lalu sesuaikan nilainya:
 
 ## 🧭 Struktur repository
 
-Repository ini mengikuti **Pola Sarang Laba-Laba** — satu pusat logika melayani banyak fitur tanpa kode berulang. Penjelasan lengkap mengenai alur media, batas ukuran unggah, sistem motion 3D, dan keamanan tersedia di **[`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)**.
+Repository ini mengikuti **Pola Sarang Laba-Laba** — satu pusat logika melayani banyak fitur tanpa kode berulang. Penjelasan lengkap mengenai arsitektur modul, alur media, sistem motion, dan keamanan tersedia di **[`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)**.
 
 ```text
 .
@@ -125,32 +130,33 @@ Repository ini mengikuti **Pola Sarang Laba-Laba** — satu pusat logika melayan
 │  ├─ proxy.ts                  # Proxy request Next.js (bypass pemotongan body untuk Server Action foto)
 │  ├─ app/                      # App Router: halaman publik, area profil/admin, SEO endpoints, dan /api/*
 │  ├─ components/
-│  │  ├─ ui/                    # Primitif desain (Button, Card, Chip, Avatar, MediaCarousel, Skeleton, ...)
-│  │  ├─ motion/                # Sistem animasi pegas CSS murni, efek kedalaman 3D, dan RouteSkeleton
-│  │  ├─ public/                # Shell publik, Dynamic Island, Spotlight, komposer pin, pemutar musik
-│  │  ├─ admin/                 # Kit komponen panel admin bersama
+│  │  ├─ ui/                    # Primitif desain (Button, Card, MediaCarousel, MediaLightbox, Modal, Skeleton, ...)
+│  │  ├─ motion/                # Sistem pegas CSS, SharedMorph (<ViewTransition>), efek 3D, dan RouteSkeleton
+│  │  ├─ public/                # Shell publik, Dynamic Island, Spotlight, Buku Angkatan, Songfess, TOC artikel
+│  │  ├─ admin/                 # Kit komponen panel admin bersama & editor TipTap v3
 │  │  ├─ media-editor/          # Editor foto non-destruktif (crop, rotasi, koreksi warna, filter)
 │  │  ├─ auth/                  # Form login & setup owner pertama
 │  │  └─ seo/                   # Komponen JSON-LD terstruktur
-│  └─ lib/                      # Pusat logika terorganisasi per domain (site-config, media, security, seo, ...)
+│  └─ lib/                      # Pusat logika per domain (theme OKLCH, site-config, story-card, blog, security, ...)
 ├─ supabase/
 │  └─ schema.sql                # Skema database, bucket Storage, RPC, dan RLS (idempoten untuk instalasi & upgrade)
 ├─ scripts/                     # Skrip verifikasi otomatis (schema PGlite, format media, slug anggota, share target)
 ├─ docs/
-│  └─ ARCHITECTURE.md           # Dokumentasi mendalam arsitektur, keamanan, dan alur teknis
-└─ .github/                     # Workflow CI, panduan kontribusi, kebijakan keamanan, dan template Issue/PR
+│  ├─ ARCHITECTURE.md           # Dokumentasi mendalam arsitektur, keamanan, dan alur teknis
+│  └─ screenshots/              # Cuplikan tampilan Mode Demo terang & gelap
+└─ .github/                     # Workflow CI, panduan kontribusi, kebijakan keamanan, funding, dan template Issue/PR
 ```
 
 ---
 
 ## 🧪 Skrip & pemeriksaan kualitas
 
-Seluruh skrip di bawah ini juga dijalankan otomatis oleh [GitHub Actions CI](./.github/workflows/ci.yml) pada setiap push dan pull request:
+Seluruh skrip di bawah ini dijalankan otomatis oleh [GitHub Actions CI](./.github/workflows/ci.yml) pada setiap push dan pull request:
 
 | Perintah | Kegunaan |
 | :--- | :--- |
 | `npm run dev` | Menjalankan server pengembangan lokal di `http://localhost:3000`. |
-| `npm run build` | Membangun bundel produksi Next.js. |
+| `npm run build` | Membangun bundel produksi Next.js (Turbopack + React Compiler). |
 | `npm run start` | Menjalankan server produksi dari hasil `build`. |
 | `npm run lint` | Memeriksa kualitas kode dengan ESLint. |
 | `npm run typecheck` | Memeriksa tipe statis dengan TypeScript (`tsc --noEmit`). |
@@ -162,13 +168,12 @@ Seluruh skrip di bawah ini juga dijalankan otomatis oleh [GitHub Actions CI](./.
 
 ---
 
-## 🤝 Berkontribusi & komunitas
+## 🤝 Berkontribusi & Dukung Proyek
 
-Kontribusi dalam bentuk laporan bug, usulan fitur, perbaikan dokumentasi, maupun pull request sangat terbuka!
+Kontribusi dalam bentuk laporan bug, usulan fitur, perbaikan dokumentasi, pull request, maupun dukungan sponsor sangat terbuka!
 
 - 📖 **[Panduan Berkontribusi (`CONTRIBUTING.md`)](./.github/CONTRIBUTING.md)** — alur kerja PR, aturan Pola Sarang Laba-Laba, dan format commit.
 - 📐 **[Arsitektur Teknis (`docs/ARCHITECTURE.md`)](./docs/ARCHITECTURE.md)** — peta modul `src/lib/`, alur media, keamanan, dan keputusan desain.
-- 🤖 **[Aturan Pengembangan (`AGENTS.md`)](./AGENTS.md)** — prinsip kebersihan kode dan penempatan kategori folder.
 - 📜 **[Kode Etik (`CODE_OF_CONDUCT.md`)](./.github/CODE_OF_CONDUCT.md)** — standar interaksi komunitas yang ramah dan inklusif.
 - 🔒 **[Kebijakan Keamanan (`SECURITY.md`)](./.github/SECURITY.md)** — cara melaporkan celah keamanan secara privat.
 - 🗂️ **[Riwayat Perubahan (`CHANGELOG.md`)](./CHANGELOG.md)** — catatan rilis per versi.
@@ -185,6 +190,6 @@ Dirilis di bawah **[MIT License](./LICENSE)**. Lisensi pustaka pihak ketiga dica
 
 <div align="center">
 
-Dibuat dengan 💙 untuk komunitas Indonesia. Jika proyek ini bermanfaat, jangan lupa beri **⭐ Star** di GitHub!
+Dibuat dengan 💙 untuk komunitas Indonesia. Jika proyek ini bermanfaat, jangan lupa beri **⭐ Star** atau dukung pengembangannya melalui tombol **Sponsor** di GitHub!
 
 </div>

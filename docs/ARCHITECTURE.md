@@ -23,7 +23,7 @@ dan keputusan teknis utama. Untuk panduan instalasi dan mulai cepat, lihat
 
 ## 1. Pola Sarang Laba-Laba
 
-Seluruh codebase mengikuti satu prinsip utama (lihat juga [`AGENTS.md`](../AGENTS.md)):
+Seluruh codebase mengikuti satu prinsip utama (lihat juga [Panduan Berkontribusi](../.github/CONTRIBUTING.md#aturan-pengembangan)):
 **satu pusat logika melayani banyak cabang fitur**, sehingga tidak ada aturan yang
 ditulis berulang atau berjalan sendiri-sendiri.
 
@@ -65,9 +65,9 @@ src/
 │  │  └─ (admin)/                # dashboard, settings, media, albums, blog, agenda, members, messages, comments, music, visitors, accounts
 │  └─ api/                       # agenda, bell, blog-image, comments, media, og, pesan, push, pwa, search, tersimpan, track, uploads
 ├─ components/
-│  ├─ ui/                        # primitif desain (Button, Card, Chip, Avatar, MediaCarousel, Skeleton, IconPlate, ...)
-│  ├─ motion/                    # motion.css, KineticWords, depth pointer, route transisi, dan RouteSkeleton
-│  ├─ public/                    # shell publik, Dynamic Island, tab bar, Spotlight, komposer media, pemutar musik
+│  ├─ ui/                        # primitif desain (Button, Card, Chip, Avatar, MediaCarousel, MediaLightbox, Modal, Skeleton, ...)
+│  ├─ motion/                    # motion.css, SharedMorph (<ViewTransition>), KineticWords, depth pointer, dan RouteSkeleton
+│  ├─ public/                    # shell publik, Dynamic Island, tab bar, Spotlight, komposer media, pemutar musik, artikel & TOC
 │  ├─ admin/                     # kit admin bersama (AdminPage, AdminTabs, AdminList, AdminFormDialog, IslandSave, ...)
 │  ├─ media-editor/              # editor foto/video non-destruktif berbasis WebGL/Canvas
 │  ├─ auth/                      # formulir autentikasi & setup owner
@@ -77,22 +77,23 @@ src/
    ├─ categories.ts              # daftar kategori & warna kategori terpusat
    ├─ constants.ts               # konstanta global (batas unggah, bucket, rute editor, retensi data)
    ├─ env.ts                     # pembacaan environment variables aman
-   ├─ theme.ts                   # generator CSS variables tema + kontras otomatis AA
+   ├─ theme.ts                   # mesin tema OKLCH + kontras ganda WCAG/APCA & 5 preset atmosfer
    ├─ admin/                     # query berhalaman, guard validasi action, audit/IP ban
-   ├─ agenda/                    # kalkulasi fase acara (mendatang/berlangsung/selesai) & file .ics
+   ├─ agenda/                    # kalkulasi fase acara, file .ics, tautan Google/Outlook Calendar & Peta
    ├─ api/                       # helper request, origin check, rate-limited public mutation
    ├─ assets/                    # pengelolaan gambar terkelola (logo, hero, avatar, cover)
    ├─ auth/                      # sesi cookie HMAC/scrypt, matriks izin fitur per akun
-   ├─ blog/                      # sanitasi/normalisasi HTML artikel & rich-text
+   ├─ blog/                      # sanitasi HTML, ekstensi Callout TipTap, ekstraktor Daftar Isi (TOC) & validator dokumen
    ├─ data/                      # pembacaan data publik ber-cache + fallback data demo
    ├─ database/                  # pembungkus mutasi DB & pemetaan pesan error ramah pengguna
    ├─ feedback/                  # antrean toast & umpan balik antarmuka
-   ├─ hooks/                     # React hooks bersama (useDraftUploads, useMediaDrafts, useSavedItems, useNow, ...)
+   ├─ hooks/                     # React hooks bersama (useDialogFocusTrap, useDraftUploads, useMediaDrafts, useSavedItems, useNow, ...)
    ├─ media/                     # kontrak slide carousel, metadata pin, upload/moderasi, revalidasi ISR
    ├─ media-editor/              # geometri crop, filter warna, pipeline render ekspor
    ├─ media-formats/             # registry tunggal MIME/ekstensi/magic-bytes foto, video, dan audio
    ├─ members/                   # pembuatan slug unik anggota & agregasi aktivitas/mention dua arah
-   ├─ music/                     # state pemutar musik latar lintas-navigasi
+   ├─ messages/                  # encoder & parser Songfess untuk pesan anonim
+   ├─ music/                     # state pemutar musik latar lintas-navigasi, antrean & MediaSession
    ├─ navigation/                # registry rute aplikasi & pemetaan layout skeleton
    ├─ og/                        # komponen kartu Open Graph 1200×630 (Satori/ImageResponse)
    ├─ push/                      # langganan & pengiriman Web Push (VAPID)
@@ -100,10 +101,11 @@ src/
    ├─ security/                  # moderasi IP, rate-limit Postgres atomik, jadwal pembersihan retensi data
    ├─ seo/                       # metadata halaman, JSON-LD, feed RSS/JSON, dan revalidasi sitemap
    ├─ site-config/               # skema, normalisasi, defaults, dan resolver hero konfigurasi situs
+   ├─ story-card/                # generator kanvas Kartu Story 9:16 (1080×1920 PNG) sisi klien
    ├─ supabase/                  # client publik (RLS), browser, service-role admin, dan operasi Storage
    ├─ types/                     # definisi tipe TypeScript selaras supabase/schema.sql
    ├─ uploads/                   # kebijakan ukuran/tipe, tiket tanda tangan unggah, finalisasi & penyapuan yatim
-   └─ utils/                     # cn (tailwind-merge), warna & kontras WCAG, format waktu zona situs, localStorage aman
+   └─ utils/                     # cn (tailwind-merge), warna OKLCH/WCAG/APCA, parser perangkat MIT, format waktu, localStorage aman
 ```
 
 ---
@@ -111,7 +113,7 @@ src/
 ## 3. Pusat logika utama (`src/lib/`)
 
 - **Konfigurasi situs (`src/lib/site-config/`)** — Satu sumber kebenaran untuk identitas situs, label istilah anggota, hero beranda (`resolveHeroContent` di `hero.ts`), kontak, dan SEO. Sub-entry `client.ts` mengekspor opsi & batas yang aman dipakai komponen klien tanpa menarik kode khusus server.
-- **Tema & kontras warna (`src/lib/theme.ts` + `src/lib/utils/color.ts`)** — Perhitungan luminansi dan rasio kontras WCAG 2.1 dipusatkan di `utils/color.ts`, lalu dipakai baik oleh avatar deterministik (`mutedAvatarColors`) maupun generator token tema (`themeCss`), sehingga setiap warna merek yang dipilih admin otomatis menurunkan `--primary-readable` yang lulus kontras AA di mode terang dan gelap.
+- **Tema & kontras warna (`src/lib/theme.ts` + `src/lib/utils/color.ts`)** — Konversi perseptual **OKLCH**, token wide-gamut Display P3, serta perhitungan kontras ganda **WCAG 2.2 AA & APCA (`Lc`)** dipusatkan di `utils/color.ts` dan dipakai bersama oleh 5 preset atmosfer tema (`themeCss`), sehingga setiap warna merek yang dipilih admin otomatis menurunkan `--primary-readable` yang nyaman dibaca di mode terang maupun gelap.
 - **Pembacaan data & mode demo (`src/lib/data/`)** — Bila variabel Supabase kosong, seluruh fungsi pembacaan otomatis mengembalikan data demo generik sehingga repository dapat langsung dicoba setelah `git clone` tanpa setup eksternal.
 - **Aktivitas & sebutan anggota dua arah (`src/lib/members/activity.ts`)** — Profil anggota menampilkan karya yang diunggah sekaligus pin/artikel yang menyebut mereka, sementara halaman pin dan artikel menampilkan chip anggota yang disebut (dicocokkan terhadap nama lengkap maupun token nama panggilan ≥ 3 karakter).
 - **Penyimpanan lokal aman (`src/lib/utils/storage.ts` & `src/lib/hooks/use-saved-items.ts`)** — Seluruh kunci `localStorage` didaftarkan di satu tempat dengan penanganan mode privat browser, kuota penuh, dan JSON rusak; fitur **Tersimpan** menyinkronkan bookmark lokal lintas-tab via `useSyncExternalStore`.
@@ -122,7 +124,7 @@ src/
 ## 4. Sistem UI, Motion, dan Skeleton (`src/components/`)
 
 - **Token desain kustom (`src/app/globals.css` + `src/lib/utils/cn.ts`)** — Tipografi (`text-display`, `text-title-1`, `text-footnote`, dll.), radius (`rounded-pin`, `rounded-card`, `rounded-island`), dan warna semantik (`text-tone-blue-text`, dll.) didefinisikan di CSS dan didaftarkan pada konfigurasi `tailwind-merge` di `cn.ts` agar penggabungan class tidak saling menghapus.
-- **Motion CSS murni (`src/components/motion/motion.css`)** — Animasi memakai `transform` dan `opacity` dengan kurva pegas (`--motion-spring`, `--motion-spring-snappy`, `--motion-spring-bouncy`) tanpa pustaka animasi JS berat. Satu listener pointer bersama (`useDepthPointer`) menggerakkan efek tilt 3D (`.motion-card`) sekaligus sorotan tepi (`[data-spotlight]`).
+- **Motion CSS murni & View Transitions (`src/components/motion/`)** — Animasi memakai `transform` dan `opacity` dengan kurva pegas (`--motion-spring`, `--motion-spring-snappy`, `--motion-spring-bouncy`) tanpa pustaka animasi JS berat. `SharedMorph` membungkus `<ViewTransition>` React 19.3 untuk morph elemen bersama antar rute, sementara `useDepthPointer` menggerakkan efek tilt 3D (`.motion-card`) dan sorotan tepi (`[data-spotlight]`).
 - **Skeleton per rute (`src/components/motion/route-skeleton.tsx`)** — Setiap rute di `src/lib/navigation/app-routes.ts` dan `ADMIN_FEATURE_META` mendeklarasikan jenis layout skeleton-nya; `loading.tsx` di root maupun admin langsung merender kerangka halaman yang sesuai.
 - **Kit Admin terpadu (`src/components/admin/`)** — Semua halaman kelola dibangun dari primitif yang sama (`AdminPage`, `AdminTabs`, `AdminList`, `AdminFormDialog`, `ImageField`, `SerpPreview`, `IslandSave` dengan pintasan `Ctrl/⌘+S`), sementara validasi argumen Server Action dijaga oleh `src/lib/admin/guard.ts`.
 

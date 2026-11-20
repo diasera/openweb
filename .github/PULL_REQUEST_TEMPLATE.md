@@ -17,7 +17,7 @@
 
 ## Checklist
 
-- [ ] Saya sudah mencari dan memakai ulang kode yang ada (Pola Sarang Laba-Laba, lihat `AGENTS.md`).
+- [ ] Saya sudah mencari dan memakai ulang kode yang ada (Pola Sarang Laba-Laba, lihat `CONTRIBUTING.md` & `docs/ARCHITECTURE.md`).
 - [ ] Tidak ada logika ganda; kode diletakkan di folder sesuai kategorinya.
 - [ ] Perubahan `schema.sql` (bila ada) idempoten dan diuji di `scripts/check-schema.mjs`.
 - [ ] `npm run lint`, `npm run typecheck`, dan `npm run build` lulus.

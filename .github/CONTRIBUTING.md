@@ -48,8 +48,8 @@ menulis data, siapkan project Supabase sesuai bagian
 ## Aturan pengembangan
 
 Repository ini memakai **Pola Sarang Laba-Laba**: logika inti dikumpulkan di
-satu pusat, lalu dipakai ulang oleh banyak fitur. Aturan lengkapnya ada di
-[`AGENTS.md`](../AGENTS.md) dan [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md); ringkasannya:
+satu pusat, lalu dipakai ulang oleh banyak fitur. Penjelasan arsitektur
+lengkapnya ada di [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md); ringkasannya:
 
 1. **Cari sebelum membuat.** Sebelum menulis fungsi, komponen, atau file baru,
    cek apakah sudah ada yang bisa dipakai ulang atau diperluas.

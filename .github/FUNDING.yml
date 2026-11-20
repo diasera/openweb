@@ -1,0 +1,7 @@
+# Menampilkan tombol Sponsor di halaman utama repository GitHub.
+# Aktifkan GitHub Sponsors di https://github.com/sponsors/diasera atau buka
+# komentar `custom` di bawah untuk menautkan Saweria, Trakteer, atau Ko-fi.
+
+github: [diasera]
+# ko_fi: diasera
+# custom: ["https://saweria.co/username", "https://trakteer.id/username"]
