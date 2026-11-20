@@ -8,6 +8,7 @@ import type {
   CommentRow,
   EventRow,
   AlbumRow,
+  NotificationRow,
 } from "@/lib/types/database";
 import { DEFAULT_SITE_CONFIG } from "@/lib/site-config";
 import { slugifyMemberName } from "@/lib/members/slug";
@@ -372,4 +373,31 @@ function album(
 export const DEMO_ALBUMS: AlbumRow[] = [
   album("a1", "lokakarya-kreatif", "Lokakarya kreatif", "Dokumentasi lokakarya bersama fasilitator.", "e3", 19),
   album("a2", "kebersamaan", "Kebersamaan", "Momen santai, makan bersama, dan cerita di luar agenda resmi.", null, 30),
+];
+
+export const DEMO_NOTIFICATIONS: Pick<
+  NotificationRow,
+  "id" | "title" | "body" | "url" | "created_at"
+>[] = [
+  {
+    id: "n1",
+    title: "Rapat anggota bulanan dalam 2 hari",
+    body: "Simpan jadwal ke kalender dan siapkan masukan program untuk bulan depan.",
+    url: "/agenda",
+    created_at: hoursAgo(4),
+  },
+  {
+    id: "n2",
+    title: "Album Lokakarya Kreatif sudah terbit",
+    body: "Lihat dokumentasi lengkap foto dan cerita kegiatan terbaru di galeri.",
+    url: "/album/lokakarya-kreatif",
+    created_at: daysAgo(3),
+  },
+  {
+    id: "n3",
+    title: "Kilas Balik komunitas tersedia",
+    body: "Telusuri rangkuman momen, karya, dan lagu terfavorit sepanjang perjalanan bersama.",
+    url: "/kilas-balik",
+    created_at: daysAgo(12),
+  },
 ];

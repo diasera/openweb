@@ -299,6 +299,56 @@ const [{ total, unlinked }] = await rows(
 );
 assert.equal(total, unlinked);
 
+// Reaksi emoji cepat: RLS tertutup bagi anon, agregasi publik lewat RPC, toggle atomik.
+const [{ id: publishedPostId }] = await rows(
+  "select id from public.blog_posts where slug = 'berkemah-di-gunung'",
+);
+const [{ id: draftPostId }] = await rows(
+  "select id from public.blog_posts where slug = 'draft-kemah'",
+);
+await rejects("anon", "select * from public.content_reactions", /permission denied/);
+await rejects(
+  "anon",
+  `select * from public.toggle_content_reaction('media', '${carouselId}', 'v1', 'fire')`,
+  /permission denied/,
+);
+const [reactOn] = await asRole(
+  "service_role",
+  "select active, total::int as total from public.toggle_content_reaction('media', $1, 'v1', 'fire')",
+  [carouselId],
+);
+assert.deepEqual(reactOn, { active: true, total: 1 });
+const [reactOn2] = await asRole(
+  "service_role",
+  "select active, total::int as total from public.toggle_content_reaction('media', $1, 'v2', 'fire')",
+  [carouselId],
+);
+assert.deepEqual(reactOn2, { active: true, total: 2 });
+const [reactOff] = await asRole(
+  "service_role",
+  "select active, total::int as total from public.toggle_content_reaction('media', $1, 'v1', 'fire')",
+  [carouselId],
+);
+assert.deepEqual(reactOff, { active: false, total: 1 });
+const anonCounts = await asRole(
+  "anon",
+  "select emoji, total::int as total from public.get_reaction_counts('media', $1)",
+  [carouselId],
+);
+assert.deepEqual(anonCounts, [{ emoji: "fire", total: 1 }]);
+const [blogReact] = await asRole(
+  "service_role",
+  "select active, total::int as total from public.toggle_content_reaction('blog', $1, 'v1', 'clap')",
+  [publishedPostId],
+);
+assert.deepEqual(blogReact, { active: true, total: 1 });
+const draftReact = await asRole(
+  "service_role",
+  "select * from public.toggle_content_reaction('blog', $1, 'v1', 'heart')",
+  [draftPostId],
+);
+assert.deepEqual(draftReact, [], "draf tidak bisa direaksikan");
+
 // Upgrade label hero: chip yang dulu ditebak dari identitas disalin SEKALI ke
 // hero_badge saat kolomnya dibuat; setelah itu pilihan admin tidak ditimpa.
 const heroBadge = async () =>

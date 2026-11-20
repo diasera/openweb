@@ -249,6 +249,15 @@ export type CommentRow = {
   created_at: string;
 }
 
+export type ContentReactionRow = {
+  id: string;
+  media_id: string | null;
+  blog_post_id: string | null;
+  visitor_id: string;
+  emoji: "heart" | "fire" | "clap" | "laugh" | "wow";
+  created_at: string;
+}
+
 export type MusicTrackRow = {
   id: string;
   title: string;
@@ -366,6 +375,7 @@ export interface Database {
       rate_limits: TableShape<RateLimitRow>;
       events: TableShape<EventRow>;
       albums: TableShape<AlbumRow>;
+      content_reactions: TableShape<ContentReactionRow>;
     };
     Views: Record<string, never>;
     Functions: {
@@ -399,6 +409,19 @@ export interface Database {
       like_message: {
         Args: { p_message_id: string; p_visitor_id: string };
         Returns: Array<{ total_likes: number; newly_liked: boolean }>;
+      };
+      get_reaction_counts: {
+        Args: { p_target_kind: string; p_target_id: string };
+        Returns: Array<{ emoji: string; total: number }>;
+      };
+      toggle_content_reaction: {
+        Args: {
+          p_target_kind: string;
+          p_target_id: string;
+          p_visitor_id: string;
+          p_emoji: string;
+        };
+        Returns: Array<{ active: boolean; total: number }>;
       };
       search_site: {
         Args: { p_query: string; p_limit?: number };

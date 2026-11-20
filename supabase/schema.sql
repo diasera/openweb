@@ -1405,6 +1405,150 @@ create policy "public read comments" on public.comments
     )
   );
 
+-- Reaksi emoji cepat untuk pin galeri & artikel blog (tanpa ekspos visitor_id ke anon).
+create table if not exists public.content_reactions (
+  id           uuid primary key default gen_random_uuid(),
+  media_id     uuid references public.media(id) on delete cascade,
+  blog_post_id uuid references public.blog_posts(id) on delete cascade,
+  visitor_id   text not null,
+  emoji        text not null check (emoji in ('heart', 'fire', 'clap', 'laugh', 'wow')),
+  created_at   timestamptz not null default now(),
+  constraint content_reactions_target_check
+    check (num_nonnulls(media_id, blog_post_id) = 1)
+);
+
+create unique index if not exists content_reactions_media_uniq
+  on public.content_reactions (media_id, visitor_id, emoji)
+  where media_id is not null;
+create unique index if not exists content_reactions_blog_uniq
+  on public.content_reactions (blog_post_id, visitor_id, emoji)
+  where blog_post_id is not null;
+create index if not exists content_reactions_media_idx
+  on public.content_reactions (media_id) where media_id is not null;
+create index if not exists content_reactions_blog_idx
+  on public.content_reactions (blog_post_id) where blog_post_id is not null;
+
+alter table public.content_reactions enable row level security;
+
+-- Agregasi reaksi publik: hanya menghitung target yang benar-benar terbit.
+create or replace function public.get_reaction_counts(
+  p_target_kind text,
+  p_target_id uuid
+)
+returns table (emoji text, total bigint)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select r.emoji, count(*)::bigint as total
+  from public.content_reactions as r
+  where (
+    p_target_kind = 'media'
+    and r.media_id = p_target_id
+    and exists (
+      select 1 from public.media m
+      where m.id = p_target_id and m.status = 'approved'
+    )
+  ) or (
+    p_target_kind = 'blog'
+    and r.blog_post_id = p_target_id
+    and exists (
+      select 1 from public.blog_posts p
+      where p.id = p_target_id and p.status = 'published'
+    )
+  )
+  group by r.emoji;
+$$;
+
+-- Toggle reaksi atomik (hanya service_role dari Route Handler).
+create or replace function public.toggle_content_reaction(
+  p_target_kind text,
+  p_target_id uuid,
+  p_visitor_id text,
+  p_emoji text
+)
+returns table (active boolean, total bigint)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_deleted integer := 0;
+  v_active boolean := false;
+  v_total bigint := 0;
+begin
+  if p_target_kind not in ('media', 'blog')
+     or p_emoji not in ('heart', 'fire', 'clap', 'laugh', 'wow')
+     or btrim(coalesce(p_visitor_id, '')) = '' then
+    return;
+  end if;
+
+  if p_target_kind = 'media' then
+    if not exists (
+      select 1 from public.media where id = p_target_id and status = 'approved'
+    ) then
+      return;
+    end if;
+
+    delete from public.content_reactions
+    where media_id = p_target_id
+      and visitor_id = p_visitor_id
+      and emoji = p_emoji;
+    get diagnostics v_deleted = row_count;
+
+    if v_deleted > 0 then
+      v_active := false;
+    else
+      insert into public.content_reactions (media_id, visitor_id, emoji)
+      values (p_target_id, p_visitor_id, p_emoji)
+      on conflict (media_id, visitor_id, emoji) where media_id is not null do nothing;
+      v_active := true;
+    end if;
+
+    select count(*)::bigint into v_total
+    from public.content_reactions
+    where media_id = p_target_id and emoji = p_emoji;
+  else
+    if not exists (
+      select 1 from public.blog_posts where id = p_target_id and status = 'published'
+    ) then
+      return;
+    end if;
+
+    delete from public.content_reactions
+    where blog_post_id = p_target_id
+      and visitor_id = p_visitor_id
+      and emoji = p_emoji;
+    get diagnostics v_deleted = row_count;
+
+    if v_deleted > 0 then
+      v_active := false;
+    else
+      insert into public.content_reactions (blog_post_id, visitor_id, emoji)
+      values (p_target_id, p_visitor_id, p_emoji)
+      on conflict (blog_post_id, visitor_id, emoji) where blog_post_id is not null do nothing;
+      v_active := true;
+    end if;
+
+    select count(*)::bigint into v_total
+    from public.content_reactions
+    where blog_post_id = p_target_id and emoji = p_emoji;
+  end if;
+
+  return query select v_active, v_total;
+end;
+$$;
+
+revoke all on function public.get_reaction_counts(text, uuid) from public;
+grant execute on function public.get_reaction_counts(text, uuid)
+  to anon, authenticated, service_role;
+
+revoke all on function public.toggle_content_reaction(text, uuid, text, text)
+  from public, anon, authenticated;
+grant execute on function public.toggle_content_reaction(text, uuid, text, text)
+  to service_role;
+
 -- Pembersihan kolom usang dari database lama secara idempoten.
 alter table public.visitors     drop column if exists location;
 alter table public.blog_posts   drop column if exists views;
@@ -1452,7 +1596,7 @@ grant select (
   id, slug, previous_slugs, title, description, event_id, created_at, updated_at
 ) on public.albums to anon, authenticated;
 
--- (Sengaja) tidak ada policy anon untuk: admins, messages, visitors, banned_ips.
+-- (Sengaja) tidak ada policy anon untuk: admins, messages, visitors, banned_ips, content_reactions.
 
 -- Label hero (chip kiri-atas) kini field sendiri di tab Beranda. Dulu isinya
 -- ditebak dari nama alternatif/nama website sehingga bentrok dengan judul

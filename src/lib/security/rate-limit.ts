@@ -35,6 +35,7 @@ export const RATE_LIMITS = {
   comment: { scope: "public:comment", limit: 10, windowSeconds: 5 * 60 },
   message: { scope: "public:message", limit: 5, windowSeconds: 10 * 60 },
   messageLike: { scope: "public:message-like", limit: 60, windowSeconds: 5 * 60 },
+  reaction: { scope: "public:reaction", limit: 90, windowSeconds: 5 * 60 },
   // Ditandatangani per file: cukup untuk tiga pin carousel penuh per jam.
   uploadSign: {
     scope: "public:upload-sign",

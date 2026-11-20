@@ -21,6 +21,7 @@ import {
   DEMO_COMMENTS,
   DEMO_ALBUMS,
   DEMO_EVENTS,
+  DEMO_NOTIFICATIONS,
 } from "./demo";
 import { eventPagePath } from "@/lib/agenda/calendar";
 import { SAVED_ITEM_LIMITS } from "@/lib/constants";
@@ -30,6 +31,12 @@ import { isUuid } from "@/lib/utils/id";
 import { isSchemaOutdatedError } from "@/lib/database/errors";
 import { readingTime } from "@/lib/utils/reading-time";
 import { SITE_TIME_ZONE, zonedParts } from "@/lib/utils/time";
+import {
+  emptyReactionCounts,
+  isReactionKey,
+  type ReactionCounts,
+  type ReactionTargetKind,
+} from "@/lib/reactions";
 import { isLookupSlug, optionalRead, unwrap, unwrapCount, unwrapFeature } from "./read";
 import {
   composeMediaSlides,
@@ -614,7 +621,7 @@ export async function getComments(
 }
 
 export async function getNotifications(limit = 30) {
-  if (!isSupabaseConfigured()) return [];
+  if (!isSupabaseConfigured()) return DEMO_NOTIFICATIONS.slice(0, limit);
   const data = unwrap(
     "notifications",
     await createPublicSupabase()
@@ -625,6 +632,36 @@ export async function getNotifications(limit = 30) {
   );
   return data ?? [];
 }
+
+/**
+ * Pengumuman terbaru dalam jendela waktu (bawaan 72 jam) untuk Live Activity
+ * Dynamic Island. Opsional: bila tabel belum tersedia atau kosong mengembalikan null.
+ */
+export const getLatestAnnouncement = cache(async (windowHours = 72) => {
+  const cutoff = Date.now() - windowHours * 3_600_000;
+  if (!isSupabaseConfigured()) {
+    const latest = DEMO_NOTIFICATIONS[0];
+    if (!latest) return null;
+    return Date.parse(latest.created_at) >= cutoff ? latest : null;
+  }
+  return optionalRead(
+    "latest-announcement",
+    async () => {
+      const data = unwrap(
+        "latest-announcement",
+        await createPublicSupabase()
+          .from("notifications")
+          .select("id, title, body, url, created_at")
+          .gte("created_at", new Date(cutoff).toISOString())
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      );
+      return data ?? null;
+    },
+    null,
+  );
+});
 
 /**
  * Pesan anonim untuk publik. Service role hanya memilih kolom aman;
@@ -771,4 +808,63 @@ export async function searchSiteContent(
       subtitle: row.subtitle,
       href: searchHref(row),
     }));
+}
+
+export interface ContentReactionsResult {
+  available: boolean;
+  demo: boolean;
+  counts: ReactionCounts;
+}
+
+function demoReactionCounts(seed: string): ReactionCounts {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) % 997;
+  }
+  return {
+    heart: 3 + (hash % 7),
+    fire: 1 + ((hash >> 2) % 5),
+    clap: (hash >> 4) % 4,
+    laugh: (hash >> 5) % 3,
+    wow: 1 + ((hash >> 3) % 3),
+  };
+}
+
+/**
+ * Hitungan reaksi emoji cepat untuk pin galeri atau artikel blog.
+ * Berdegradasi anggun (`available: false`) sebelum `schema.sql` terbaru dijalankan.
+ */
+export async function getContentReactions(
+  kind: ReactionTargetKind,
+  targetId: string,
+): Promise<ContentReactionsResult> {
+  if (!isSupabaseConfigured()) {
+    return { available: true, demo: true, counts: demoReactionCounts(targetId) };
+  }
+  if (!isUuid(targetId)) {
+    return { available: false, demo: false, counts: emptyReactionCounts() };
+  }
+  return optionalRead<ContentReactionsResult>(
+    "content-reactions",
+    async () => {
+      const { data, error } = await createPublicSupabase().rpc(
+        "get_reaction_counts",
+        { p_target_kind: kind, p_target_id: targetId },
+      );
+      if (error) {
+        if (isSchemaOutdatedError(error)) {
+          return { available: false, demo: false, counts: emptyReactionCounts() };
+        }
+        throw error;
+      }
+      const counts = emptyReactionCounts();
+      for (const row of data ?? []) {
+        if (isReactionKey(row.emoji)) {
+          counts[row.emoji] = Number(row.total) || 0;
+        }
+      }
+      return { available: true, demo: false, counts };
+    },
+    { available: false, demo: false, counts: emptyReactionCounts() },
+  );
 }

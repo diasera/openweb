@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import {
+  getContentReactions,
   getPostBySlug,
   getPublishedPosts,
   getSettings,
@@ -10,6 +11,7 @@ import { ArticleContent, ArticleCover } from "@/components/public/article-conten
 import { ArticleToc, ReadingProgressBar } from "@/components/public/article-toc";
 import { MentionedMembers } from "@/components/public/mentioned-members";
 import { PostRow } from "@/components/public/post-row";
+import { ReactionBar } from "@/components/public/reaction-bar";
 import { ShareButton, SaveButton } from "@/components/public/share-save";
 import { getMentionedMembersForPost } from "@/lib/members/activity";
 import { Avatar } from "@/components/ui/avatar";
@@ -92,7 +94,10 @@ export default async function ArticlePage({
   if (!post) notFound();
   // Slug lama (judul pernah diganti) dialihkan permanen ke URL kanonis.
   if (post.slug !== slug) permanentRedirect(`/blog/${post.slug}`);
-  const mentionedMembers = await getMentionedMembersForPost(post);
+  const [mentionedMembers, reactions] = await Promise.all([
+    getMentionedMembersForPost(post),
+    getContentReactions("blog", post.id),
+  ]);
   const related = pickRelatedPosts(recentPosts, post.slug, post.category);
   const { html: preparedHtml, headings } = prepareArticleToc(
     normalizeArticleHtml(post.content_html),
@@ -195,6 +200,15 @@ export default async function ArticlePage({
             ))}
           </div>
         )}
+
+        <ReactionBar
+          kind="blog"
+          targetId={post.id}
+          initialCounts={reactions.counts}
+          available={reactions.available}
+          demo={reactions.demo}
+          className="border-border/70 mt-6 border-t pt-5"
+        />
 
         <MentionedMembers members={mentionedMembers} settings={settings} className="mt-6" />
       </article>
