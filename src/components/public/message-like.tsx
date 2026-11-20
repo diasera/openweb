@@ -63,14 +63,23 @@ export function MessageLike({ id, likes }: { id: string; likes: number }) {
     () => likedIds().has(id),
     () => false,
   );
-  const [count, setCount] = useState(likes);
+  // Simpan hanya delta lokal atau respons otoritatif server agar angka selalu
+  // ikut menyegarkan diri ketika prop `likes` berubah pasca-refresh.
+  const [override, setOverride] = useState<{ base: number; value: number } | null>(
+    null,
+  );
+  const [bursting, setBursting] = useState(false);
   const [pending, setPending] = useState(false);
+
+  const count = override && override.base === likes ? override.value : likes;
 
   async function like() {
     if (liked || pending) return;
     setPending(true);
     setLiked(id, true);
-    setCount((c) => c + 1);
+    setOverride({ base: likes, value: count + 1 });
+    setBursting(true);
+    setTimeout(() => setBursting(false), 450);
 
     try {
       const data = await postJson<{ likes?: number }>(
@@ -78,11 +87,15 @@ export function MessageLike({ id, likes }: { id: string; likes: number }) {
         { id },
         "Gagal menyukai pesan",
       );
-      if (typeof data.likes === "number") setCount(data.likes);
+      if (typeof data.likes === "number") {
+        setOverride({ base: likes, value: data.likes });
+      }
     } catch (error) {
       setLiked(id, false);
-      setCount((c) => Math.max(0, c - 1));
-      toast.error(error instanceof Error ? error.message : "Gagal menyukai pesan");
+      setOverride(null);
+      toast.error(
+        error instanceof Error ? error.message : "Gagal menyukai pesan",
+      );
     } finally {
       setPending(false);
     }
@@ -100,13 +113,15 @@ export function MessageLike({ id, likes }: { id: string; likes: number }) {
         liked ? "text-primary-readable" : "hover:text-primary-readable",
       )}
     >
-      <Heart
-        className={cn(
-          "h-3.5 w-3.5",
-          liked && "animate-symbol-bounce fill-current",
-        )}
-      />
-      {count}
+      <span className={cn("inline-flex", bursting && "motion-heart-burst")}>
+        <Heart
+          className={cn(
+            "h-3.5 w-3.5",
+            liked && "animate-symbol-bounce fill-current",
+          )}
+        />
+      </span>
+      <span className="tabular-nums">{count}</span>
     </button>
   );
 }

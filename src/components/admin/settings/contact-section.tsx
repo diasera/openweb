@@ -1,6 +1,7 @@
 "use client";
 
-import { AtSign, ChartNoAxesColumn, Contact } from "lucide-react";
+import { AtSign, ChartNoAxesColumn, Contact, ExternalLink } from "lucide-react";
+import { CopyButton } from "@/components/ui/copy-button";
 import { SITE_CONFIG_LIMITS, SOCIAL_NETWORKS } from "@/lib/site-config/client";
 import type { SiteSettingsRow } from "@/lib/types/database";
 import { saveContactSettings } from "@/app/profil/(admin)/setting/actions";
@@ -126,6 +127,34 @@ export function ContactSection({
           description="Aktifkan hanya setelah website disetujui AdSense; iklan memengaruhi performa dan pengalaman pengunjung."
           defaultChecked={settings.google_adsense_auto_ads}
         />
+        {settings.google_adsense_client_id && (
+          <div className="bg-surface border-border/70 flex items-center gap-2 rounded-xl border py-1.5 pl-3 pr-1.5">
+            <div className="min-w-0 flex-1">
+              <p className="text-muted text-caption2 font-semibold uppercase tracking-wide">
+                Endpoint ads.txt
+              </p>
+              <p className="truncate font-mono text-caption1">
+                {siteUrl}/ads.txt
+              </p>
+            </div>
+            <CopyButton
+              value={`${siteUrl}/ads.txt`}
+              size="xs"
+              label="Salin URL ads.txt"
+              successMessage="URL ads.txt disalin"
+              className="size-8 rounded-lg bg-transparent hover:bg-surface-2"
+            />
+            <a
+              href={`${siteUrl}/ads.txt`}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Buka ads.txt"
+              className="text-muted hover:bg-surface-2 hover:text-foreground grid size-8 shrink-0 place-items-center rounded-lg transition-colors"
+            >
+              <ExternalLink className="size-3.5" aria-hidden="true" />
+            </a>
+          </div>
+        )}
       </FormSection>
     </SettingsTabForm>
   );

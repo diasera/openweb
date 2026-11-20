@@ -52,19 +52,23 @@ export async function POST(req: Request) {
   }
 
   const userAgent = getUserAgent(req.headers);
-  const { error } = await sb.from("comments").insert({
-    media_id: parsed.data.media_id,
-    content: parsed.data.content,
-    author_name: parsed.data.author_name?.trim() || null,
-    ip_address: access.ip,
-    user_agent: userAgent,
-    device: parseDevice(userAgent, req.headers),
-  });
+  const { data: inserted, error } = await sb
+    .from("comments")
+    .insert({
+      media_id: parsed.data.media_id,
+      content: parsed.data.content,
+      author_name: parsed.data.author_name?.trim() || null,
+      ip_address: access.ip,
+      user_agent: userAgent,
+      device: parseDevice(userAgent, req.headers),
+    })
+    .select("id, author_name, content, created_at")
+    .maybeSingle();
   if (error) {
     return NextResponse.json({ error: "Gagal menyimpan komentar" }, { status: 500 });
   }
   // Halaman pin di-cache ISR: tanpa ini router.refresh() pengirim masih
   // menerima versi lama dan komentarnya tertahan sebagai "Mengirim…".
   revalidatePath(`/pin/${parsed.data.media_id}`);
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, comment: inserted ?? undefined });
 }

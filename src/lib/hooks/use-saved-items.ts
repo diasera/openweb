@@ -146,3 +146,25 @@ export function forgetSaved(kind: SavedKind, ids: Iterable<string>) {
   const next = list.filter((item) => !(item.kind === kind && gone.has(item.id)));
   if (next.length !== list.length) commit(next);
 }
+
+/** Kosongkan seluruh koleksi Tersimpan di perangkat ini. */
+export function clearSaved() {
+  commit([]);
+}
+
+/** Format JSON cadangan koleksi tersimpan untuk diunduh pengguna. */
+export function buildSavedExportJson(items: readonly SavedItem[]): string {
+  return JSON.stringify(
+    {
+      exportedAt: new Date().toISOString(),
+      total: items.length,
+      items: items.map((item) => ({
+        kind: item.kind,
+        id: item.id,
+        savedAt: item.savedAt ? new Date(item.savedAt).toISOString() : null,
+      })),
+    },
+    null,
+    2,
+  );
+}

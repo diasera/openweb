@@ -1,6 +1,8 @@
 import "server-only";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { readableMediaUrls } from "@/lib/media/upload";
+import { countPushSubscriptions } from "@/lib/push/subscriptions";
+import { getVapidConfig } from "@/lib/push/vapid";
 import type { AdminFeature } from "@/lib/constants";
 import type { MediaRow, MessageRow } from "@/lib/types/database";
 import { getAdminStats, type AdminStats } from "./stats";
@@ -13,13 +15,22 @@ export type DashboardQueueItem = Pick<
   "id" | "type" | "url" | "title" | "caption" | "created_at"
 >;
 
-export type DashboardMessage = Pick<MessageRow, "id" | "content" | "created_at" | "is_read">;
+export type DashboardMessage = Pick<
+  MessageRow,
+  "id" | "content" | "created_at" | "is_read" | "is_pinned"
+>;
+
+export interface DashboardPushStatus {
+  vapidReady: boolean;
+  devices: number;
+}
 
 export interface AdminDashboardData {
   stats: AdminStats;
   /** Kiriman menunggu moderasi; URL sudah bisa dibuka (signed bila di inbox). */
   queue: DashboardQueueItem[];
   messages: DashboardMessage[];
+  push: DashboardPushStatus | null;
 }
 
 /** Antrean moderasi terbaru untuk pratinjau dasbor. Gagal baca = kosong. */
@@ -46,7 +57,7 @@ async function getModerationQueue(): Promise<DashboardQueueItem[]> {
 async function getRecentMessages(): Promise<DashboardMessage[]> {
   const { data, error } = await createAdminSupabase()
     .from("messages")
-    .select("id, content, created_at, is_read")
+    .select("id, content, created_at, is_read, is_pinned")
     .order("is_read", { ascending: true })
     .order("created_at", { ascending: false })
     .limit(MESSAGE_PREVIEW_LIMIT);
@@ -61,10 +72,20 @@ async function getRecentMessages(): Promise<DashboardMessage[]> {
 export async function getAdminDashboard(
   features: readonly AdminFeature[],
 ): Promise<AdminDashboardData> {
-  const [stats, queue, messages] = await Promise.all([
+  const canSeePush =
+    features.includes("pengunjung") || features.includes("stats");
+  const [stats, queue, messages, pushDevices] = await Promise.all([
     getAdminStats(),
     features.includes("media") ? getModerationQueue() : Promise.resolve([]),
     features.includes("pesan") ? getRecentMessages() : Promise.resolve([]),
+    canSeePush ? countPushSubscriptions() : Promise.resolve(0),
   ]);
-  return { stats, queue, messages };
+  return {
+    stats,
+    queue,
+    messages,
+    push: canSeePush
+      ? { vapidReady: Boolean(getVapidConfig()), devices: pushDevices }
+      : null,
+  };
 }

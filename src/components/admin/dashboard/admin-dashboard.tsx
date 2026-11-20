@@ -1,5 +1,6 @@
 import {
   ArrowUpRight,
+  BellRing,
   CheckCircle2,
   ExternalLink,
   Globe,
@@ -18,7 +19,7 @@ import {
   adminFilterHref,
   type AdminFeature,
 } from "@/lib/constants";
-import type { AdminDashboardData } from "@/lib/admin/dashboard";
+import type { AdminDashboardData, DashboardPushStatus } from "@/lib/admin/dashboard";
 import type { AdminStats } from "@/lib/admin/stats";
 import type { AdminAccount } from "@/lib/types/database";
 import { cn } from "@/lib/utils/cn";
@@ -34,6 +35,7 @@ import { AccountDialog } from "../accounts/account-dialog";
 import { StatusBadge } from "../admin-list";
 import { ADMIN_FEATURE_PRESENTATION } from "../features";
 import { StatTile } from "../stat-tile";
+import { DashboardMessageTriage } from "./dashboard-message-triage";
 
 type LaunchFeature = Exclude<AdminFeature, "stats">;
 
@@ -114,7 +116,7 @@ export function AdminDashboard({
   /** Hanya untuk owner (fitur Pengaturan). */
   seo: DashboardSeoStatus | null;
 }) {
-  const { stats, queue, messages } = data;
+  const { stats, queue, messages, push } = data;
   const has = (feature: AdminFeature) => features.includes(feature);
   const seesAll = has("stats");
   const firstName = admin.name.trim().split(/\s+/)[0] || admin.name;
@@ -387,48 +389,10 @@ export function AdminDashboard({
             )}
 
             {messages.length > 0 && (
-              <section aria-labelledby="admin-messages">
-                <SectionHeader
-                  id="admin-messages"
-                  eyebrow="Kotak masuk"
-                  title="Pesan terbaru"
-                  actionHref={adminFeatureHref("pesan")}
-                  actionLabel="Semua"
-                />
-                <ul className="space-y-2">
-                  {messages.map((message, index) => (
-                    <li key={message.id} {...listReveal(index)}>
-                      <MotionLink
-                        href={adminFeatureHref("pesan")}
-                        className={cardClass(
-                          "interactive",
-                          cn(
-                            "flex items-start gap-3 p-3.5",
-                            !message.is_read && "border-primary/30",
-                          ),
-                        )}
-                      >
-                        <span
-                          aria-hidden="true"
-                          className={cn(
-                            "mt-1.5 size-2 shrink-0 rounded-full",
-                            message.is_read ? "bg-border" : "bg-primary",
-                          )}
-                        />
-                        <span className="min-w-0 flex-1">
-                          <span className="line-clamp-2 text-sm leading-relaxed">{message.content}</span>
-                          <span className="text-muted mt-1 block text-caption1">
-                            {!message.is_read && (
-                              <span className="text-primary-readable font-semibold">Baru · </span>
-                            )}
-                            <RelativeTime iso={message.created_at} />
-                          </span>
-                        </span>
-                      </MotionLink>
-                    </li>
-                  ))}
-                </ul>
-              </section>
+              <DashboardMessageTriage
+                messages={messages}
+                unreadCount={stats.messagesUnread}
+              />
             )}
           </div>
         )}
@@ -453,13 +417,13 @@ export function AdminDashboard({
         )}
 
         {/* ---- Sistem ---------------------------------------------------- */}
-        {(system.length > 0 || seo) && (
+        {(system.length > 0 || seo || push) && (
           <section aria-labelledby="admin-system">
             <SectionHeader
               id="admin-system"
               eyebrow="Sistem"
               title="Website & akses"
-              subtitle="Akun, izin, identitas, dan mesin pencari."
+              subtitle="Akun, izin, identitas, push, dan mesin pencari."
             />
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {system.map((feature, index) => (
@@ -470,6 +434,11 @@ export function AdminDashboard({
               {seo && (
                 <div {...listReveal(system.length)}>
                   <SeoStatusCard seo={seo} />
+                </div>
+              )}
+              {push && (
+                <div {...listReveal(system.length + (seo ? 1 : 0))}>
+                  <PushStatusCard push={push} bellCount={stats.bellSubscribers} />
                 </div>
               )}
             </div>
@@ -595,6 +564,53 @@ function SeoStatusCard({ seo }: { seo: DashboardSeoStatus }) {
           {seo.verified
             ? "Verifikasi Search Console terpasang."
             : "Verifikasi lewat DNS atau isi kode di tab SEO."}
+        </p>
+      </div>
+    </MotionLink>
+  );
+}
+
+function PushStatusCard({
+  push,
+  bellCount,
+}: {
+  push: DashboardPushStatus;
+  bellCount: number;
+}) {
+  return (
+    <MotionLink
+      href={`${adminFeatureHref("pengunjung")}#kirim-notifikasi`}
+      data-spotlight
+      className={cardClass(
+        "interactive",
+        "group flex h-full min-h-40 flex-col justify-between p-4 sm:p-5",
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span
+          className={cn(
+            "gloss grid size-11 place-items-center rounded-[14px] text-white",
+            push.vapidReady ? "bg-tone-cyan" : "bg-tone-gray",
+          )}
+        >
+          <BellRing className="size-5.5" aria-hidden="true" />
+        </span>
+        <StatusBadge
+          tone={push.vapidReady ? "success" : "neutral"}
+          live={push.vapidReady}
+        >
+          {push.vapidReady ? "VAPID aktif" : "In-app saja"}
+        </StatusBadge>
+      </div>
+      <div className="mt-5 min-w-0">
+        <h3 className="font-display text-body font-bold">Kanal Web Push</h3>
+        <p className="text-muted mt-1 truncate text-footnote tabular-nums">
+          {push.devices} perangkat push · {bellCount} lonceng
+        </p>
+        <p className="text-muted mt-1 text-caption1">
+          {push.vapidReady
+            ? "Siaran notifikasi terkirim langsung ke perangkat terdaftar."
+            : "Setel kunci VAPID di environment untuk mengaktifkan Web Push."}
         </p>
       </div>
     </MotionLink>

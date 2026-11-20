@@ -1,6 +1,6 @@
 "use client";
 
-import type { FormEventHandler, ReactNode } from "react";
+import type { FormEventHandler, ReactNode, RefObject } from "react";
 import { Button } from "@/components/ui/button";
 import { fieldClass } from "@/components/ui/input";
 import { cn } from "@/lib/utils/cn";
@@ -16,6 +16,8 @@ interface InlineTextComposerProps {
   submitLabel?: string;
   submitIcon?: ReactNode;
   submitAriaLabel?: string;
+  maxLength?: number;
+  inputRef?: RefObject<HTMLInputElement | null>;
 }
 
 /** Tampilan composer pill bersama untuk komentar dan pesan publik. */
@@ -30,18 +32,32 @@ export function InlineTextComposer({
   submitLabel = "Kirim",
   submitIcon,
   submitAriaLabel,
+  maxLength = 500,
+  inputRef,
 }: InlineTextComposerProps) {
+  const showCounter = value.length >= Math.floor(maxLength * 0.8);
   return (
     <form onSubmit={onSubmit}>
       <div className={fieldClass("within", "flex items-center gap-2 rounded-full p-1 pl-4")}>
         <input
+          ref={inputRef}
           value={value}
           onChange={(event) => onValueChange(event.target.value)}
           placeholder={placeholder}
           aria-label={placeholder.replace(/…$/, "")}
-          maxLength={500}
+          maxLength={maxLength}
           className="placeholder:text-muted min-w-0 flex-1 bg-transparent text-base outline-hidden sm:text-sm"
         />
+        {showCounter && (
+          <span
+            className={cn(
+              "shrink-0 text-[0.68rem] font-semibold tabular-nums",
+              value.length >= maxLength ? "text-danger" : "text-muted",
+            )}
+          >
+            {value.length}/{maxLength}
+          </span>
+        )}
         <Button
           type="submit"
           size="sm"

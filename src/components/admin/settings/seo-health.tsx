@@ -3,11 +3,10 @@
 import {
   CircleAlert,
   CircleCheck,
-  Copy,
   ExternalLink,
   Info,
 } from "lucide-react";
-import { useToast } from "@/components/ui/toast";
+import { CopyButton } from "@/components/ui/copy-button";
 import { hasReadableText } from "@/lib/site-config/client";
 import { normalizeVerificationCode } from "@/lib/site-config/external-identifiers";
 import type { SiteSettingsRow } from "@/lib/types/database";
@@ -76,27 +75,18 @@ const ICONS = {
 } satisfies Record<CheckState, React.ReactNode>;
 
 function EndpointRow({ label, url }: { label: string; url: string }) {
-  const { toast } = useToast();
   return (
     <div className="bg-surface flex items-center gap-2 rounded-xl border border-border/70 py-1 pl-3 pr-1">
       <div className="min-w-0 flex-1">
         <p className="text-muted text-caption2 font-semibold uppercase tracking-wide">{label}</p>
         <p className="truncate font-mono text-caption1">{url}</p>
       </div>
-      <button
-        type="button"
-        aria-label={`Salin ${label}`}
-        title="Salin"
-        onClick={() => {
-          void navigator.clipboard
-            .writeText(url)
-            .then(() => toast.success(`${label} disalin`))
-            .catch(() => toast.error("Tidak dapat menyalin. Salin manual."));
-        }}
-        className="text-muted hover:bg-surface-2 hover:text-foreground grid size-9 shrink-0 place-items-center rounded-lg transition-colors"
-      >
-        <Copy className="size-4" aria-hidden="true" />
-      </button>
+      <CopyButton
+        value={url}
+        label={`Salin ${label}`}
+        successMessage={`${label} disalin`}
+        className="size-9 rounded-lg bg-transparent hover:bg-surface-2"
+      />
       <a
         href={url}
         target="_blank"

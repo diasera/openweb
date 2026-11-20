@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import {
   getAlbumForMedia,
   getApprovedMedia,
   getComments,
+  getContentReactions,
   getMediaById,
   getMediaSlides,
   getSettings,
@@ -14,9 +16,13 @@ import { PinComments } from "@/components/public/pin-comments";
 import { MediaCard } from "@/components/public/media-card";
 import { MentionedMembers } from "@/components/public/mentioned-members";
 import { PinMedia } from "@/components/public/pin-media";
+import { ReactionBar } from "@/components/public/reaction-bar";
+import { StoryShareButton } from "@/components/public/story-share-button";
 import { getMentionedMembersForMedia } from "@/lib/members/activity";
+import { slidePreviewUrl } from "@/lib/media/slides";
 import { Avatar } from "@/components/ui/avatar";
 import { buttonClass } from "@/components/ui/button";
+import { cardClass } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { Masonry } from "@/components/ui/masonry";
 import { RelativeTime } from "@/components/ui/relative-time";
@@ -31,6 +37,7 @@ import {
   breadcrumbStructuredData,
   mediaStructuredData,
 } from "@/lib/seo/structured-data";
+import { formatSiteDate } from "@/lib/utils/time";
 import { buildQueryHref } from "@/lib/utils/url";
 
 export const revalidate = 30;
@@ -84,16 +91,40 @@ export default async function PinPage({
     getSettings(),
   ]);
   if (!media) notFound();
-  const [{ comments, total: commentTotal }, recentMedia, album, slides, mentionedMembers] = await Promise.all([
+  const [
+    { comments, total: commentTotal },
+    recentMedia,
+    album,
+    slides,
+    mentionedMembers,
+    reactions,
+  ] = await Promise.all([
     getComments(media.id),
     getApprovedMedia({ limit: 30 }),
     getAlbumForMedia(media.id),
     getMediaSlides(media),
     getMentionedMembersForMedia(media),
+    getContentReactions("media", media.id),
   ]);
+
+  const albumPeers = album
+    ? await getApprovedMedia({
+        albumId: album.id,
+        limit: 120,
+        slideCounts: false,
+      })
+    : [];
+  const albumIndex = albumPeers.findIndex((item) => item.id === media.id);
+  const prevPin = albumIndex > 0 ? albumPeers[albumIndex - 1] ?? null : null;
+  const nextPin =
+    albumIndex >= 0 && albumIndex < albumPeers.length - 1
+      ? albumPeers[albumIndex + 1] ?? null
+      : null;
+
   const mediaSchema = mediaStructuredData(settings, media);
   const related = pickRelatedMedia(recentMedia, media.id, media.category);
   const title = mediaTitle(media, settings);
+  const absoluteDate = formatSiteDate(media.created_at);
 
   const ratio = mediaDisplayAspectRatio(
     media.width,
@@ -107,9 +138,23 @@ export default async function PinPage({
       header={{
         variant: "sub",
         title: "",
-        backHref: "/galeri",
+        backHref: album ? `/album/${album.slug}` : "/galeri",
         right: (
           <>
+            <StoryShareButton
+              variant="icon"
+              spec={{
+                kind: "pin",
+                siteName: settings.site_name,
+                title,
+                caption: media.caption,
+                uploader: media.uploader_name,
+                dateLabel: absoluteDate,
+                category: media.category,
+                imageUrl: slidePreviewUrl(media),
+                filename: `pin-${media.id.slice(0, 8)}`,
+              }}
+            />
             <ShareButton title={title} />
             <SaveButton kind="pin" itemId={media.id} pill />
           </>
@@ -144,8 +189,14 @@ export default async function PinPage({
             <div className="flex items-center gap-2.5">
               <Avatar name={media.uploader_name || "Anonim"} size={40} />
               <div>
-                <p className="text-sm font-semibold">{media.uploader_name || "Anonim"}</p>
-                <RelativeTime iso={media.created_at} className="text-muted block text-xs" />
+                <p className="text-sm font-semibold">
+                  {media.uploader_name || "Anonim"}
+                </p>
+                <p className="text-muted flex flex-wrap items-center gap-x-1.5 text-xs">
+                  <RelativeTime iso={media.created_at} />
+                  <span aria-hidden="true">·</span>
+                  <span>{absoluteDate}</span>
+                </p>
               </div>
             </div>
             {media.category && (
@@ -160,20 +211,37 @@ export default async function PinPage({
             )}
           </div>
 
-          {album && (
-            <MotionLink
-              href={`/album/${album.slug}`}
-              prefetch={false}
-              className={buttonClass({
-                variant: "secondary",
-                size: "sm",
-                className: "mt-3 max-w-full gap-1.5",
-              })}
-            >
-              <span className="text-muted">Album</span>
-              <span className="truncate">{album.title}</span>
-            </MotionLink>
-          )}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {album && (
+              <MotionLink
+                href={`/album/${album.slug}`}
+                prefetch={false}
+                className={buttonClass({
+                  variant: "secondary",
+                  size: "sm",
+                  className: "max-w-full gap-1.5",
+                })}
+              >
+                <span className="text-muted">Album</span>
+                <span className="truncate">{album.title}</span>
+              </MotionLink>
+            )}
+            {media.url && (
+              <a
+                href={media.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={buttonClass({
+                  variant: "outline",
+                  size: "sm",
+                  className: "gap-1.5 text-xs",
+                })}
+              >
+                <ExternalLink className="size-3.5" aria-hidden="true" />
+                Media asli
+              </a>
+            )}
+          </div>
 
           {/* Setiap pin punya h1: judul admin bila ada, selain itu judul
               turunan (jenis · kategori · tanggal) khusus pembaca layar/mesin pencari. */}
@@ -187,10 +255,77 @@ export default async function PinPage({
             {title}
           </h1>
           {media.caption && (
-            <p className="text-muted mt-2 text-subhead leading-relaxed">{media.caption}</p>
+            <p className="text-muted mt-2 text-subhead leading-relaxed">
+              {media.caption}
+            </p>
           )}
 
+          <ReactionBar
+            kind="media"
+            targetId={media.id}
+            initialCounts={reactions.counts}
+            available={reactions.available}
+            demo={reactions.demo}
+            className="mt-4"
+          />
+
           <MentionedMembers members={mentionedMembers} settings={settings} />
+
+          {(prevPin || nextPin) && (
+            <nav
+              aria-label="Navigasi pin dalam album"
+              className="mt-5 grid grid-cols-2 gap-2.5"
+            >
+              {prevPin ? (
+                <MotionLink
+                  href={`/pin/${prevPin.id}`}
+                  className={cardClass(
+                    "interactive",
+                    "flex items-center gap-2 p-2.5 text-left",
+                  )}
+                >
+                  <ChevronLeft
+                    className="text-muted size-4 shrink-0"
+                    aria-hidden="true"
+                  />
+                  <span className="min-w-0">
+                    <span className="text-muted block text-[0.68rem] font-semibold">
+                      Sebelumnya
+                    </span>
+                    <span className="block truncate text-xs font-semibold">
+                      {mediaTitle(prevPin, settings)}
+                    </span>
+                  </span>
+                </MotionLink>
+              ) : (
+                <span />
+              )}
+              {nextPin ? (
+                <MotionLink
+                  href={`/pin/${nextPin.id}`}
+                  className={cardClass(
+                    "interactive",
+                    "flex items-center justify-end gap-2 p-2.5 text-right",
+                  )}
+                >
+                  <span className="min-w-0">
+                    <span className="text-muted block text-[0.68rem] font-semibold">
+                      Berikutnya
+                    </span>
+                    <span className="block truncate text-xs font-semibold">
+                      {mediaTitle(nextPin, settings)}
+                    </span>
+                  </span>
+                  <ChevronRight
+                    className="text-muted size-4 shrink-0"
+                    aria-hidden="true"
+                  />
+                </MotionLink>
+              ) : (
+                <span />
+              )}
+            </nav>
+          )}
 
           <PinComments
             mediaId={media.id}
@@ -202,8 +337,13 @@ export default async function PinPage({
       </div>
 
       {related.length > 0 && (
-        <section aria-label="Pin lainnya" className="mx-auto mt-8 w-full max-w-5xl">
-          <h2 className="font-display mb-3 text-title2 font-bold">Pin Lainnya</h2>
+        <section
+          aria-label="Pin lainnya"
+          className="mx-auto mt-8 w-full max-w-5xl"
+        >
+          <h2 className="font-display mb-3 text-title2 font-bold">
+            Pin Lainnya
+          </h2>
           {/* Masonry (bukan grid baris) agar rasio asli tidak meninggalkan celah. */}
           <Masonry>
             {related.map((item, index) => (

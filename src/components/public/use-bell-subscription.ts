@@ -31,6 +31,23 @@ function pushCapable(): boolean {
   );
 }
 
+export type DevicePushStatus =
+  | "granted"
+  | "denied"
+  | "prompt"
+  | "unsupported"
+  | "unconfigured";
+
+/** Status kanal Web Push perangkat saat ini (aman dipanggil pasca-hidrasi). */
+export function getDevicePushStatus(): DevicePushStatus {
+  if (typeof window === "undefined") return "unsupported";
+  if (!PUSH_PUBLIC_KEY) return "unconfigured";
+  if (!pushCapable()) return "unsupported";
+  if (Notification.permission === "granted") return "granted";
+  if (Notification.permission === "denied") return "denied";
+  return "prompt";
+}
+
 /** applicationServerKey harus Uint8Array base64url — konversi standar VAPID. */
 function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   const padded = base64.replace(/-/g, "+").replace(/_/g, "/");

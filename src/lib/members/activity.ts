@@ -2,32 +2,24 @@ import "server-only";
 import { createPublicSupabase, isSupabaseConfigured } from "@/lib/supabase/public";
 import { DEMO_MEDIA, DEMO_MEMBERS, DEMO_POSTS } from "@/lib/data/demo";
 import type { BlogPostRow, MediaRow, MemberRow } from "@/lib/types/database";
-import { calendarKey, siteDateKey, zonedParts } from "@/lib/utils/time";
+import {
+  buildActivityHeatmap,
+  type ActivityHeatmap,
+  type ActivityHeatmapDay,
+  type ActivityHeatmapMonthMark,
+  type MemberActivityItem,
+} from "./activity-shared";
 import { textMentionsMember } from "./name-match";
 import { blogMentionValues, mediaMentionValues } from "./mention-values";
 import { ensureMemberSlugs } from "./slug";
 
-export type MemberActivityItem =
-  | {
-      kind: "media";
-      id: string;
-      href: string;
-      title: string;
-      description: string | null;
-      occurredAt: string;
-      mediaType: "photo" | "video";
-      /** URL media asli; video dipratinjau dari frame pertamanya. */
-      mediaUrl: string;
-    }
-  | {
-      kind: "blog";
-      id: string;
-      href: string;
-      title: string;
-      description: string | null;
-      occurredAt: string;
-      imageUrl: string | null;
-    };
+export {
+  buildActivityHeatmap,
+  type ActivityHeatmap,
+  type ActivityHeatmapDay,
+  type ActivityHeatmapMonthMark,
+  type MemberActivityItem,
+};
 
 function mediaItem(media: {
   id: string;
@@ -265,75 +257,4 @@ export async function getMentionedMembersForPost(
     id: post.id,
     values: blogMentionValues(post),
   });
-}
-
-/** Sel satu hari pada grafik aktivitas. */
-export interface ActivityHeatmapDay {
-  /** ISO date (yyyy-mm-dd) — kunci stabil untuk React. */
-  date: string;
-  /** 0 = kosong; 1..4 = intensitas naik. */
-  level: 0 | 1 | 2 | 3 | 4;
-  /** Jumlah momen pada hari itu. */
-  count: number;
-}
-
-export interface ActivityHeatmap {
-  days: ActivityHeatmapDay[];
-  total: number;
-  /** Senin di kolom pertama; minggu berjalan di kolom terakhir. */
-  weeks: number;
-}
-
-/** Ambil level dari jumlah: 0 lalu 1..4 dengan batas 3+. */
-function heatLevel(count: number): ActivityHeatmapDay["level"] {
-  if (count <= 0) return 0;
-  if (count === 1) return 1;
-  if (count === 2) return 2;
-  if (count <= 4) return 3;
-  return 4;
-}
-
-const DAY_MS = 86_400_000;
-
-/**
- * Bangun data grafik aktivitas (grid minggu × hari) dari item aktivitas yang
- * sudah ada — fungsi pure tanpa query tambahan. Kolom pertama = Senin pada
- * (hari ini - (weeks-1) minggu), dirotasi agar minggu berjalan paling kanan.
- * Hari dihitung di zona situs (bukan zona server yang biasanya UTC), lalu
- * aritmetikanya memakai tanggal kalender UTC agar bebas pergeseran DST.
- */
-export function buildActivityHeatmap(
-  items: MemberActivityItem[],
-  weeks = 26,
-  now = new Date(),
-): ActivityHeatmap {
-  const perDay = new Map<string, number>();
-  for (const item of items) {
-    const stamp = Date.parse(item.occurredAt);
-    if (Number.isNaN(stamp)) continue;
-    const key = siteDateKey(new Date(stamp));
-    perDay.set(key, (perDay.get(key) ?? 0) + 1);
-  }
-
-  const today = zonedParts(now);
-  const todayUtc = Date.UTC(today.year, today.month - 1, today.day);
-  // Mundur ke Senin minggu ini, lalu (weeks-1) minggu ke belakang.
-  const weekday = (new Date(todayUtc).getUTCDay() + 6) % 7;
-  const mondayUtc = todayUtc - (weekday + (weeks - 1) * 7) * DAY_MS;
-
-  const days: ActivityHeatmapDay[] = [];
-  let total = 0;
-  for (let offset = 0; offset < weeks * 7; offset += 1) {
-    const dayUtc = mondayUtc + offset * DAY_MS;
-    const day = new Date(dayUtc);
-    const key = calendarKey(
-      day.getUTCFullYear(),
-      day.getUTCMonth() + 1,
-      day.getUTCDate(),
-    );
-    const count = dayUtc > todayUtc ? 0 : (perDay.get(key) ?? 0);
-    total += count;
-    days.push({ date: key, level: heatLevel(count), count });
-  }
-  return { days, total, weeks };
 }

@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { getMemberByProfileKey, getSettings } from "@/lib/data";
-import { getMemberActivity } from "@/lib/members/activity";
+import { buildActivityHeatmap, getMemberActivity } from "@/lib/members/activity";
 import { memberProfilePath } from "@/lib/members/slug";
 import { getContentLabels, toDisplayLabel } from "@/lib/site-config";
-import { buildPageMetadata, MEMBER_OG_CARD_PATH, plainText } from "@/lib/seo";
+import { absoluteUrl, buildPageMetadata, MEMBER_OG_CARD_PATH, plainText } from "@/lib/seo";
 import {
   breadcrumbStructuredData,
   profileStructuredData,
@@ -13,8 +13,7 @@ import { PageShell } from "@/components/public/page-shell";
 import { ShareButton } from "@/components/public/share-save";
 import { StoryShareButton } from "@/components/public/story-share-button";
 import { MemberHero } from "@/components/public/profil/member-hero";
-import { MemberHeatmap } from "@/components/public/profil/member-heatmap";
-import { MemberTimeline } from "@/components/public/profil/member-timeline";
+import { MemberActivityExplorer } from "@/components/public/profil/member-activity-explorer";
 import { JsonLd } from "@/components/seo/json-ld";
 import { formatSiteDate } from "@/lib/utils/time";
 
@@ -58,6 +57,7 @@ export default async function MemberProfilePage({ params }: MemberProfileParams)
   if (slug !== member.slug) permanentRedirect(canonicalPath);
 
   const activity = await getMemberActivity(member);
+  const initialHeatmap = buildActivityHeatmap(activity);
   const labels = getContentLabels(settings);
   const memberLabel = toDisplayLabel(labels.memberSingular, settings.locale);
   const mediaCount = activity.filter((item) => item.kind === "media").length;
@@ -65,6 +65,7 @@ export default async function MemberProfilePage({ params }: MemberProfileParams)
   const roleLabel =
     member.position ||
     (member.is_pengurus ? toDisplayLabel(labels.memberCoreGroup, settings.locale) : null);
+  const profileUrl = absoluteUrl(canonicalPath, settings);
 
   return (
     <PageShell
@@ -86,6 +87,8 @@ export default async function MemberProfilePage({ params }: MemberProfileParams)
                 joinedLabel: member.created_at
                   ? `Bergabung ${formatSiteDate(member.created_at, "monthYear")}`
                   : null,
+                photoUrl: member.photo_url,
+                qrUrl: profileUrl,
                 filename: `kartu-${member.slug}`,
               }}
             />
@@ -110,9 +113,14 @@ export default async function MemberProfilePage({ params }: MemberProfileParams)
           settings={settings}
           mediaCount={mediaCount}
           blogCount={blogCount}
+          profileUrl={profileUrl}
         />
-        <MemberHeatmap items={activity} memberLabel={memberLabel} />
-        <MemberTimeline memberName={member.name} memberLabel={memberLabel} items={activity} />
+        <MemberActivityExplorer
+          initialHeatmap={initialHeatmap}
+          items={activity}
+          memberName={member.name}
+          memberLabel={memberLabel}
+        />
       </div>
     </PageShell>
   );

@@ -16,8 +16,27 @@
   height: 100%;
   min-width: 0;
   border-radius: 3px;
+  border: 0;
+  padding: 0;
   animation: heat-in 520ms var(--motion-spring-snappy) backwards;
   animation-delay: calc(300ms + var(--week, 0) * 22ms);
+}
+
+.cellInteractive {
+  cursor: pointer;
+  transition: transform 140ms var(--motion-ease-out), box-shadow 140ms var(--motion-ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cellInteractive:hover {
+    transform: scale(1.25);
+    z-index: 2;
+  }
+}
+
+.cellSelected {
+  box-shadow: 0 0 0 2px rgb(var(--surface)), 0 0 0 3.5px rgb(var(--primary));
+  z-index: 3;
 }
 
 /* Level intensitas — dari permukaan netral ke aksen utama pekat. */
