@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { ArrowRight } from "lucide-react";
 import { MotionLink } from "@/components/motion";
 import { cn } from "@/lib/utils/cn";
@@ -5,7 +6,7 @@ import { cn } from "@/lib/utils/cn";
 /**
  * Header section editorial: eyebrow kecil berwarna aksen (opsional), judul
  * Title 2 tebal dengan jumlah item, subjudul, dan kapsul aksi "Lihat semua"
- * yang memantulkan kilau saat hover. Dipakai tiap section beranda dan daftar.
+ * atau slot aksi kustom. Dipakai tiap section beranda dan daftar.
  */
 export function SectionHeader({
   title,
@@ -14,6 +15,7 @@ export function SectionHeader({
   count,
   actionHref,
   actionLabel = "Lihat semua",
+  action,
   id,
   className,
 }: {
@@ -25,6 +27,8 @@ export function SectionHeader({
   count?: number;
   actionHref?: string;
   actionLabel?: string;
+  /** Slot aksi kustom bila section perlu lebih dari satu kontrol. */
+  action?: ReactNode;
   /** id judul untuk aria-labelledby section pemanggil. */
   id?: string;
   className?: string;
@@ -50,18 +54,22 @@ export function SectionHeader({
         </h2>
         {subtitle && <p className="text-muted mt-1 text-footnote">{subtitle}</p>}
       </div>
-      {actionHref && (
-        <MotionLink
-          href={actionHref}
-          prefetch={false}
-          className="group/action motion-pressable motion-sheen bg-primary/10 text-primary-readable hover:bg-primary/15 relative inline-flex shrink-0 items-center gap-1 overflow-hidden rounded-full py-1.5 pl-3.5 pr-2.5 text-footnote font-semibold transition-colors"
-        >
-          {actionLabel}
-          <ArrowRight
-            className="size-3.5 transition-transform duration-300 ease-out group-hover/action:translate-x-0.5"
-            aria-hidden="true"
-          />
-        </MotionLink>
+      {action ? (
+        <div className="shrink-0">{action}</div>
+      ) : (
+        actionHref && (
+          <MotionLink
+            href={actionHref}
+            prefetch={false}
+            className="group/action motion-pressable motion-sheen bg-primary/10 text-primary-readable hover:bg-primary/15 relative inline-flex shrink-0 items-center gap-1 overflow-hidden rounded-full py-1.5 pl-3.5 pr-2.5 text-footnote font-semibold transition-colors"
+          >
+            {actionLabel}
+            <ArrowRight
+              className="size-3.5 transition-transform duration-300 ease-out group-hover/action:translate-x-0.5"
+              aria-hidden="true"
+            />
+          </MotionLink>
+        )
       )}
     </div>
   );

@@ -11,6 +11,8 @@ export const STORAGE_KEYS = {
   notificationPrompt: "notifPrompt",
   notificationLastSeen: "notifLastSeen",
   likedMessages: "liked_messages",
+  contentReactions: "content_reactions",
+  commentAuthorName: "comment_author_name",
   savedItems: "saved_items",
   musicEnabled: "webkelas.music.enabled",
   musicTrack: "webkelas.music.track",
