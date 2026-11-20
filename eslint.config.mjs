@@ -5,6 +5,6 @@ import nextTypeScript from "eslint-config-next/typescript";
 export default defineConfig([
   ...nextVitals,
   ...nextTypeScript,
-  // .claude/ dan .agents/ berisi tooling agent lokal, bukan kode aplikasi.
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", ".claude/**", ".agents/**"]),
+  // Abaikan artefak build, deklarasi bawaan Next.js, dan direktori konfigurasi tersembunyi.
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", ".*/**"]),
 ]);
