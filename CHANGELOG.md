@@ -7,6 +7,64 @@ dan proyek ini menganut [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-21
+
+### Ditambahkan
+
+- Komponen terpusat **`BrowserToolbar`** (`src/components/public/browser-toolbar.tsx`) dengan
+  sorotan fokus murni CSS (`:has()`) untuk merangkum pencarian, segmen filter, dan kontrol
+  katalog dalam 1–2 baris kompak di Galeri, Album, dan Anggota.
+- Varian kartu majalah **`variant="card"`** pada komponen terpusat `PostRow`
+  (`src/components/public/post-row.tsx`) dengan sampul `16:10`, lencana kategori kaca,
+  kutipan, avatar penulis, estimasi baca, dan sorotan tepi kursor (`data-spotlight`).
+- Prop opsional **`eyebrow`** editorial pada `PageHeader` (`src/components/ui/page-header.tsx`),
+  varian kompak berikon (`size="sm"`, `iconOnly`) pada `Segmented` (`src/components/ui/segmented.tsx`),
+  serta prop `compact` pada `EmptyState` (`src/components/ui/empty-state.tsx`).
+
+### Diubah
+
+- **Optical Frosted Chrome & Mobile-First Polish (`globals.css`, `tab-bar.tsx`, `dynamic-island.module.css`, `motion.css`)**:
+  - Floating Tab Bar dilengkapi lapisan kabut gradasi bawah (`.tabbar-mist`), densitas kaca
+    buram adaptif (blur `16–18px` di ponsel agar 60fps, `24–26px` di desktop), pil aktif
+    berlensa tint tema, serta halo lembut + `.motion-sheen` pada tombol aksi utama.
+  - Dynamic Island menyembunyikan titik `.lens` di layar kecil (`<640px`), memperbarui tombol
+    ikon internal menjadi *recessed tinted glass*, menggabungkan gaya chip Live Activity, serta
+    menambah scrim fokus pada panel cepat.
+  - Atmosfer kanvas (`body::before`), `.dark .liquid-gradient`, `.media-badge`, primitif UI
+    (`SectionHeader`, `PageHeader`, `Card`, `Button`, `Chip`, `EmptyState`, `IconPlate`), dan
+    palet Avatar *duotone jewel* (kontras ≥ 5:1) diselaraskan terpusat.
+- **Flagship Hero (`hero.tsx`, `hero.module.css`)**: skala judul berbasis *Container Query Units*
+  (`cqi`) agar megah di desktop tanpa merusak pratinjau sempit Admin, scrim 5-stop khusus foto
+  grup *subtitle-only* (`title = null`) agar wajah tetap terang & caption terbaca tajam,
+  directional specular rim 135°, dan ambient underglow.
+- **Beranda (`/`)**: penyempurnaan `MemberRail` (tinggi nama sejajar, aksen warna khusus
+  pengurus), `EventCard featured` split 2-kolom dengan ubin hitung mundur *split-flap*
+  (`EventCountdown`), `MemoriesRail` arsip, grid majalah 3 kolom untuk Artikel terbaru, banner
+  showcase penuh kontras untuk Kilas Balik, dan `MessageBoard` tanpa bayangan ganda.
+- **Galeri, Detail Pin & Album**: toolbar 2-baris di `/galeri`, kartu dossier editorial di
+  `/pin/[id]` dengan `sticky-below-island`, kartu album bergaya *Stacked Folio* di `AlbumCard`,
+  serta konsistensi `PageHeader` & `AlbumDetailBrowser` di `/album/[slug]`.
+- **Blog & Halaman Baca (`/blog`, `/blog/[slug]`)**: Hero split 2-kolom dengan `.media-badge`
+  kontras tinggi di `/blog`; masthead editorial + standfirst `excerpt` + sampul lebar + tata
+  letak 2-kolom desktop dengan `ArticleToc` sticky + grid 3 kolom Artikel Terkait di `/blog/[slug]`.
+- **Anggota, Profil Anggota & Hub Profil**: konsolidasi `SiteIdentityCard` + `MemberHero`, tata
+  letak dossier 2-kolom desktop di `/profil/[slug]`, serta penataan Bento Hub Profil 12 sel
+  penuh simetris (`col-span-2` + `grid-flow-dense`) di ponsel maupun desktop.
+- **Pesan Anonim, Agenda, Kilas Balik, Tentang & Skeleton**: tipografi *pull-quote* adaptif pada
+  `MessageCard`, komposer terpadu di `MessageComposer`, pembeda visual arsip `past` di `/agenda`,
+  kartu Bento berkarakter & lencana podium `#1`–`#3` di `WrappedShowcase`, *Manifesto Card* Visi
+  & ubin kontak terangkat di `/tentang`, sinkronisasi penuh `skeleton-layouts.tsx`, serta
+  pembaruan pratinjau terang & gelap (`docs/screenshots/preview-*.webp`).
+
+### Diperbaiki
+
+- Pemetaan penuh variabel `--tw-prose-*` pada `.article-content` & `.ProseMirror` di
+  `src/app/globals.css` sehingga teks artikel blog & editor rich-text terbaca tajam di mode gelap.
+- Perbaikan visibilitas panah hover `MemberCard` pengurus, celah & hairline foto `Avatar`
+  (`--avatar-gap` adaptif & `ring-black/12`), urutan `z-index: 20` cincin `[data-spotlight]`,
+  glare adaptif mode terang, lubang kosong grid Bento Hub Profil, serta penghapusan tombol reset
+  filter tanggal ganda di Profil Anggota.
+
 ## [1.3.0] - 2026-11-20
 
 ### Ditambahkan
