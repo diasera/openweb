@@ -1,6 +1,8 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Grid2x2, Grid3x3 } from "lucide-react";
+import { Segmented } from "@/components/ui/segmented";
 import type { MediaWithSlideCount } from "@/lib/media/slides";
 import { cn } from "@/lib/utils/cn";
 
@@ -38,6 +40,7 @@ export function MediaGridControls({
   density,
   onDensityChange,
   showAspectFilter = true,
+  meta,
   className,
 }: {
   aspect?: MediaAspectFilter;
@@ -45,6 +48,8 @@ export function MediaGridControls({
   density: MediaGridDensity;
   onDensityChange: (next: MediaGridDensity) => void;
   showAspectFilter?: boolean;
+  /** Ringkasan jumlah item opsional sejajar kontrol kepadatan. */
+  meta?: ReactNode;
   className?: string;
 }) {
   return (
@@ -64,10 +69,10 @@ export function MediaGridControls({
                 aria-pressed={selected}
                 onClick={() => onAspectChange(opt.value)}
                 className={cn(
-                  "motion-pressable shrink-0 rounded-full px-3 py-1 text-caption1 font-semibold transition-colors",
+                  "motion-pressable shrink-0 rounded-full border px-3 py-1 text-caption1 font-semibold transition-colors",
                   selected
-                    ? "bg-foreground text-bg"
-                    : "bg-surface-2 text-muted hover:text-foreground",
+                    ? "border-foreground bg-foreground text-bg"
+                    : "border-border/75 bg-surface-2/85 text-muted hover:text-foreground",
                 )}
               >
                 {opt.label}
@@ -79,39 +84,33 @@ export function MediaGridControls({
         <span />
       )}
 
-      <div
-        role="group"
-        aria-label="Kepadatan tampilan grid"
-        className="bg-surface-2 inline-flex shrink-0 items-center rounded-full p-0.5"
-      >
-        <button
-          type="button"
-          aria-label="Tampilan nyaman"
-          aria-pressed={density === "comfortable"}
-          onClick={() => onDensityChange("comfortable")}
-          className={cn(
-            "grid size-7 place-items-center rounded-full transition-colors",
-            density === "comfortable"
-              ? "bg-surface text-foreground shadow-2xs"
-              : "text-muted hover:text-foreground",
-          )}
-        >
-          <Grid2x2 className="size-3.75" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          aria-label="Tampilan padat"
-          aria-pressed={density === "compact"}
-          onClick={() => onDensityChange("compact")}
-          className={cn(
-            "grid size-7 place-items-center rounded-full transition-colors",
-            density === "compact"
-              ? "bg-surface text-foreground shadow-2xs"
-              : "text-muted hover:text-foreground",
-          )}
-        >
-          <Grid3x3 className="size-3.75" aria-hidden="true" />
-        </button>
+      <div className="flex shrink-0 items-center gap-2.5">
+        {meta && (
+          <span className="text-muted text-caption1 font-medium tabular-nums">
+            {meta}
+          </span>
+        )}
+        <Segmented
+          size="sm"
+          iconOnly
+          ariaLabel="Kepadatan tampilan grid"
+          value={density}
+          onChange={onDensityChange}
+          options={[
+            {
+              value: "comfortable",
+              label: "Nyaman",
+              ariaLabel: "Tampilan nyaman",
+              icon: <Grid2x2 className="size-3.75" aria-hidden="true" />,
+            },
+            {
+              value: "compact",
+              label: "Padat",
+              ariaLabel: "Tampilan padat",
+              icon: <Grid3x3 className="size-3.75" aria-hidden="true" />,
+            },
+          ]}
+        />
       </div>
     </div>
   );

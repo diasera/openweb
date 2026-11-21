@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { FolderOpen } from "lucide-react";
 import { AlbumCard } from "@/components/public/album-card";
+import { BrowserToolbar } from "@/components/public/browser-toolbar";
 import { listReveal } from "@/components/motion";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SearchInput } from "@/components/ui/search-input";
@@ -53,32 +54,37 @@ export function AlbumBrowser({ albums }: { albums: AlbumSummaryRow[] }) {
   return (
     <div className="space-y-4">
       {albums.length > 2 && (
-        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
-          <div className="min-w-0 flex-1">
+        <BrowserToolbar
+          search={
             <SearchInput
               value={query}
               onChange={setQuery}
               placeholder="Cari judul atau deskripsi album…"
             />
-          </div>
-          <div className="sm:w-72 sm:shrink-0">
-            <Segmented
-              value={mode}
-              onChange={setMode}
-              options={[
-                { label: "Terbaru", value: "latest" },
-                { label: "Terbanyak", value: "count" },
-                { label: "Acara", value: "event" },
-              ]}
-            />
-          </div>
-        </div>
+          }
+          primaryControl={
+            <div className="sm:w-72">
+              <Segmented
+                value={mode}
+                onChange={setMode}
+                options={[
+                  { label: "Terbaru", value: "latest" },
+                  { label: "Terbanyak", value: "count" },
+                  { label: "Acara", value: "event" },
+                ]}
+              />
+            </div>
+          }
+        />
       )}
 
       {filtered.length === 0 ? (
-        <p className="text-muted py-10 text-center text-sm">
-          Tidak ada album yang cocok dengan filter ini.
-        </p>
+        <EmptyState
+          compact
+          icon={<FolderOpen className="h-7 w-7" />}
+          title="Tidak ada album yang cocok"
+          description="Coba kata kunci lain atau ubah filter urutan album."
+        />
       ) : (
         <div className="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 lg:grid-cols-4">
           {filtered.map((album, index) => (

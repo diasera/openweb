@@ -29,6 +29,7 @@ export default async function MembersPage() {
       />
       <PageHeader
         size="large"
+        eyebrow="Direktori"
         title={title}
         description={`${members.length} ${labels.memberPlural} · ${settings.site_name}`}
       />

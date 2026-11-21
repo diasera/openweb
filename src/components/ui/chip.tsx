@@ -16,9 +16,9 @@ type ChipVariant =
 
 const CHIP: Record<ChipVariant, string> = {
   solid: "bg-foreground text-bg",
-  soft: "bg-surface-2 text-muted",
-  primary: "bg-primary text-primary-foreground",
-  softPrimary: "bg-primary/10 text-primary-readable",
+  soft: "border border-border/75 bg-surface-2 text-muted",
+  primary: "gloss bg-primary text-primary-foreground",
+  softPrimary: "border border-primary/20 bg-primary/10 text-primary-readable",
   role: "bg-role/15 text-role border border-role/25",
   // Border kaca adaptif tema disediakan oleh .glass (jangan hardcode putih).
   glass: "glass text-foreground",

@@ -17,16 +17,17 @@ type Variant =
 type Size = "sm" | "md" | "lg";
 
 const VARIANTS: Record<Variant, string> = {
-  primary: "gloss bg-primary text-primary-foreground hover:opacity-90",
+  primary:
+    "motion-sheen relative overflow-hidden bg-linear-to-b from-primary to-primary-strong text-primary-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.28),var(--shadow-primary-glow)] hover:brightness-105",
   // Tombol abu ala iOS (gray bordered): aksi/tautan sekunder berbentuk pil.
-  secondary: "bg-surface-2 text-foreground hover:bg-border",
+  secondary: "border border-border/75 bg-surface-2 text-foreground hover:bg-border",
   dark: "bg-foreground text-bg hover:opacity-90",
   outline: "bg-surface text-foreground border border-border hover:bg-surface-2",
   ghost: "text-foreground hover:bg-surface-2",
   // Kaca adaptif tema (bukan putih hardcoded) supaya bagus di light & dark.
   glass: "glass-button text-foreground",
   // Aksi destruktif ala iOS: teks merah di atas tint, terbaca di light & dark.
-  danger: "bg-danger/12 text-danger hover:bg-danger/18",
+  danger: "border border-danger/20 bg-danger/12 text-danger hover:bg-danger/18",
 };
 
 const SIZES: Record<Size, string> = {

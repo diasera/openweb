@@ -13,37 +13,76 @@ export function EmptyState({
   title,
   description,
   action,
+  compact = false,
   className,
 }: {
   icon?: ReactNode;
   title: string;
   description?: string;
   action?: ReactNode;
+  /** Varian ringkas untuk hasil pencarian/filter kosong di dalam daftar. */
+  compact?: boolean;
   className?: string;
 }) {
   return (
     <div
       className={cn(
-        "flex flex-col items-center px-6 py-10 text-center",
+        "flex flex-col items-center text-center",
+        compact ? "px-4 py-8" : "px-6 py-12",
         className,
       )}
     >
       {icon && (
-        <div aria-hidden="true" className="relative mb-4 grid size-32 place-items-center">
-          <span className="bg-primary/10 absolute size-20 rounded-full blur-2xl" />
-          <span className="border-primary/12 absolute size-24 rounded-[2rem] border" />
-          <span className="border-primary/6 absolute inset-0 rounded-[2.5rem] border" />
+        <div
+          aria-hidden="true"
+          className={cn(
+            "relative grid place-items-center",
+            compact ? "mb-3 size-22" : "mb-5 size-32",
+          )}
+        >
+          <span
+            className={cn(
+              "bg-primary/14 absolute rounded-full blur-2xl",
+              compact ? "size-14" : "size-22",
+            )}
+          />
+          <span
+            className={cn(
+              "border-primary/16 absolute border",
+              compact ? "size-17 rounded-[1.35rem]" : "size-24 rounded-[2rem]",
+            )}
+          />
+          {!compact && (
+            <span className="border-primary/8 absolute inset-0 rounded-[2.5rem] border" />
+          )}
           <div
-            className="motion-float border-border bg-surface text-primary-readable shadow-elevated relative grid size-18 place-items-center rounded-3xl border"
+            className={cn(
+              "motion-float border-border/80 bg-surface text-primary-readable shadow-elevated relative grid place-items-center border ring-1 ring-inset ring-white/35 dark:ring-white/10",
+              compact ? "size-13 rounded-2xl" : "size-18 rounded-3xl",
+            )}
             style={{ background: gradientCss(title, 160) }}
           >
             {icon}
           </div>
         </div>
       )}
-      <p className="font-display text-title3 font-semibold">{title}</p>
+      <p
+        className={cn(
+          "font-display font-bold tracking-tight",
+          compact ? "text-headline" : "text-title3",
+        )}
+      >
+        {title}
+      </p>
       {description && (
-        <p className="text-muted mt-1.5 max-w-xs text-subhead text-balance">{description}</p>
+        <p
+          className={cn(
+            "text-muted mt-1.5 max-w-xs text-balance",
+            compact ? "text-footnote" : "text-subhead",
+          )}
+        >
+          {description}
+        </p>
       )}
       {action && <div className="mt-5">{action}</div>}
     </div>

@@ -30,6 +30,7 @@ export default async function AlbumsPage() {
       />
       <PageHeader
         size="large"
+        eyebrow="Koleksi Acara"
         title="Album"
         description="Foto dan video dikelompokkan per acara."
       />

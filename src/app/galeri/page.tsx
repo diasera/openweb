@@ -61,6 +61,7 @@ export default async function GaleriPage({
       />
       <PageHeader
         size="large"
+        eyebrow="Dokumentasi"
         title="Galeri"
         description={`Foto dan video dari ${settings.site_name}`}
         action={

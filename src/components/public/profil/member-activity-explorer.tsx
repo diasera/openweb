@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { LayoutGrid, List, X } from "lucide-react";
+import { LayoutGrid, List } from "lucide-react";
 import { SectionHeader } from "@/components/ui/section-header";
 import { Segmented } from "@/components/ui/segmented";
 import { MemberHeatmap } from "@/components/public/profil/member-heatmap";
@@ -14,8 +14,6 @@ import {
   type ActivityHeatmap,
   type MemberActivityItem,
 } from "@/lib/members/activity-shared";
-import { formatCalendarDate } from "@/lib/utils/time";
-import { cn } from "@/lib/utils/cn";
 
 type ActivityKindFilter = "all" | "media" | "blog";
 
@@ -87,57 +85,24 @@ export function MemberActivityExplorer({
               <span />
             )}
 
-            <div
-              role="group"
-              aria-label="Mode tampilan jejak aktivitas"
-              className="bg-surface-2 inline-flex shrink-0 items-center rounded-full p-1"
-            >
-              <button
-                type="button"
-                aria-pressed={viewMode === "timeline"}
-                onClick={() => setViewMode("timeline")}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-caption1 font-semibold transition-colors",
-                  viewMode === "timeline"
-                    ? "bg-surface text-foreground shadow-2xs"
-                    : "text-muted hover:text-foreground",
-                )}
-              >
-                <List className="size-3.5" aria-hidden="true" />
-                Linimasa
-              </button>
-              <button
-                type="button"
-                aria-pressed={viewMode === "grid"}
-                onClick={() => setViewMode("grid")}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-caption1 font-semibold transition-colors",
-                  viewMode === "grid"
-                    ? "bg-surface text-foreground shadow-2xs"
-                    : "text-muted hover:text-foreground",
-                )}
-              >
-                <LayoutGrid className="size-3.5" aria-hidden="true" />
-                Grid
-              </button>
-            </div>
-          </div>
-        )}
-
-        {selectedDate && (
-          <div className="border-primary/25 bg-primary/8 flex items-center justify-between gap-2 rounded-2xl border px-3.5 py-2 text-xs">
-            <span>
-              Menampilkan jejak pada{" "}
-              <strong>{formatCalendarDate(selectedDate, "dayMonth")}</strong>
-            </span>
-            <button
-              type="button"
-              onClick={() => setSelectedDate(null)}
-              className="text-primary-readable inline-flex items-center gap-1 font-semibold hover:underline"
-            >
-              Reset
-              <X className="size-3.5" aria-hidden="true" />
-            </button>
+            <Segmented
+              size="sm"
+              ariaLabel="Mode tampilan jejak aktivitas"
+              value={viewMode}
+              onChange={setViewMode}
+              options={[
+                {
+                  value: "timeline",
+                  label: "Linimasa",
+                  icon: <List className="size-3.5" aria-hidden="true" />,
+                },
+                {
+                  value: "grid",
+                  label: "Grid",
+                  icon: <LayoutGrid className="size-3.5" aria-hidden="true" />,
+                },
+              ]}
+            />
           </div>
         )}
 

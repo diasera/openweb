@@ -37,16 +37,23 @@ export function SectionHeader({
     <div className={cn("mb-4 flex items-end justify-between gap-3", className)}>
       <div className="min-w-0">
         {eyebrow && (
-          <p className="text-primary-readable mb-1 text-caption1 font-semibold uppercase tracking-[0.14em]">
-            {eyebrow}
+          <p className="text-primary-readable mb-1.5 inline-flex items-center gap-2 text-caption1 font-semibold uppercase tracking-[0.14em]">
+            <span
+              className="bg-primary inline-block h-[2px] w-3.5 shrink-0 rounded-full"
+              aria-hidden="true"
+            />
+            <span>{eyebrow}</span>
           </p>
         )}
-        <h2 id={id} className="flex items-baseline gap-2 text-title2 font-bold tracking-tight">
+        <h2
+          id={id}
+          className="flex flex-wrap items-center gap-2 text-title2 font-extrabold tracking-tight sm:text-title1"
+        >
           <span className="min-w-0">{title}</span>
           {count !== undefined && count > 0 && (
             <>
               <span className="sr-only">{" "}</span>
-              <span className="text-muted font-sans text-subhead font-semibold tabular-nums">
+              <span className="border-border/80 bg-surface-2/90 text-muted inline-flex items-center rounded-full border px-2 py-0.5 font-sans text-caption2 font-semibold tabular-nums">
                 {count}
               </span>
             </>
@@ -61,7 +68,7 @@ export function SectionHeader({
           <MotionLink
             href={actionHref}
             prefetch={false}
-            className="group/action motion-pressable motion-sheen bg-primary/10 text-primary-readable hover:bg-primary/15 relative inline-flex shrink-0 items-center gap-1 overflow-hidden rounded-full py-1.5 pl-3.5 pr-2.5 text-footnote font-semibold transition-colors"
+            className="group/action motion-pressable motion-sheen border-primary/20 bg-primary/10 text-primary-readable hover:border-primary/30 hover:bg-primary/15 relative inline-flex shrink-0 items-center gap-1 overflow-hidden rounded-full border py-1.5 pl-3.5 pr-2.5 text-footnote font-semibold transition-colors"
           >
             {actionLabel}
             <ArrowRight

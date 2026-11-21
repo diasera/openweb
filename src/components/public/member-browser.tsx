@@ -1,12 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BookOpen, LayoutGrid } from "lucide-react";
+import { BookOpen, LayoutGrid, UsersRound } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { cardClass } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
+import { EmptyState } from "@/components/ui/empty-state";
 import { SearchInput } from "@/components/ui/search-input";
 import { Segmented } from "@/components/ui/segmented";
+import { BrowserToolbar } from "@/components/public/browser-toolbar";
 import { MemberCard } from "@/components/public/member-card";
 import { useMusic } from "@/components/public/music";
 import { MemberPassButton } from "@/components/public/profil/member-pass-modal";
@@ -15,7 +17,7 @@ import { MotionLink, SharedMorph, listReveal } from "@/components/motion";
 import { memberProfilePath } from "@/lib/members/slug";
 import { toDisplayLabel } from "@/lib/site-config/client";
 import type { ContentLabels, MemberRow } from "@/lib/types/database";
-import { cn } from "@/lib/utils/cn";
+import { gradientCss } from "@/lib/utils/color";
 import { formatSiteDate } from "@/lib/utils/time";
 
 type MemberFilter = "all" | "core" | "regular";
@@ -55,14 +57,35 @@ export function MemberBrowser({
 
   return (
     <div className="space-y-4">
-      <SearchInput
-        value={query}
-        onChange={setQuery}
-        placeholder={`Cari ${labels.memberSingular}, peran, atau ${labels.memberIdentifier.toLocaleLowerCase()}…`}
-      />
-
-      <div className="flex flex-wrap items-center justify-between gap-2.5">
-        <div className="min-w-56 flex-1">
+      <BrowserToolbar
+        search={
+          <SearchInput
+            value={query}
+            onChange={setQuery}
+            placeholder={`Cari ${labels.memberSingular}, peran, atau ${labels.memberIdentifier.toLocaleLowerCase()}…`}
+          />
+        }
+        primaryControl={
+          <Segmented
+            size="sm"
+            ariaLabel="Mode tampilan anggota"
+            value={viewMode}
+            onChange={setViewMode}
+            options={[
+              {
+                value: "directory",
+                label: "Direktori",
+                icon: <LayoutGrid className="size-3.5" aria-hidden="true" />,
+              },
+              {
+                value: "yearbook",
+                label: "Buku Angkatan",
+                icon: <BookOpen className="size-3.5" aria-hidden="true" />,
+              },
+            ]}
+          />
+        }
+        secondary={
           <Segmented
             value={filter}
             onChange={setFilter}
@@ -72,48 +95,16 @@ export function MemberBrowser({
               { label: toDisplayLabel(labels.memberSingular), value: "regular" },
             ]}
           />
-        </div>
-
-        <div
-          role="group"
-          aria-label="Mode tampilan anggota"
-          className="bg-surface-2 inline-flex shrink-0 items-center rounded-full p-1"
-        >
-          <button
-            type="button"
-            aria-pressed={viewMode === "directory"}
-            onClick={() => setViewMode("directory")}
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-caption1 font-semibold transition-colors",
-              viewMode === "directory"
-                ? "bg-surface text-foreground shadow-2xs"
-                : "text-muted hover:text-foreground",
-            )}
-          >
-            <LayoutGrid className="size-3.5" aria-hidden="true" />
-            Direktori
-          </button>
-          <button
-            type="button"
-            aria-pressed={viewMode === "yearbook"}
-            onClick={() => setViewMode("yearbook")}
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-caption1 font-semibold transition-colors",
-              viewMode === "yearbook"
-                ? "bg-surface text-foreground shadow-2xs"
-                : "text-muted hover:text-foreground",
-            )}
-          >
-            <BookOpen className="size-3.5" aria-hidden="true" />
-            Buku Angkatan
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {filtered.length === 0 ? (
-        <p className="text-muted py-10 text-center text-sm">
-          Tidak ada {labels.memberSingular} yang cocok.
-        </p>
+        <EmptyState
+          compact
+          icon={<UsersRound className="h-7 w-7" />}
+          title={`Tidak ada ${labels.memberSingular} yang cocok`}
+          description="Coba ubah kata kunci pencarian atau pilih filter peran lainnya."
+        />
       ) : viewMode === "directory" ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {filtered.map((member, index) => (
@@ -142,7 +133,16 @@ export function MemberBrowser({
                 )}
               >
                 <div
-                  className="liquid-gradient grain relative h-20"
+                  className={
+                    member.is_pengurus
+                      ? "liquid-gradient grain relative h-20"
+                      : "grain relative h-20"
+                  }
+                  style={
+                    member.is_pengurus
+                      ? undefined
+                      : { background: gradientCss(member.id) }
+                  }
                   aria-hidden="true"
                 />
                 <div className="flex flex-1 flex-col px-5 pb-4">
@@ -152,7 +152,7 @@ export function MemberBrowser({
                       className="rounded-full"
                     >
                       <SharedMorph name={`member-${member.slug}`}>
-                        <span className="bg-surface inline-block rounded-full p-1">
+                        <span className="bg-surface inline-block rounded-full p-1 [--avatar-gap:rgb(var(--surface))]">
                           <Avatar
                             name={member.name}
                             src={member.photo_url}

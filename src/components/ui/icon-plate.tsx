@@ -15,10 +15,12 @@ const SIZES = {
 export function IconPlate({
   icon: Icon,
   className,
+  iconClassName,
   size = "md",
 }: {
   icon: LucideIcon;
   className: string;
+  iconClassName?: string;
   size?: keyof typeof SIZES;
 }) {
   return (
@@ -26,7 +28,7 @@ export function IconPlate({
       aria-hidden="true"
       className={cn("gloss grid shrink-0 place-items-center", SIZES[size].plate, className)}
     >
-      <Icon className={SIZES[size].icon} strokeWidth={2.15} />
+      <Icon className={cn(SIZES[size].icon, iconClassName)} strokeWidth={2.15} />
     </span>
   );
 }

@@ -20,26 +20,28 @@ export function MemoriesRail({ media }: { media: MediaWithSlideCount[] }) {
         <MotionLink
           key={item.id}
           href={`/pin/${item.id}`}
-          className="group animate-rise motion-pressable relative aspect-3/4 w-32 shrink-0 overflow-hidden rounded-pin sm:w-40"
+          className="group animate-rise motion-pressable relative aspect-3/4 w-38 shrink-0 overflow-hidden rounded-pin ring-1 ring-inset ring-black/8 dark:ring-white/12 sm:w-46"
           style={{ animationDelay: staggerDelay(index, 50) }}
         >
           <MediaPreview
             media={item}
             alt={item.title ?? item.caption ?? "Kenangan"}
-            sizes="160px"
+            sizes="184px"
             seed={item.id}
             className="motion-media-image"
           />
           <span className="media-tint" aria-hidden="true" />
+          <span className="media-badge absolute left-2.5 top-2.5 rounded-full px-2.5 py-0.5 text-caption2 font-semibold tracking-wide">
+            {yearsAgoLabel(item.created_at)}
+          </span>
           <MediaBadges type={item.type} slideCount={item.slide_count} />
-          <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/75 to-transparent p-2.5 pt-10">
-            <p className="text-caption2 font-semibold uppercase tracking-wide text-white/85">
-              {yearsAgoLabel(item.created_at)}
-            </p>
-            {item.title && (
-              <p className="line-clamp-1 text-footnote font-semibold text-white">{item.title}</p>
-            )}
-          </div>
+          {item.title && (
+            <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/82 via-black/35 to-transparent p-3 pt-12">
+              <p className="font-display line-clamp-2 text-subhead font-bold leading-snug text-white">
+                {item.title}
+              </p>
+            </div>
+          )}
         </MotionLink>
       ))}
     </div>

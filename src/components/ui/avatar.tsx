@@ -36,8 +36,8 @@ export function Avatar({
     <div
       className={cn(
         "relative overflow-hidden rounded-full",
-        // Hairline dalam: avatar terang tetap berbatas di atas kartu putih.
-        "after:pointer-events-none after:absolute after:inset-0 after:rounded-full after:ring-1 after:ring-black/6 after:ring-inset after:content-[''] dark:after:ring-white/10",
+        // Hairline dalam: avatar berlatar putih tetap berbatas tajam di atas bg/kartu terang.
+        "after:pointer-events-none after:absolute after:inset-0 after:rounded-full after:ring-1 after:ring-black/12 after:ring-inset after:content-[''] dark:after:ring-white/16",
         sizeClassName ?? "h-auto w-auto",
       )}
       style={{
@@ -65,19 +65,20 @@ export function Avatar({
 
   if (!ring) {
     return (
-      <div className={cn(reserveRingSpace && "rounded-full p-[4.5px]", className)}>
+      <div className={cn(reserveRingSpace && "rounded-full p-[3.5px]", className)}>
         {inner}
       </div>
     );
   }
 
-  // Cincin gradien (pengurus): padding tipis + latar bg agar ada celah
-  // (2.5px + 2px = ruang yang sama dengan `reserveRingSpace`).
+  // Cincin gradien (pengurus): padding ramping agar ukuran optik tetap seimbang
+  // dengan avatar di sekitarnya (2px + 1.5px = ruang sama dengan `reserveRingSpace`).
+  // Warna celah mengikuti `--avatar-gap` (default bg halaman, kartu set ke surface).
   return (
     <div
-      className={cn("avatar-ring rounded-full p-[2.5px]", className)}
+      className={cn("avatar-ring rounded-full p-[2px]", className)}
     >
-      <div className="bg-bg rounded-full p-[2px]">{inner}</div>
+      <div className="rounded-full bg-[var(--avatar-gap,rgb(var(--bg)))] p-[1.5px]">{inner}</div>
     </div>
   );
 }

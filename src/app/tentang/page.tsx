@@ -1,5 +1,14 @@
 import type { Metadata } from "next";
-import { ArrowUpRight, AtSign, Mail, MapPin, Phone } from "lucide-react";
+import {
+  ArrowUpRight,
+  AtSign,
+  Compass,
+  ListChecks,
+  Mail,
+  MapPin,
+  Phone,
+  Quote,
+} from "lucide-react";
 import {
   getApprovedMediaCount,
   getMembers,
@@ -9,11 +18,11 @@ import {
 import { eventMapsUrl } from "@/lib/agenda/calendar";
 import { PageShell } from "@/components/public/page-shell";
 import { ShareButton } from "@/components/public/share-save";
-import { SiteIdentityCard } from "@/components/public/site-identity-card";
 import { SiteColophon } from "@/components/public/site-colophon";
+import { SiteIdentityCard } from "@/components/public/site-identity-card";
 import { Card } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
-import { CountUp } from "@/components/ui/count-up";
+import { SectionHeader } from "@/components/ui/section-header";
 import { MemberCard } from "@/components/public/member-card";
 import { buildPageMetadata, PUBLIC_PAGE_SEO } from "@/lib/seo";
 import { breadcrumbStructuredData } from "@/lib/seo/structured-data";
@@ -23,7 +32,8 @@ import {
   SOCIAL_NETWORKS,
   toDisplayLabel,
 } from "@/lib/site-config";
-import { listReveal } from "@/components/motion";
+import { blurDelay, listReveal } from "@/components/motion";
+import { cn } from "@/lib/utils/cn";
 
 export const revalidate = 30;
 
@@ -45,6 +55,9 @@ function formatSocialDisplay(rawUrl: string): string {
     return rawUrl;
   }
 }
+
+const CONTACT_TILE_CLASS =
+  "border-border/80 bg-surface hover:border-primary/25 hover:shadow-soft flex items-center justify-between gap-2 rounded-2xl border p-3 transition-all";
 
 function toTelHref(phone: string): string {
   return `tel:${phone.replace(/[^+\d]/g, "")}`;
@@ -76,6 +89,9 @@ export default async function TentangPage() {
     { label: "Artikel", value: postCount },
   ];
 
+  const hasVision = Boolean(settings.visi);
+  const hasMissions = Boolean(settings.misi && settings.misi.length > 0);
+
   return (
     <PageShell
       header={{
@@ -91,62 +107,131 @@ export default async function TentangPage() {
           { name: `Tentang ${settings.site_name}`, path: "/tentang" },
         ])}
       />
-      <div className="space-y-4">
+
+      <div className="space-y-8">
+        {/* Banner Identitas Heroik + Strip Statistik Terpadu */}
         <SiteIdentityCard
           name={settings.site_name}
           logoUrl={settings.logo_url}
-          logoSize={64}
+          logoSize={88}
+          titleId="about-site-title"
+          stats={stats}
         >
-          {settings.description && (
-            <p className="text-muted mt-1 text-sm">{settings.description}</p>
+          {settings.tagline && (
+            <p
+              className="text-primary-readable motion-blur-in mx-auto mt-1.5 max-w-lg text-subhead font-semibold"
+              style={blurDelay(150)}
+            >
+              {settings.tagline}
+            </p>
           )}
-          {settings.tagline && <p className="mt-2 text-sm">{settings.tagline}</p>}
+          {settings.description && (
+            <p
+              className="text-muted motion-blur-in mx-auto mt-2 max-w-xl text-sm leading-relaxed text-balance"
+              style={blurDelay(210)}
+            >
+              {settings.description}
+            </p>
+          )}
         </SiteIdentityCard>
 
-        <dl className="grid grid-cols-3 gap-2.5">
-          {stats.map((item) => (
-            <Card key={item.label} className="flex flex-col-reverse p-3.5 text-center">
-              <dt className="text-muted truncate text-caption1 font-medium">
-                {item.label}
-              </dt>
-              <dd className="font-display text-title2 font-bold tabular-nums">
-                <CountUp value={item.value} />
-              </dd>
-            </Card>
-          ))}
-        </dl>
+        {/* Bento 2-Kolom Visi & Misi */}
+        {(hasVision || hasMissions) && (
+          <div
+            className={cn(
+              "grid gap-4",
+              hasVision && hasMissions && "md:grid-cols-2",
+            )}
+          >
+            {hasVision && (
+              <Card
+                data-spotlight
+                className="relative flex flex-col justify-between overflow-hidden p-6"
+              >
+                <span
+                  aria-hidden="true"
+                  className="aurora pointer-events-none absolute inset-0"
+                />
+                <Quote
+                  aria-hidden="true"
+                  className="text-primary/[0.08] pointer-events-none absolute right-5 top-5 size-12"
+                />
+                <div className="relative">
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      className="bg-primary/14 text-primary-readable grid size-9 shrink-0 place-items-center rounded-xl"
+                      aria-hidden="true"
+                    >
+                      <Compass className="size-4.5" />
+                    </span>
+                    <div>
+                      <p className="text-primary-readable text-caption2 font-bold uppercase tracking-wider">
+                        Arah Kami
+                      </p>
+                      <h2 className="font-display text-lg font-bold leading-tight">
+                        Visi / Tujuan
+                      </h2>
+                    </div>
+                  </div>
+                  <p className="font-display mt-5 text-title3 font-semibold leading-snug tracking-tight text-balance sm:text-title2">
+                    “{settings.visi}”
+                  </p>
+                </div>
+              </Card>
+            )}
 
-        {settings.visi && (
-          <Card className="p-5">
-            <h2 className="font-display font-bold">Visi / tujuan</h2>
-            <p className="text-muted mt-2 text-sm leading-relaxed">
-              {settings.visi}
-            </p>
-          </Card>
+            {hasMissions && settings.misi && (
+              <Card data-spotlight className="relative overflow-hidden p-6">
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className="bg-tone-teal/15 text-tone-teal-text grid size-9 shrink-0 place-items-center rounded-xl"
+                    aria-hidden="true"
+                  >
+                    <ListChecks className="size-4.5" />
+                  </span>
+                  <div>
+                    <p className="text-tone-teal-text text-caption2 font-bold uppercase tracking-wider">
+                      Langkah Nyata
+                    </p>
+                    <h2 className="font-display text-lg font-bold leading-tight">
+                      Misi / Prinsip
+                    </h2>
+                  </div>
+                </div>
+                <ol className="divide-border/55 mt-4 divide-y">
+                  {settings.misi.map((mission, idx) => (
+                    <li
+                      key={mission}
+                      className="flex items-start gap-3 py-2.5 text-sm first:pt-0 last:pb-0"
+                    >
+                      <span className="border-primary/20 bg-primary/12 text-primary-readable mt-0.5 grid size-6 shrink-0 place-items-center rounded-full border font-mono text-[0.68rem] font-bold tabular-nums">
+                        {String(idx + 1).padStart(2, "0")}
+                      </span>
+                      <span className="text-muted leading-relaxed">
+                        {mission}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </Card>
+            )}
+          </div>
         )}
 
-        {settings.misi && settings.misi.length > 0 && (
-          <Card className="p-5">
-            <h2 className="font-display font-bold">Misi / prinsip</h2>
-            <ul className="mt-2 space-y-2">
-              {settings.misi.map((mission) => (
-                <li key={mission} className="flex gap-2.5 text-sm">
-                  <span className="bg-primary mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full" />
-                  <span className="text-muted leading-relaxed">{mission}</span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        )}
-
+        {/* Pengurus / Tim Inti */}
         {coreMembers.length > 0 && (
-          <section>
-            <h2 className="font-display mb-3 font-bold">
-              {toDisplayLabel(labels.memberCoreGroup, settings.locale)}
-            </h2>
+          <section aria-labelledby="about-core">
+            <SectionHeader
+              id="about-core"
+              eyebrow="Penggerak"
+              title={toDisplayLabel(labels.memberCoreGroup, settings.locale)}
+              count={coreMembers.length}
+              actionHref="/anggota"
+              actionLabel={`Semua ${labels.memberPlural}`}
+            />
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {coreMembers.map((member, index) => (
-                <div key={member.id} {...listReveal(index)}>
+                <div key={member.id} {...listReveal(index)} className="h-full">
                   <MemberCard member={member} />
                 </div>
               ))}
@@ -154,17 +239,25 @@ export default async function TentangPage() {
           </section>
         )}
 
+        {/* Kartu Kontak Bento 2-Kolom */}
         {hasContact && (
-          <Card className="p-5">
-            <h2 className="font-display mb-3 font-bold">Kontak</h2>
-            <div className="space-y-3">
+          <section aria-labelledby="about-contact">
+            <SectionHeader
+              id="about-contact"
+              eyebrow="Terhubung"
+              title="Kontak & Kanal"
+            />
+            <div className="grid gap-2.5 sm:grid-cols-2">
               {socialLinks.map((social) => (
                 <a
                   key={social.key}
                   href={social.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:bg-surface-2/60 -mx-2 flex items-center justify-between gap-3 rounded-xl px-2 py-1.5 transition-colors"
+                  className={cn(
+                    CONTACT_TILE_CLASS,
+                    "gap-3",
+                  )}
                 >
                   <span className="flex min-w-0 items-center gap-3">
                     <ContactIcon icon={<AtSign className="h-4 w-4" />} />
@@ -181,7 +274,7 @@ export default async function TentangPage() {
               ))}
 
               {settings.contact_email && (
-                <div className="flex items-center justify-between gap-3">
+                <div className={CONTACT_TILE_CLASS}>
                   <a
                     href={`mailto:${settings.contact_email}`}
                     className="flex min-w-0 flex-1 items-center gap-3 hover:underline"
@@ -199,7 +292,7 @@ export default async function TentangPage() {
               )}
 
               {settings.contact_phone && (
-                <div className="flex items-center justify-between gap-3">
+                <div className={CONTACT_TILE_CLASS}>
                   <a
                     href={toTelHref(settings.contact_phone)}
                     className="flex min-w-0 flex-1 items-center gap-3 hover:underline"
@@ -220,7 +313,7 @@ export default async function TentangPage() {
               )}
 
               {settings.contact_address && (
-                <div className="flex items-center justify-between gap-3">
+                <div className={cn(CONTACT_TILE_CLASS, "sm:col-span-2")}>
                   <a
                     href={eventMapsUrl(settings.contact_address)}
                     target="_blank"
@@ -242,13 +335,13 @@ export default async function TentangPage() {
                 </div>
               )}
             </div>
-          </Card>
+          </section>
         )}
 
         <SiteColophon
           siteName={settings.site_name}
           footerText={settings.footer_text}
-          className="pt-6"
+          className="mt-2"
         />
       </div>
     </PageShell>
@@ -257,7 +350,7 @@ export default async function TentangPage() {
 
 function ContactIcon({ icon }: { icon: React.ReactNode }) {
   return (
-    <span className="bg-surface-2 text-muted grid h-9 w-9 shrink-0 place-items-center rounded-xl">
+    <span className="bg-surface text-primary-readable grid h-9 w-9 shrink-0 place-items-center rounded-xl shadow-2xs">
       {icon}
     </span>
   );
@@ -266,8 +359,10 @@ function ContactIcon({ icon }: { icon: React.ReactNode }) {
 function ContactText({ label, value }: { label: string; value: string }) {
   return (
     <span className="min-w-0">
-      <span className="text-muted block text-xs">{label}</span>
-      <span className="block break-words font-medium">{value}</span>
+      <span className="text-muted block text-caption2 font-semibold uppercase tracking-wide">
+        {label}
+      </span>
+      <span className="block break-words text-sm font-semibold">{value}</span>
     </span>
   );
 }

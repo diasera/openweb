@@ -214,16 +214,17 @@ const PASTELS: string[] = [
   "#E9DEF2",
 ];
 
-// Warna solid "muted" untuk latar avatar (inisial putih), sesuai gaya Figma.
+// Palet jewel-editorial untuk latar avatar fallback: setiap warna terkalibrasi
+// kontras >= 5:1 terhadap inisial putih (WCAG AA & APCA) di mode terang & gelap.
 const MUTED: string[] = [
-  "#B79A78",
-  "#A98BC9",
-  "#7FA8D0",
-  "#83C09A",
-  "#C99A9A",
-  "#9AA9C9",
-  "#C9B08A",
-  "#8FBFC0",
+  "#3E6396",
+  "#6B52A8",
+  "#227B6A",
+  "#B34B5D",
+  "#9E602B",
+  "#2F6F94",
+  "#7E4D8A",
+  "#2E7D5B",
 ];
 
 function pickPastel(seed: string): string {

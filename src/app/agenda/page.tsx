@@ -17,6 +17,7 @@ import { EventCard } from "@/components/public/event-card";
 import { SectionHeader } from "@/components/ui/section-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { listReveal } from "@/components/motion";
 import { JsonLd } from "@/components/seo/json-ld";
 
 export const revalidate = 60;
@@ -54,6 +55,7 @@ export default async function AgendaPage() {
       <div className="space-y-7">
         <PageHeader
           size="large"
+          eyebrow="Kalender Komunitas"
           title="Agenda"
           description={`Jadwal acara ${settings.site_name}. Semua waktu dalam ${timeZoneLabel()}.`}
         />
@@ -66,7 +68,11 @@ export default async function AgendaPage() {
           />
         ) : (
           <section className="space-y-3">
-            <SectionHeader title="Berikutnya" />
+            <SectionHeader
+              eyebrow="Segera hadir"
+              title="Berikutnya"
+              count={upcoming.length}
+            />
             <EventCard
               event={next}
               siteUrl={siteUrl}
@@ -75,13 +81,14 @@ export default async function AgendaPage() {
             />
             {later.length > 0 && (
               <div className="grid gap-3 md:grid-cols-2">
-                {later.map((event) => (
-                  <EventCard
-                    key={event.id}
-                    event={event}
-                    siteUrl={siteUrl}
-                    album={albumByEvent.get(event.id)}
-                  />
+                {later.map((event, index) => (
+                  <div key={event.id} {...listReveal(index)}>
+                    <EventCard
+                      event={event}
+                      siteUrl={siteUrl}
+                      album={albumByEvent.get(event.id)}
+                    />
+                  </div>
                 ))}
               </div>
             )}
@@ -90,16 +97,21 @@ export default async function AgendaPage() {
 
         {past.length > 0 && (
           <section>
-            <SectionHeader title="Sudah lewat" />
+            <SectionHeader
+              eyebrow="Arsip"
+              title="Sudah lewat"
+              count={past.length}
+            />
             <div className="grid gap-3 md:grid-cols-2">
-              {past.map((event) => (
-                <EventCard
-                  key={event.id}
-                  event={event}
-                  siteUrl={siteUrl}
-                  past
-                  album={albumByEvent.get(event.id)}
-                />
+              {past.map((event, index) => (
+                <div key={event.id} {...listReveal(index)}>
+                  <EventCard
+                    event={event}
+                    siteUrl={siteUrl}
+                    past
+                    album={albumByEvent.get(event.id)}
+                  />
+                </div>
               ))}
             </div>
           </section>

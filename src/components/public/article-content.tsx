@@ -60,7 +60,7 @@ export function ArticleCover({
               setOpen(true);
             }
           }}
-          className="group rounded-ios-lg bg-surface-2 relative mb-5 cursor-zoom-in overflow-hidden"
+          className="group rounded-ios-lg bg-surface-2 shadow-elevated relative mb-5 cursor-zoom-in overflow-hidden ring-1 ring-inset ring-black/6 dark:ring-white/10"
           style={{ aspectRatio }}
         >
           <Image
@@ -68,7 +68,7 @@ export function ArticleCover({
             alt={title}
             fill
             preload
-            sizes="(max-width: 672px) 100vw, 672px"
+            sizes="(max-width: 1023px) 100vw, 896px"
             className="motion-parallax"
             style={{ objectFit }}
           />

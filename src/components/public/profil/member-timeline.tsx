@@ -91,6 +91,7 @@ export function MemberTimeline({
   const body =
     items.length === 0 ? (
       <EmptyState
+        compact={filtered}
         title={filtered ? "Tidak ada momen cocok" : "Belum ada momen"}
         description={
           filtered
@@ -118,12 +119,13 @@ export function MemberTimeline({
                   item={item}
                   sizes="(max-width: 640px) 50vw, 220px"
                 />
+                <span className="media-tint" aria-hidden="true" />
                 {item.kind === "media" && item.mediaType === "video" && (
                   <span className="absolute inset-0 grid place-items-center bg-black/25 text-white">
                     <Play className="size-6 fill-current" aria-hidden="true" />
                   </span>
                 )}
-                <span className="absolute left-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[0.65rem] font-semibold text-white backdrop-blur-md">
+                <span className="media-badge absolute left-2 top-2 rounded-full px-2 py-0.5 text-[0.65rem] font-semibold">
                   {kindLabel(item)}
                 </span>
               </span>

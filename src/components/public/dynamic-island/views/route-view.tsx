@@ -114,7 +114,7 @@ export function RouteView({
 
         {renderLiveChip(<span className={styles.lens} aria-hidden="true" />)}
 
-        <nav className="flex shrink-0 items-center gap-0.5">
+        <nav className="flex shrink-0 items-center gap-1">
           <MusicQuickButton />
           {/* Cari = Spotlight seluruh situs (media, artikel, anggota), bukan galeri saja. */}
           <IconButton
@@ -190,7 +190,7 @@ export function RouteView({
       >
         {config.title}
       </ExpandTrigger>
-      <div className="flex shrink-0 items-center gap-0.5">
+      <div className="flex shrink-0 items-center gap-1">
         {renderLiveChip()}
         {config.right}
         <MusicQuickButton />

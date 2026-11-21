@@ -1,16 +1,16 @@
 import { ArrowUpRight, ChevronRight, LockKeyhole } from "lucide-react";
 import { ADMIN_AUTH_PATHS } from "@/lib/constants";
 import { cn } from "@/lib/utils/cn";
-import { KineticWords, MotionLink, blurDelay, listReveal } from "@/components/motion";
+import { MotionLink, blurDelay, listReveal } from "@/components/motion";
 import {
   DESTINATION_ICONS,
   type Destination,
 } from "@/components/public/destination-icons";
 import { PageShell } from "@/components/public/page-shell";
 import { SiteColophon } from "@/components/public/site-colophon";
-import { SiteLogo } from "@/components/public/site-logo";
+import { SiteIdentityCard } from "@/components/public/site-identity-card";
 import { cardClass } from "@/components/ui/card";
-import { CountUp } from "@/components/ui/count-up";
+import { IconPlate } from "@/components/ui/icon-plate";
 import { SectionHeader } from "@/components/ui/section-header";
 import { ProfilPreferences } from "./profil-preferences";
 
@@ -21,6 +21,7 @@ const DESTINATIONS: ReadonlyArray<{
   description: string;
   plate: string;
   featured?: boolean;
+  wide?: boolean;
 }> = [
   {
     href: "/galeri",
@@ -32,7 +33,7 @@ const DESTINATIONS: ReadonlyArray<{
   { href: "/blog", label: "Blog", description: "Artikel & kabar", plate: "bg-tone-teal text-white" },
   { href: "/agenda", label: "Agenda", description: "Jadwal kegiatan", plate: "bg-tone-orange text-white" },
   { href: "/album", label: "Album", description: "Koleksi per acara", plate: "bg-tone-indigo text-white" },
-  { href: "/kilas-balik", label: "Kilas Balik", description: "Rangkuman perjalanan", plate: "bg-primary text-primary-foreground" },
+  { href: "/kilas-balik", label: "Kilas Balik", description: "Rangkuman perjalanan", plate: "bg-primary text-primary-foreground", wide: true },
   { href: "/anggota", label: "Anggota", description: "Kenali semuanya", plate: "bg-tone-green text-white" },
   { href: "/pesan", label: "Pesan Anonim", description: "Kirim tanpa nama", plate: "bg-tone-purple text-white" },
   { href: "/tersimpan", label: "Tersimpan", description: "Pin & artikel favoritmu", plate: "bg-tone-pink text-white" },
@@ -77,58 +78,32 @@ export function ProfilHub({
     <PageShell header={{ variant: "title", title: "Profil" }}>
       <div className="space-y-9">
         {/* ---- Identitas -------------------------------------------------- */}
-        <section
-          aria-labelledby="profil-title"
-          className={cardClass("elevated", "relative overflow-hidden rounded-[2rem] text-center")}
+        <SiteIdentityCard
+          name={siteName}
+          logoUrl={logoUrl}
+          logoSize={96}
+          titleId="profil-title"
+          stats={statItems}
         >
-          <div className="liquid-gradient grain relative h-32 sm:h-40" aria-hidden="true" />
-          <div className="relative -mt-14 flex justify-center sm:-mt-16">
-            <span className="avatar-ring motion-ring-spin animate-control-pop rounded-full p-[3px]">
-              <span className="bg-surface block rounded-full p-1">
-                <SiteLogo name={siteName} url={logoUrl} size={96} />
-              </span>
-            </span>
-          </div>
-          <div className="px-5 pb-6 pt-3 sm:px-8">
-            <h1
-              id="profil-title"
-              className="font-display text-title1 font-bold tracking-tight sm:text-large-title"
+          {lead && (
+            <p
+              className="text-muted motion-blur-in mx-auto mt-1.5 max-w-md text-subhead text-balance"
+              style={blurDelay(200)}
             >
-              <KineticWords text={siteName} />
-            </h1>
-            {lead && (
-              <p
-                className="text-muted motion-blur-in mx-auto mt-1.5 max-w-md text-subhead text-balance"
-                style={blurDelay(200)}
-              >
-                {lead}
-              </p>
-            )}
-            <dl className="mt-5 grid grid-cols-3 gap-2 sm:mx-auto sm:max-w-md">
-              {statItems.map((item, index) => (
-                <div
-                  key={item.label}
-                  className="bg-surface-2/70 border-border/60 motion-blur-in flex flex-col-reverse rounded-2xl border px-2 py-3"
-                  style={blurDelay(260 + index * 70)}
-                >
-                  <dt className="text-muted truncate text-caption1 font-medium">{item.label}</dt>
-                  <dd className="font-display text-title2 font-bold">
-                    <CountUp value={item.value} />
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </section>
+              {lead}
+            </p>
+          )}
+        </SiteIdentityCard>
 
         {/* ---- Jelajahi --------------------------------------------------- */}
         <section aria-labelledby="profil-explore">
           <SectionHeader id="profil-explore" eyebrow="Jelajahi" title="Semua ruang" />
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <ul className="grid grid-flow-dense grid-cols-2 gap-3 sm:grid-cols-3">
             {DESTINATIONS.map((item, index) => {
               const Icon = DESTINATION_ICONS[item.href];
               const label = item.href === "/anggota" ? memberLabel : item.label;
               const reveal = listReveal(index);
+              const highlight = Boolean(item.featured || item.wide);
               return (
                 <li
                   key={item.href}
@@ -136,6 +111,7 @@ export function ProfilHub({
                   className={cn(
                     reveal.className,
                     item.featured && "col-span-2 sm:col-span-1 sm:row-span-2",
+                    item.wide && "col-span-2",
                   )}
                 >
                   <MotionLink
@@ -149,23 +125,23 @@ export function ProfilHub({
                       ),
                     )}
                   >
-                    {item.featured && (
+                    {highlight && (
                       <span
                         aria-hidden="true"
-                        className="liquid-gradient absolute inset-0 opacity-[0.14] transition-opacity duration-500 group-hover:opacity-25"
+                        className={cn(
+                          "liquid-gradient pointer-events-none absolute inset-0 transition-opacity duration-500",
+                          item.featured
+                            ? "opacity-[0.14] group-hover:opacity-24"
+                            : "opacity-[0.1] group-hover:opacity-18",
+                        )}
                       />
                     )}
                     <div className="relative flex items-start justify-between gap-2">
-                      <span
-                        className={cn(
-                          "gloss grid place-items-center rounded-[14px]",
-                          item.featured ? "size-13" : "size-11",
-                          item.plate,
-                        )}
-                        aria-hidden="true"
-                      >
-                        <Icon className={item.featured ? "size-6.5" : "size-5.5"} strokeWidth={2.15} />
-                      </span>
+                      <IconPlate
+                        icon={Icon}
+                        size={item.featured ? "lg" : "md"}
+                        className={item.plate}
+                      />
                       <ArrowUpRight
                         className="text-muted size-4.5 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
                         aria-hidden="true"
@@ -207,7 +183,7 @@ export function ProfilHub({
           href={ADMIN_AUTH_PATHS.login}
           className={cardClass(
             "flat",
-            "group motion-pressable bg-surface/60 flex items-center gap-3 border-dashed p-4 transition-colors hover:bg-surface",
+            "group motion-pressable border-border/75 bg-surface/75 flex items-center gap-3 p-4 transition-colors hover:bg-surface",
           )}
         >
           <span className="bg-foreground text-bg grid size-10 place-items-center rounded-xl">

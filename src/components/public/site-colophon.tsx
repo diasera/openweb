@@ -32,8 +32,16 @@ export function SiteColophon({
     : `© ${year} ${siteName}${text ? ` · ${text}` : ""}`;
 
   return (
-    <footer className={cn("text-muted text-center text-caption1", className)}>
-      <nav aria-label="Tautan situs" className="mb-2.5 flex flex-wrap justify-center gap-x-5 gap-y-1">
+    <footer
+      className={cn(
+        "border-border/65 text-muted border-t pb-2 pt-7 text-center text-caption1",
+        className,
+      )}
+    >
+      <nav
+        aria-label="Tautan situs"
+        className="mb-3 flex flex-wrap justify-center gap-x-6 gap-y-2"
+      >
         {COLOPHON_LINKS.map((link) => (
           <MotionLink
             key={link.href}
@@ -45,7 +53,7 @@ export function SiteColophon({
           </MotionLink>
         ))}
       </nav>
-      <p className="text-balance">{line}</p>
+      <p className="text-muted/85 text-balance">{line}</p>
     </footer>
   );
 }

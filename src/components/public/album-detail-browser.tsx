@@ -86,14 +86,17 @@ export function AlbumDetailBrowser({
       </div>
 
       {visible.length === 0 ? (
-        <p className="text-muted py-10 text-center text-sm">
-          Tidak ada media yang cocok dengan filter bentuk ini.
-        </p>
+        <EmptyState
+          compact
+          icon={<Images className="h-7 w-7" />}
+          title="Tidak ada media yang cocok"
+          description="Coba pilih filter bentuk lainnya untuk melihat isi album."
+        />
       ) : (
         <Masonry density={density}>
           {visible.map((item, index) => (
             <div key={item.id} {...listReveal(index)}>
-              <MediaCard media={item} showMeta />
+              <MediaCard media={item} showMeta={density === "comfortable"} />
             </div>
           ))}
         </Masonry>

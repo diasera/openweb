@@ -141,16 +141,22 @@ export function TabBar({ profileLabel = "Profil" }: { profileLabel?: string }) {
     <nav
       style={{ viewTransitionName: "chrome-tabbar" }}
       className={cn(
-        "motion-tabbar-shell safe-bottom safe-inline fixed inset-x-0 bottom-0 z-40 flex justify-center",
-        compact && "translate-y-1 opacity-[0.96]",
+        "motion-tabbar-shell safe-bottom safe-inline pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center",
+        compact && "translate-y-1",
       )}
       aria-label="Navigasi utama"
     >
+      {/* Kabut gradasi bawah ala iOS 26: teks yang digulir melebur lembut
+          sebelum lewat di belakang floating Tab Bar. */}
+      <span
+        aria-hidden="true"
+        className="tabbar-mist pointer-events-none fixed inset-x-0 bottom-0 -z-10 h-[calc(5.25rem+var(--safe-bottom))]"
+      />
       <div
         ref={listRef}
         className={cn(
-          "motion-tabbar-body floating-tabbar relative flex items-center gap-0.5 px-2.5 py-2",
-          compact && "py-1.5",
+          "motion-tabbar-body floating-tabbar pointer-events-auto relative flex items-center gap-0.5 px-2.5 py-2",
+          compact && "scale-[0.95] py-1.5",
         )}
       >
         <span
@@ -184,7 +190,7 @@ export function TabBar({ profileLabel = "Profil" }: { profileLabel?: string }) {
           aria-label="Buat pin"
           data-tab-fab
           className={cn(
-            "floating-action-button group mx-1 grid h-12 w-12 shrink-0 place-items-center rounded-full text-primary-foreground",
+            "floating-action-button motion-sheen group mx-1 grid h-12 w-12 shrink-0 place-items-center rounded-full text-primary-foreground",
           )}
         >
           <CreateIcon

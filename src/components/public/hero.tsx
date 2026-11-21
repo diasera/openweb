@@ -88,7 +88,7 @@ export function Hero({
             "bg-surface-2 relative w-full",
             // 38rem = lebar hero saat viewport 640px. Layar lebar tanpa foto
             // dibuat sinematik agar tidak memenuhi satu layar.
-            !imageUrl && "aspect-366/250 @min-[38rem]:aspect-2/1 @min-[56rem]:aspect-5/2",
+            !imageUrl && "aspect-366/250 @min-[38rem]:aspect-2/1 @min-[56rem]:aspect-[21/10]",
           )}
         >
           <div className={cn(styles.settle, !imageUrl && "absolute inset-0")}>
@@ -127,15 +127,14 @@ export function Hero({
             )}
           </div>
 
-          {/* Scrim bawah agar teks putih tetap terbaca di foto terang (WCAG F83).
-              Tanpa teks sama sekali, foto tampil polos. */}
+          {/* Scrim bawah 5-stop agar teks putih tetap terbaca di foto terang
+              (WCAG F83) tanpa meredupkan wajah pada foto grup. Tanpa teks sama
+              sekali, foto tampil polos. */}
           {hasCopy && (
             <div
               className={cn(
-                "pointer-events-none absolute inset-0 bg-linear-to-t to-transparent",
-                title
-                  ? "from-black/75 via-black/20"
-                  : "from-black/60 via-black/5 via-35%",
+                "pointer-events-none absolute inset-0",
+                title ? styles.photoScrimTitle : styles.photoScrimSubtitle,
               )}
             />
           )}
@@ -159,8 +158,8 @@ export function Hero({
           data-hero-copy
           className={cn(
             styles.copy,
-            "text-shadow-sm absolute inset-x-4 bottom-4 text-white",
-            !compactPanorama && "@min-[38rem]:inset-x-7 @min-[38rem]:bottom-7",
+            "text-shadow-sm absolute inset-x-5 bottom-4 text-white",
+            !compactPanorama && "@min-[38rem]:inset-x-8 @min-[38rem]:bottom-7 @min-[56rem]:inset-x-10 @min-[56rem]:bottom-9",
             extremePanorama && "inset-x-3 bottom-3",
           )}
         >
@@ -184,7 +183,10 @@ export function Hero({
             style={wordsDelay(titleDelay)}
             className={cn(
               title
-                ? "font-display max-w-2xl text-title1 font-bold tracking-tight text-balance wrap-break-word @min-[38rem]:text-large-title @min-[56rem]:text-display"
+                ? cn(
+                    "font-display max-w-2xl font-extrabold text-balance wrap-break-word",
+                    !compactPanorama && styles.headlineFluid,
+                  )
                 : "sr-only",
               // Foto lonjong tidak punya ruang tinggi: satu baris + elipsis.
               title && compactPanorama && "truncate text-title3 @min-[38rem]:text-title2",
@@ -198,8 +200,10 @@ export function Hero({
             <p
               style={blurDelay(subtitleDelay)}
               className={cn(
-                "motion-blur-in max-w-md text-subhead text-white/88 wrap-anywhere @min-[56rem]:text-callout",
-                title ? "mt-2" : "mt-0",
+                "motion-blur-in wrap-anywhere",
+                title
+                  ? "mt-2 max-w-md text-subhead text-white/90 @min-[56rem]:text-callout"
+                  : "font-display mt-0 max-w-xl text-[0.95rem] font-semibold leading-snug tracking-[-0.01em] text-white text-balance @min-[38rem]:text-title3",
                 compactPanorama && "mt-1 line-clamp-1",
                 ultraWidePanorama && "text-footnote",
                 extremePanorama && "mt-0.5 text-caption1",

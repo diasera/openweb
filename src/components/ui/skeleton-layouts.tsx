@@ -52,7 +52,7 @@ export const SKELETON_LAYOUTS: Record<SkeletonLayoutId, SkeletonLayout> = {
     label: "Memuat beranda",
     content: () => (
       <div className="space-y-11 sm:space-y-14">
-        <Skeleton className="rounded-ios-lg aspect-366/250 w-full sm:aspect-2/1 lg:aspect-5/2 lg:rounded-[2rem]" />
+        <Skeleton className="rounded-ios-lg aspect-366/250 w-full sm:aspect-2/1 lg:aspect-[21/10] lg:rounded-[2rem]" />
         <section>
           <SkeletonSectionTitle />
           <SkeletonRail count={7} />
@@ -118,18 +118,26 @@ export const SKELETON_LAYOUTS: Record<SkeletonLayoutId, SkeletonLayout> = {
   article: {
     label: "Memuat artikel",
     content: () => (
-      <article className="mx-auto max-w-2xl space-y-5">
-        <Skeleton className="rounded-ios-lg aspect-video w-full" />
-        <div className="space-y-3">
-          <Skeleton className="h-3 w-20 rounded-md" />
-          <SkeletonText lines={2} lineClassName="h-8" />
+      <article className="mx-auto w-full max-w-5xl space-y-6">
+        <div className="mx-auto max-w-3xl space-y-3">
+          <Skeleton className="h-6 w-36 rounded-full" />
+          <SkeletonText lines={2} lineClassName="h-9" />
+          <Skeleton className="h-5 w-4/5 rounded-md" />
+          <div className="border-border/65 flex items-center gap-3 border-y py-3.5">
+            <Skeleton className="size-10 rounded-full" />
+            <Skeleton className="h-3.5 w-40 rounded-md" />
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Skeleton className="size-9 rounded-full" />
-          <Skeleton className="h-3.5 w-40 rounded-md" />
+        <div className="mx-auto max-w-4xl">
+          <Skeleton className="rounded-ios-lg aspect-video w-full" />
         </div>
-        <SkeletonText lines={5} />
-        <SkeletonText lines={4} />
+        <div className="lg:grid lg:grid-cols-[minmax(0,42rem)_16rem] lg:items-start lg:justify-center lg:gap-10">
+          <div className="space-y-4">
+            <SkeletonText lines={5} />
+            <SkeletonText lines={4} />
+          </div>
+          <Skeleton className="hidden h-40 w-full rounded-2xl lg:block" />
+        </div>
       </article>
     ),
   },
@@ -156,19 +164,24 @@ export const SKELETON_LAYOUTS: Record<SkeletonLayoutId, SkeletonLayout> = {
   profile: {
     label: "Memuat profil anggota",
     content: () => (
-      <div className="space-y-7">
-        <div className="flex flex-col items-center gap-3 pt-2">
-          <Skeleton className="size-24 rounded-full" />
-          <Skeleton className="h-7 w-48 rounded-lg" />
-          <Skeleton className="h-6 w-24 rounded-full" />
+      <div className="mx-auto w-full max-w-2xl space-y-7 lg:grid lg:max-w-5xl lg:grid-cols-[21rem_minmax(0,1fr)] lg:items-start lg:gap-7 lg:space-y-0">
+        <div className={cardClass("elevated", "overflow-hidden rounded-[2rem] pb-6")}>
+          <Skeleton className="h-28 w-full rounded-none sm:h-32" />
+          <div className="-mt-14 flex flex-col items-center gap-3 px-5">
+            <Skeleton className="size-24 rounded-full" />
+            <Skeleton className="h-7 w-44 rounded-lg" />
+            <Skeleton className="h-6 w-24 rounded-full" />
+            <div className="mt-3 grid w-full grid-cols-3 gap-2">
+              {[0, 1, 2].map((index) => (
+                <Skeleton key={index} className="h-16 rounded-2xl" />
+              ))}
+            </div>
+          </div>
         </div>
-        <div className="grid grid-cols-3 gap-3">
-          {[0, 1, 2].map((index) => (
-            <Skeleton key={index} className="h-20 rounded-card" />
-          ))}
+        <div className="space-y-6">
+          <Skeleton className="h-36 w-full rounded-card" />
+          <SkeletonRows count={4} leading="wide" trailing={false} />
         </div>
-        <Skeleton className="h-32 w-full rounded-card" />
-        <SkeletonRows count={4} leading="wide" trailing={false} />
       </div>
     ),
   },

@@ -34,6 +34,9 @@ function RollingNumber({ value }: { value: number }) {
   );
 }
 
+const TILE_CLASS =
+  "border-border/80 bg-surface shadow-soft relative min-w-[3.5rem] overflow-hidden rounded-2xl border px-2 py-2 text-center before:pointer-events-none before:absolute before:inset-x-0 before:top-[48%] before:h-px before:bg-border/60 sm:min-w-[4.25rem]";
+
 /** Hitung mundur besar untuk kartu agenda: hari · jam · menit · detik. */
 export function EventCountdown({
   event,
@@ -52,14 +55,11 @@ export function EventCountdown({
         aria-hidden="true"
       >
         {UNITS.map(([key, label]) => (
-          <div
-            key={key}
-            className="bg-surface-2 border-border/60 min-w-[3.5rem] rounded-2xl border px-2 py-1.5 text-center sm:min-w-[4.25rem]"
-          >
-            <span className="text-muted/45 block font-display text-2xl font-bold tabular-nums leading-tight sm:text-title1">
+          <div key={key} className={TILE_CLASS}>
+            <span className="text-muted/45 relative block font-display text-2xl font-extrabold tabular-nums leading-tight sm:text-title1">
               --
             </span>
-            <span className="text-muted block text-caption2 font-semibold uppercase tracking-wide">
+            <span className="text-muted relative mt-0.5 block text-caption2 font-semibold uppercase tracking-wider">
               {label}
             </span>
           </div>
@@ -91,14 +91,11 @@ export function EventCountdown({
       aria-label={`Hitung mundur acara: ${spoken}`}
     >
       {UNITS.map(([key, label]) => (
-        <div
-          key={key}
-          className="bg-surface-2 border-border/60 min-w-[3.5rem] rounded-2xl border px-2 py-1.5 text-center sm:min-w-[4.25rem]"
-        >
-          <span className="block font-display text-2xl font-bold tabular-nums leading-tight sm:text-title1">
+        <div key={key} className={TILE_CLASS}>
+          <span className="relative block font-display text-2xl font-extrabold tabular-nums leading-tight sm:text-title1">
             <RollingNumber value={parts[key]} />
           </span>
-          <span className="text-muted block text-caption2 font-semibold uppercase tracking-wide">
+          <span className="text-muted relative mt-0.5 block text-caption2 font-semibold uppercase tracking-wider">
             {label}
           </span>
         </div>

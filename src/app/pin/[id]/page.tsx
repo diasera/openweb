@@ -26,6 +26,7 @@ import { cardClass } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { Masonry } from "@/components/ui/masonry";
 import { RelativeTime } from "@/components/ui/relative-time";
+import { SectionHeader } from "@/components/ui/section-header";
 import { MotionLink, SharedMorph, listReveal } from "@/components/motion";
 import {
   MEDIA_ASPECT_LIMITS,
@@ -180,101 +181,105 @@ export default async function PinPage({
             slides={slides}
             label={title}
             aspectRatio={ratio}
-            className="rounded-ios-lg lg:sticky lg:top-24 lg:max-h-[calc(100dvh-8rem)]"
+            className="rounded-ios-lg shadow-elevated ring-1 ring-inset ring-black/6 dark:ring-white/10 lg:sticky-below-island lg:max-h-[calc(100dvh-8rem)]"
           />
         </SharedMorph>
 
-        <div className="min-w-0">
-          <div className="mt-4 flex items-center justify-between gap-3 lg:mt-0">
-            <div className="flex items-center gap-2.5">
-              <Avatar name={media.uploader_name || "Anonim"} size={40} />
-              <div>
-                <p className="text-sm font-semibold">
-                  {media.uploader_name || "Anonim"}
-                </p>
-                <p className="text-muted flex flex-wrap items-center gap-x-1.5 text-xs">
-                  <RelativeTime iso={media.created_at} />
-                  <span aria-hidden="true">·</span>
-                  <span>{absoluteDate}</span>
-                </p>
+        <div className="mt-4 min-w-0 space-y-5 lg:mt-0">
+          <div className={cardClass("elevated", "p-5 sm:p-6")}>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <Avatar name={media.uploader_name || "Anonim"} size={40} />
+                <div>
+                  <p className="text-sm font-semibold">
+                    {media.uploader_name || "Anonim"}
+                  </p>
+                  <p className="text-muted flex flex-wrap items-center gap-x-1.5 text-xs">
+                    <RelativeTime iso={media.created_at} />
+                    <span aria-hidden="true">·</span>
+                    <span>{absoluteDate}</span>
+                  </p>
+                </div>
               </div>
+              {media.category && (
+                <MotionLink
+                  href={buildQueryHref("/galeri", { category: media.category })}
+                  prefetch={false}
+                >
+                  <Chip variant="softPrimary" className="motion-pressable">
+                    {media.category}
+                  </Chip>
+                </MotionLink>
+              )}
             </div>
-            {media.category && (
-              <MotionLink
-                href={buildQueryHref("/galeri", { category: media.category })}
-                prefetch={false}
-              >
-                <Chip variant="softPrimary" className="motion-pressable">
-                  {media.category}
-                </Chip>
-              </MotionLink>
+
+            {(album || media.url) && (
+              <div className="mt-3.5 flex flex-wrap items-center gap-2">
+                {album && (
+                  <MotionLink
+                    href={`/album/${album.slug}`}
+                    prefetch={false}
+                    className={buttonClass({
+                      variant: "secondary",
+                      size: "sm",
+                      className: "max-w-full gap-1.5",
+                    })}
+                  >
+                    <span className="text-muted">Album</span>
+                    <span className="truncate">{album.title}</span>
+                  </MotionLink>
+                )}
+                {media.url && (
+                  <a
+                    href={media.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={buttonClass({
+                      variant: "outline",
+                      size: "sm",
+                      className: "gap-1.5 text-xs",
+                    })}
+                  >
+                    <ExternalLink className="size-3.5" aria-hidden="true" />
+                    Media asli
+                  </a>
+                )}
+              </div>
             )}
+
+            {/* Setiap pin punya h1: judul admin bila ada, selain itu judul
+                turunan (jenis · kategori · tanggal) khusus pembaca layar/mesin pencari. */}
+            <h1
+              className={
+                media.title
+                  ? "font-display mt-4 text-title1 font-extrabold tracking-tight text-balance"
+                  : "sr-only"
+              }
+            >
+              {title}
+            </h1>
+            {media.caption && (
+              <p className="text-muted mt-2 text-subhead leading-relaxed">
+                {media.caption}
+              </p>
+            )}
+
+            <ReactionBar
+              kind="media"
+              targetId={media.id}
+              initialCounts={reactions.counts}
+              available={reactions.available}
+              demo={reactions.demo}
+              className="border-border/60 mt-4 border-t pt-4"
+            />
+
+            <MentionedMembers members={mentionedMembers} settings={settings} />
           </div>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {album && (
-              <MotionLink
-                href={`/album/${album.slug}`}
-                prefetch={false}
-                className={buttonClass({
-                  variant: "secondary",
-                  size: "sm",
-                  className: "max-w-full gap-1.5",
-                })}
-              >
-                <span className="text-muted">Album</span>
-                <span className="truncate">{album.title}</span>
-              </MotionLink>
-            )}
-            {media.url && (
-              <a
-                href={media.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={buttonClass({
-                  variant: "outline",
-                  size: "sm",
-                  className: "gap-1.5 text-xs",
-                })}
-              >
-                <ExternalLink className="size-3.5" aria-hidden="true" />
-                Media asli
-              </a>
-            )}
-          </div>
-
-          {/* Setiap pin punya h1: judul admin bila ada, selain itu judul
-              turunan (jenis · kategori · tanggal) khusus pembaca layar/mesin pencari. */}
-          <h1
-            className={
-              media.title
-                ? "font-display mt-4 text-title1 font-bold text-balance"
-                : "sr-only"
-            }
-          >
-            {title}
-          </h1>
-          {media.caption && (
-            <p className="text-muted mt-2 text-subhead leading-relaxed">
-              {media.caption}
-            </p>
-          )}
-
-          <ReactionBar
-            kind="media"
-            targetId={media.id}
-            initialCounts={reactions.counts}
-            available={reactions.available}
-            demo={reactions.demo}
-            className="mt-4"
-          />
-
-          <MentionedMembers members={mentionedMembers} settings={settings} />
 
           {(prevPin || nextPin) && (
             <nav
               aria-label="Navigasi pin dalam album"
-              className="mt-5 grid grid-cols-2 gap-2.5"
+              className="grid grid-cols-2 gap-2.5"
             >
               {prevPin ? (
                 <MotionLink
@@ -338,12 +343,14 @@ export default async function PinPage({
 
       {related.length > 0 && (
         <section
-          aria-label="Pin lainnya"
-          className="mx-auto mt-8 w-full max-w-5xl"
+          aria-labelledby="related-pins"
+          className="mx-auto mt-10 w-full max-w-5xl"
         >
-          <h2 className="font-display mb-3 text-title2 font-bold">
-            Pin Lainnya
-          </h2>
+          <SectionHeader
+            id="related-pins"
+            eyebrow="Eksplorasi"
+            title="Pin lainnya"
+          />
           {/* Masonry (bukan grid baris) agar rasio asli tidak meninggalkan celah. */}
           <Masonry>
             {related.map((item, index) => (

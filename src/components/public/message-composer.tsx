@@ -43,7 +43,7 @@ export function MessageComposer({
   });
 
   return (
-    <div className="space-y-2">
+    <div className="border-border/75 bg-surface/80 space-y-2 rounded-[1.75rem] border p-2 shadow-2xs transition-[border-color,box-shadow] has-[:focus-visible]:border-primary/35 has-[:focus-visible]:shadow-soft">
       <InlineTextComposer
         value={mutation.value}
         onValueChange={(next) =>

@@ -23,7 +23,13 @@ export function ReadingProgressBar() {
  * Daftar Isi (Table of Contents) editorial untuk artikel yang memiliki minimal
  * 2 subjudul. Melacak bagian yang sedang dibaca dengan IntersectionObserver.
  */
-export function ArticleToc({ headings }: { headings: readonly ArticleHeading[] }) {
+export function ArticleToc({
+  headings,
+  className,
+}: {
+  headings: readonly ArticleHeading[];
+  className?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [activeId, setActiveId] = useState<string>(() => headings[0]?.id ?? "");
 
@@ -58,7 +64,10 @@ export function ArticleToc({ headings }: { headings: readonly ArticleHeading[] }
   return (
     <nav
       aria-label="Daftar isi artikel"
-      className="border-border bg-surface shadow-soft mt-5 overflow-hidden rounded-2xl border"
+      className={cn(
+        "border-border bg-surface shadow-soft mt-5 overflow-hidden rounded-2xl border",
+        className,
+      )}
     >
       <button
         type="button"

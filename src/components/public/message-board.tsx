@@ -3,7 +3,6 @@ import { Masonry } from "@/components/ui/masonry";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { SectionHeader } from "@/components/ui/section-header";
-import { cardClass } from "@/components/ui/card";
 import { listReveal } from "@/components/motion";
 import { cn } from "@/lib/utils/cn";
 import { MessageComposer } from "./message-composer";
@@ -41,40 +40,54 @@ export function MessageBoard({
       aria-labelledby={panel ? "pesan-title" : undefined}
       className={cn(
         "scroll-mt-20",
-        panel && cardClass("elevated", "aurora relative overflow-hidden p-4 sm:p-6"),
+        panel &&
+          "border-border/80 bg-surface/70 relative overflow-hidden rounded-[2rem] border p-4 sm:p-7",
       )}
     >
-      {variant === "page" ? (
-        <PageHeader size="large" title={TITLE} description={SUBTITLE} />
-      ) : (
-        <SectionHeader
-          id="pesan-title"
-          eyebrow="Ruang bersama"
-          title={TITLE}
-          subtitle={SUBTITLE}
-          actionHref={actionHref}
+      {panel && (
+        <span
+          aria-hidden="true"
+          className="aurora pointer-events-none absolute inset-0"
         />
       )}
-      {showComposer && (
-        <div className="mb-4">
-          <MessageComposer successNote={composerSuccessNote} />
-        </div>
-      )}
-      {messages.length > 0 ? (
-        <Masonry>
-          {messages.map((m, index) => (
-            <div key={m.id} {...listReveal(index)}>
-              <MessageCard message={m} />
-            </div>
-          ))}
-        </Masonry>
-      ) : (
-        <EmptyState
-          icon={<MessageSquare className="h-8 w-8" />}
-          title="Belum ada pesan"
-          description={emptyDescription}
-        />
-      )}
+      <div className="relative">
+        {variant === "page" ? (
+          <PageHeader
+            size="large"
+            eyebrow="Ruang Tanpa Nama"
+            title={TITLE}
+            description={SUBTITLE}
+          />
+        ) : (
+          <SectionHeader
+            id="pesan-title"
+            eyebrow="Ruang bersama"
+            title={TITLE}
+            subtitle={SUBTITLE}
+            actionHref={actionHref}
+          />
+        )}
+        {showComposer && (
+          <div className="mb-4">
+            <MessageComposer successNote={composerSuccessNote} />
+          </div>
+        )}
+        {messages.length > 0 ? (
+          <Masonry>
+            {messages.map((m, index) => (
+              <div key={m.id} {...listReveal(index)}>
+                <MessageCard message={m} />
+              </div>
+            ))}
+          </Masonry>
+        ) : (
+          <EmptyState
+            icon={<MessageSquare className="h-8 w-8" />}
+            title="Belum ada pesan"
+            description={emptyDescription}
+          />
+        )}
+      </div>
     </section>
   );
 }

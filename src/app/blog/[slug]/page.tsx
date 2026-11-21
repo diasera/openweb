@@ -16,7 +16,7 @@ import { ShareButton, SaveButton } from "@/components/public/share-save";
 import { getMentionedMembersForPost } from "@/lib/members/activity";
 import { Avatar } from "@/components/ui/avatar";
 import { Chip } from "@/components/ui/chip";
-import { categoryColor } from "@/lib/categories";
+import { SectionHeader } from "@/components/ui/section-header";
 import { readingTime } from "@/lib/utils/reading-time";
 import { formatSiteDate } from "@/lib/utils/time";
 import { normalizeArticleHtml } from "@/lib/blog/content";
@@ -107,6 +107,8 @@ export default async function ArticlePage({
   const dateStr = post.published_at
     ? formatSiteDate(post.published_at).toUpperCase()
     : "";
+  const hasToc = headings.length >= 2;
+  const readMinutes = readingTime(post.content_html);
 
   return (
     <PageShell
@@ -133,93 +135,132 @@ export default async function ArticlePage({
         ]}
       />
       <ReadingProgressBar />
-      <article className="mx-auto min-w-0 w-full max-w-2xl">
-        {post.cover_image_url && (
-          <ArticleCover
-            slug={post.slug}
-            title={post.title}
-            src={post.cover_image_url}
-            aspectRatio={BLOG_COVER_FRAME.aspectRatio}
-            objectFit={BLOG_COVER_FRAME.objectFit}
-          />
-        )}
 
-        {(post.category || dateStr) && (
-          <p
-            className="text-xs font-bold uppercase tracking-wide"
-            style={{ color: categoryColor(post.category) }}
-          >
-            {post.category ? (
-              <MotionLink
-                href={buildQueryHref("/blog", { category: post.category })}
-                prefetch={false}
-                className="hover:underline"
-              >
-                {post.category}
-              </MotionLink>
-            ) : null}
-            {post.category && dateStr ? " · " : null}
-            {dateStr}
-          </p>
-        )}
-
-        <h1 className="font-display mt-1.5 text-3xl font-bold leading-tight">
-          {post.title}
-        </h1>
-
-        <div className="mt-4 flex items-center gap-3">
-          <Avatar name={post.author_name || "Redaksi"} size={40} />
-          <div>
-            <p className="text-sm font-semibold">{post.author_name || "Redaksi"}</p>
-            <p className="text-muted text-xs">{readingTime(post.content_html)} menit baca</p>
-          </div>
-        </div>
-
-        <ArticleToc headings={headings} />
-
-        <ArticleContent
-          html={preparedHtml}
-          title={post.title}
-        />
-
-        {post.tags && post.tags.length > 0 && (
-          <div className="mt-6 flex flex-wrap gap-2">
-            {post.tags.map((t) => (
-              <MotionLink
-                key={t}
-                href={buildQueryHref("/blog", { tag: t })}
-                prefetch={false}
-              >
-                <Chip
-                  variant="soft"
-                  className="motion-pressable transition-colors hover:text-foreground"
+      <article className="mx-auto w-full max-w-5xl min-w-0">
+        {/* Masthead Editorial */}
+        <header className="mx-auto max-w-3xl">
+          {(post.category || dateStr) && (
+            <div className="flex flex-wrap items-center gap-2 text-caption1 font-semibold uppercase tracking-[0.12em]">
+              {post.category && (
+                <MotionLink
+                  href={buildQueryHref("/blog", { category: post.category })}
+                  prefetch={false}
                 >
-                  #{t}
-                </Chip>
-              </MotionLink>
-            ))}
+                  <Chip variant="softPrimary" className="motion-pressable">
+                    {post.category}
+                  </Chip>
+                </MotionLink>
+              )}
+              {dateStr && <span className="text-muted">{dateStr}</span>}
+              <span className="text-muted" aria-hidden="true">·</span>
+              <span className="text-muted tabular-nums">{readMinutes} menit baca</span>
+            </div>
+          )}
+
+          <h1 className="font-display mt-3 text-title1 font-extrabold leading-tight tracking-tight text-balance sm:text-large-title lg:text-[2.75rem] lg:leading-[1.1]">
+            {post.title}
+          </h1>
+
+          {post.excerpt && (
+            <p className="text-muted mt-3 text-callout leading-relaxed text-pretty sm:text-title3 sm:leading-relaxed">
+              {post.excerpt}
+            </p>
+          )}
+
+          <div className="border-border/65 mt-5 flex items-center gap-3 border-y py-3.5">
+            <Avatar name={post.author_name || "Redaksi"} size={40} />
+            <div>
+              <p className="text-sm font-semibold">{post.author_name || "Redaksi"}</p>
+              <p className="text-muted text-xs">{readMinutes} menit baca</p>
+            </div>
+          </div>
+        </header>
+
+        {post.cover_image_url && (
+          <div className="mx-auto mt-6 max-w-4xl">
+            <ArticleCover
+              slug={post.slug}
+              title={post.title}
+              src={post.cover_image_url}
+              aspectRatio={BLOG_COVER_FRAME.aspectRatio}
+              objectFit={BLOG_COVER_FRAME.objectFit}
+            />
           </div>
         )}
 
-        <ReactionBar
-          kind="blog"
-          targetId={post.id}
-          initialCounts={reactions.counts}
-          available={reactions.available}
-          demo={reactions.demo}
-          className="border-border/70 mt-6 border-t pt-5"
-        />
+        <div
+          className={
+            hasToc
+              ? "mt-6 lg:grid lg:grid-cols-[minmax(0,42rem)_16rem] lg:items-start lg:justify-center lg:gap-10"
+              : "mx-auto mt-6 max-w-2xl"
+          }
+        >
+          <div className="min-w-0">
+            {hasToc && (
+              <div className="lg:hidden">
+                <ArticleToc headings={headings} className="mt-0" />
+              </div>
+            )}
 
-        <MentionedMembers members={mentionedMembers} settings={settings} className="mt-6" />
+            <ArticleContent
+              html={preparedHtml}
+              title={post.title}
+              className="mt-4 lg:mt-0"
+            />
+
+            {post.tags && post.tags.length > 0 && (
+              <div className="mt-6 flex flex-wrap gap-2">
+                {post.tags.map((t) => (
+                  <MotionLink
+                    key={t}
+                    href={buildQueryHref("/blog", { tag: t })}
+                    prefetch={false}
+                  >
+                    <Chip
+                      variant="soft"
+                      className="motion-pressable transition-colors hover:text-foreground"
+                    >
+                      #{t}
+                    </Chip>
+                  </MotionLink>
+                ))}
+              </div>
+            )}
+
+            <ReactionBar
+              kind="blog"
+              targetId={post.id}
+              initialCounts={reactions.counts}
+              available={reactions.available}
+              demo={reactions.demo}
+              className="border-border/70 mt-6 border-t pt-5"
+            />
+
+            <MentionedMembers members={mentionedMembers} settings={settings} className="mt-6" />
+          </div>
+
+          {hasToc && (
+            <aside className="hidden lg:block lg:sticky-below-island">
+              <ArticleToc headings={headings} className="mt-0" />
+            </aside>
+          )}
+        </div>
       </article>
 
       {related.length > 0 && (
-        <section aria-label="Artikel terkait" className="mx-auto mt-8 w-full max-w-2xl">
-          <h2 className="font-display mb-3 text-lg font-bold">Artikel Terkait</h2>
-          <div className="space-y-3">
+        <section
+          aria-labelledby="related-posts"
+          className="mx-auto mt-12 w-full max-w-5xl"
+        >
+          <SectionHeader
+            id="related-posts"
+            eyebrow="Baca selanjutnya"
+            title="Artikel terkait"
+          />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {related.map((p, index) => (
-              <div key={p.id} {...listReveal(index)}>
-                <PostRow post={p} />
+              <div key={p.id} {...listReveal(index)} className="h-full">
+                <PostRow post={p} variant="card" />
               </div>
             ))}
           </div>

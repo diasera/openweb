@@ -19,7 +19,7 @@ const VARIANTS: Record<Variant, string> = {
   elevated: "border border-border bg-surface shadow-soft",
   // relative: wadah pantulan cahaya (::after) tilt 3D di motion.css.
   interactive:
-    "motion-card relative border border-border bg-surface shadow-soft active:shadow-soft",
+    "motion-card relative border border-border bg-surface shadow-soft transition-[border-color] hover:border-foreground/15 dark:hover:border-white/18 active:shadow-soft",
 };
 
 export interface CardProps extends ComponentPropsWithRef<"div"> {

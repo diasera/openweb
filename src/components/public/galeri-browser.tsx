@@ -8,6 +8,7 @@ import { SearchInput } from "@/components/ui/search-input";
 import { Segmented } from "@/components/ui/segmented";
 import { Masonry } from "@/components/ui/masonry";
 import { EmptyState } from "@/components/ui/empty-state";
+import { BrowserToolbar } from "@/components/public/browser-toolbar";
 import { MediaCard } from "@/components/public/media-card";
 import {
   matchesMediaAspectFilter,
@@ -78,45 +79,55 @@ export function GaleriBrowser({
 
   const isClientFiltered = Boolean(q.trim() || aspectFilter !== "all");
 
+  const countLabel = isClientFiltered
+    ? `${filtered.length} dari ${media.length} pin`
+    : `${totalCount ?? media.length} pin${
+        activeCategory
+          ? ` · ${activeCategory}`
+          : ` · ${photos} foto · ${videos} video`
+      }`;
+
   return (
     <div className="space-y-4">
-      <SearchInput
-        value={q}
-        onChange={setQ}
-        placeholder="Cari judul, keterangan, kategori, atau pengunggah…"
+      <BrowserToolbar
+        search={
+          <SearchInput
+            value={q}
+            onChange={setQ}
+            placeholder="Cari judul, keterangan, kategori, atau pengunggah…"
+          />
+        }
+        primaryControl={
+          <div className="sm:w-64">
+            <Segmented
+              value={filter}
+              onChange={handleTypeChange}
+              options={[
+                { label: "Semua", value: "all" },
+                { label: "Foto", value: "photo" },
+                { label: "Video", value: "video" },
+              ]}
+            />
+          </div>
+        }
+        secondary={
+          <>
+            {categoryBar}
+            <MediaGridControls
+              aspect={aspectFilter}
+              onAspectChange={setAspectFilter}
+              density={density}
+              onDensityChange={setDensity}
+              meta={countLabel}
+            />
+          </>
+        }
       />
-      <Segmented
-        value={filter}
-        onChange={handleTypeChange}
-        options={[
-          { label: "Semua", value: "all" },
-          { label: "Foto", value: "photo" },
-          { label: "Video", value: "video" },
-        ]}
-      />
-      {categoryBar}
-
-      <MediaGridControls
-        aspect={aspectFilter}
-        onAspectChange={setAspectFilter}
-        density={density}
-        onDensityChange={setDensity}
-      />
-
-      <p className="text-muted text-xs">
-        {isClientFiltered
-          ? `Menampilkan ${filtered.length} dari ${media.length} pin di halaman ini`
-          : `${totalCount ?? media.length} pin`}
-        {activeCategory
-          ? ` · kategori ${activeCategory}`
-          : !isClientFiltered
-            ? ` · ${photos} foto · ${videos} video`
-            : ""}
-      </p>
 
       {filtered.length === 0 ? (
         <EmptyState
-          icon={<ImageIcon className="h-8 w-8" />}
+          compact
+          icon={<ImageIcon className="h-7 w-7" />}
           title="Tidak ada media yang cocok"
           description="Coba ubah kata kunci pencarian atau setel ulang filter bentuk."
         />

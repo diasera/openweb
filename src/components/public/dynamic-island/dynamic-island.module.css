@@ -30,9 +30,12 @@
   isolation: isolate;
   contain: paint;
   color: rgb(var(--foreground));
-  /* Isi, tepi, dan fallback kaca berasal dari utility glass-material. */
+  /* Isi, tepi, dan fallback kaca berasal dari utility glass-material dengan
+     densitas frosted padat agar teks yang digulir tidak tembus ke kapsul. */
+  --glass-fill: var(--glass-bg-strong);
   border-radius: 1.75rem;
-  box-shadow: 0 10px 30px rgb(0 0 0 / 0.16), var(--glass-rim);
+  background-image: var(--glass-sheen);
+  box-shadow: var(--shadow-glass-strong);
   transform: translateZ(0);
   transform-origin: top center;
   pointer-events: auto;
@@ -95,26 +98,52 @@
   height: min(35rem, var(--island-max-height));
 }
 
-/* Penangkap klik luar untuk menutup panel; murni fungsional. */
+/* Penangkap klik luar untuk menutup panel + scrim lembut agar fokus terkunci ke panel. */
 .backdrop {
   position: fixed;
   inset: 0;
   z-index: 30;
-  background: transparent;
+  background: rgb(0 0 0 / 0.14);
 }
 
-/* Titik lensa dekoratif di rongga tengah island, khas iPhone. */
+:global(.dark) .backdrop {
+  background: rgb(0 0 0 / 0.42);
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  @media (min-width: 640px) {
+    .backdrop {
+      backdrop-filter: blur(4px);
+    }
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .backdrop {
+    backdrop-filter: none;
+  }
+}
+
+/* Titik lensa dekoratif di rongga tengah island, hanya tampil saat ruang
+   desktop benar-benar simetris & lapang (disembunyikan di ponsel agar rapi). */
 .lens {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 8px;
-  height: 8px;
+  display: none;
+  width: 7px;
+  height: 7px;
   border: 1px solid rgb(var(--border));
   border-radius: 999px;
   background: rgb(var(--bg));
   transform: translate(-50%, -50%);
   pointer-events: none;
+}
+
+@media (min-width: 640px) {
+  .lens {
+    display: block;
+  }
 }
 
 /* Pemicu tap pada island: seluruh area brand/judul membuka quick panel. */
@@ -132,19 +161,32 @@
   background-color: rgb(var(--foreground) / 0.1);
 }
 
-/* Kontrol ikon di dalam island: mengikuti token tema, tanpa glass ganda. */
+/* Kontrol ikon di dalam island: gaya recessed tinted glass bertepi halus. */
 .route :global(.glass-button),
 .expandedRoute :global(.glass-button) {
-  border: 0;
+  border: 1px solid rgb(var(--foreground) / 0.07);
   color: rgb(var(--foreground));
-  background-color: rgb(var(--surface-2));
+  background-color: rgb(var(--foreground) / 0.055);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.45);
   backdrop-filter: none;
+}
+
+:global(.dark) .route :global(.glass-button),
+:global(.dark) .expandedRoute :global(.glass-button) {
+  border-color: rgb(255 255 255 / 0.1);
+  background-color: rgb(255 255 255 / 0.075);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .route :global(.glass-button):hover,
   .expandedRoute :global(.glass-button):hover {
-    background-color: rgb(var(--border));
+    background-color: rgb(var(--foreground) / 0.1);
+  }
+
+  :global(.dark) .route :global(.glass-button):hover,
+  :global(.dark) .expandedRoute :global(.glass-button):hover {
+    background-color: rgb(255 255 255 / 0.13);
   }
 }
 
@@ -588,7 +630,9 @@
 }
 
 .panelLinkActive {
-  background-color: rgb(var(--foreground) / 0.14);
+  color: rgb(var(--primary-readable));
+  background-color: rgb(var(--primary) / 0.13);
+  box-shadow: inset 0 0 0 1px rgb(var(--primary) / 0.24);
 }
 
 .panelControls {
@@ -599,29 +643,40 @@
   border-top: 1px solid rgb(var(--border));
 }
 
-/* ---- Live Activity acara ----------------------------------------------- */
+/* ---- Live Activity chip bersama (acara & pengumuman) ------------------- */
 
-.eventChip {
+.eventChip,
+.announcementChip {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
   gap: 0.3rem;
   height: 1.875rem;
   margin: 0 0.125rem;
-  border: 0;
+  border: 1px solid rgb(var(--primary) / 0.22);
   border-radius: 999px;
   padding: 0 0.5625rem 0 0.5rem;
   color: rgb(var(--primary-readable));
   font-size: 0.75rem;
   font-weight: 700;
   background-color: rgb(var(--primary) / 0.14);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
   cursor: pointer;
   transition: background-color var(--motion-fast) ease-out;
   -webkit-tap-highlight-color: transparent;
 }
 
-.eventChip:active {
+.eventChip:active,
+.announcementChip:active {
   background-color: rgb(var(--primary) / 0.24);
+}
+
+.announcementChip {
+  background-color: rgb(var(--primary) / 0.16);
+}
+
+.announcementChip:active {
+  background-color: rgb(var(--primary) / 0.26);
 }
 
 /* Titik berdenyut hanya saat acara sedang berlangsung. */
@@ -687,29 +742,6 @@
 }
 
 /* ---- Live Activity pengumuman ------------------------------------------ */
-
-.announcementChip {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 0.3rem;
-  height: 1.875rem;
-  margin: 0 0.125rem;
-  border: 0;
-  border-radius: 999px;
-  padding: 0 0.5625rem 0 0.5rem;
-  color: rgb(var(--primary-readable));
-  font-size: 0.75rem;
-  font-weight: 700;
-  background-color: rgb(var(--primary) / 0.16);
-  cursor: pointer;
-  transition: background-color var(--motion-fast) ease-out;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.announcementChip:active {
-  background-color: rgb(var(--primary) / 0.26);
-}
 
 .panelAnnouncement {
   display: flex;

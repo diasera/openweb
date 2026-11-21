@@ -17,6 +17,7 @@ import { AlbumDetailBrowser } from "@/components/public/album-detail-browser";
 import { EventStatusBadge } from "@/components/public/event-countdown";
 import { Pagination } from "@/components/public/pagination";
 import { ShareButton } from "@/components/public/share-save";
+import { PageHeader } from "@/components/ui/page-header";
 import { MotionLink } from "@/components/motion";
 import { JsonLd } from "@/components/seo/json-ld";
 
@@ -95,29 +96,31 @@ export default async function AlbumPage({
           { name: album.title, path: `/album/${album.slug}` },
         ])}
       />
-      <div className="px-1 pb-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-display text-3xl font-bold">{album.title}</h1>
-          {event && <EventStatusBadge event={event} />}
-        </div>
-        {album.description && (
-          <p className="text-muted mt-1 text-sm">{album.description}</p>
-        )}
-        <p className="text-muted mt-2 text-xs">
-          {total} media
-          {event && (
-            <>
-              {" · "}
-              <MotionLink
-                href={eventPagePath(event.id)}
-                className="text-primary-readable font-semibold"
-              >
-                {event.title} · {formatEventSchedule(event.starts_at)}
-              </MotionLink>
-            </>
-          )}
-        </p>
-      </div>
+      <PageHeader
+        size="large"
+        eyebrow="Album Dokumentasi"
+        title={album.title}
+        description={
+          <>
+            {album.description && <span className="block">{album.description}</span>}
+            <span className="mt-1.5 inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+              <span className="tabular-nums">{total} media</span>
+              {event && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <MotionLink
+                    href={eventPagePath(event.id)}
+                    className="text-primary-readable font-semibold hover:underline"
+                  >
+                    {event.title} · {formatEventSchedule(event.starts_at)}
+                  </MotionLink>
+                </>
+              )}
+            </span>
+          </>
+        }
+        action={event ? <EventStatusBadge event={event} /> : undefined}
+      />
 
       <AlbumDetailBrowser media={media} albumTitle={album.title} />
       <Pagination

@@ -107,20 +107,24 @@ export default async function MemberProfilePage({ params }: MemberProfileParams)
           ]),
         ]}
       />
-      <div className="mx-auto w-full max-w-2xl space-y-8">
-        <MemberHero
-          member={member}
-          settings={settings}
-          mediaCount={mediaCount}
-          blogCount={blogCount}
-          profileUrl={profileUrl}
-        />
-        <MemberActivityExplorer
-          initialHeatmap={initialHeatmap}
-          items={activity}
-          memberName={member.name}
-          memberLabel={memberLabel}
-        />
+      <div className="mx-auto w-full max-w-2xl space-y-7 lg:grid lg:max-w-5xl lg:grid-cols-[21rem_minmax(0,1fr)] lg:items-start lg:gap-7 lg:space-y-0">
+        <div className="lg:sticky-below-island">
+          <MemberHero
+            member={member}
+            settings={settings}
+            mediaCount={mediaCount}
+            blogCount={blogCount}
+            profileUrl={profileUrl}
+          />
+        </div>
+        <div className="min-w-0">
+          <MemberActivityExplorer
+            initialHeatmap={initialHeatmap}
+            items={activity}
+            memberName={member.name}
+            memberLabel={memberLabel}
+          />
+        </div>
       </div>
     </PageShell>
   );

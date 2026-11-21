@@ -10,9 +10,9 @@ import {
   MessageSquareHeart,
   Newspaper,
   Play,
+  Quote,
   Sparkles,
   TrendingUp,
-  UsersRound,
 } from "lucide-react";
 import { KineticWords, MotionLink, blurDelay, listReveal } from "@/components/motion";
 import { useMusic } from "@/components/public/music";
@@ -21,9 +21,11 @@ import { Avatar } from "@/components/ui/avatar";
 import { cardClass } from "@/components/ui/card";
 import { CountUp } from "@/components/ui/count-up";
 import { EmptyState } from "@/components/ui/empty-state";
+import { IconPlate } from "@/components/ui/icon-plate";
 import { MediaPreview } from "@/components/ui/media-preview";
 import { SectionHeader } from "@/components/ui/section-header";
 import type { CommunityWrappedData } from "@/lib/wrapped";
+import { pastelTint } from "@/lib/utils/color";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -113,7 +115,11 @@ export function WrappedShowcase({
         />
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-linear-to-b from-black/30 via-black/45 to-black/70"
+          className="absolute inset-0 bg-linear-to-b from-black/18 via-black/32 to-black/58"
+        />
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0_1px_0_rgb(255_255_255/0.26),inset_0_0_0_1px_rgb(255_255_255/0.1)]"
         />
 
         <div className="relative z-10 px-5 py-8 text-center text-white sm:px-10 sm:py-11">
@@ -221,9 +227,10 @@ export function WrappedShowcase({
                 return (
                   <div
                     key={tile.label}
+                    data-spotlight
                     style={reveal.style}
                     className={cn(
-                      cardClass("elevated", "flex flex-col justify-between p-4"),
+                      cardClass("elevated", "relative flex flex-col justify-between overflow-hidden p-4"),
                       reveal.className,
                     )}
                   >
@@ -241,7 +248,7 @@ export function WrappedShowcase({
                         <Icon className="size-4" />
                       </span>
                     </div>
-                    <dd className="font-display mt-3 text-title1 font-bold tabular-nums">
+                    <dd className="font-display mt-3 text-title1 font-extrabold tabular-nums sm:text-large-title">
                       <CountUp value={tile.value} />
                     </dd>
                     <p className="text-muted mt-1 text-caption2">{tile.sub}</p>
@@ -282,8 +289,16 @@ export function WrappedShowcase({
             <div
               role="img"
               aria-label={`Distribusi aktivitas 12 bulan untuk ${data.periodLabel}`}
-              className="grid h-44 grid-cols-12 items-end gap-1.5 pt-4 sm:gap-2.5"
+              className="relative grid h-44 grid-cols-12 items-end gap-1.5 pt-4 sm:gap-2.5"
             >
+              <span
+                aria-hidden="true"
+                className="border-border/50 pointer-events-none absolute inset-x-0 top-1/3 border-t border-dashed"
+              />
+              <span
+                aria-hidden="true"
+                className="border-border/50 pointer-events-none absolute inset-x-0 top-2/3 border-t border-dashed"
+              />
               {data.monthlyBars.map((bar) => {
                 const pct =
                   bar.total === 0
@@ -375,10 +390,14 @@ export function WrappedShowcase({
                 aria-labelledby="wrapped-song"
                 className={cardClass(
                   "elevated",
-                  "flex flex-col justify-between gap-4 p-5",
+                  "relative flex flex-col justify-between gap-4 overflow-hidden p-5",
                 )}
               >
-                <div className="flex items-start justify-between gap-3">
+                <span
+                  aria-hidden="true"
+                  className="aurora pointer-events-none absolute inset-0"
+                />
+                <div className="relative flex items-start justify-between gap-3">
                   <div>
                     <p className="text-primary-readable text-caption2 font-bold uppercase tracking-wider">
                       {data.topSong.isSongfess
@@ -395,23 +414,15 @@ export function WrappedShowcase({
                       <p className="text-muted text-sm">{data.topSong.artist}</p>
                     )}
                   </div>
-                  <span
-                    className={cn(
-                      "gloss bg-primary text-primary-foreground grid size-12 shrink-0 place-items-center rounded-2xl",
-                      isPlayingTopSong && "animate-spin",
-                    )}
-                    style={
-                      isPlayingTopSong
-                        ? { animationDuration: "6s" }
-                        : undefined
-                    }
-                    aria-hidden="true"
-                  >
-                    <Disc3 className="size-6" />
-                  </span>
+                  <IconPlate
+                    icon={Disc3}
+                    size="lg"
+                    className="bg-primary text-primary-foreground"
+                    iconClassName={isPlayingTopSong ? "animate-spin [animation-duration:6s]" : undefined}
+                  />
                 </div>
 
-                <div className="flex items-center justify-between gap-3">
+                <div className="relative flex items-center justify-between gap-3">
                   <span className="text-muted text-xs">
                     {data.topSong.isSongfess
                       ? `Disematkan di ${data.topSong.mentions} pesan anonim`
@@ -435,21 +446,26 @@ export function WrappedShowcase({
                 aria-labelledby="wrapped-message"
                 className={cardClass(
                   "elevated",
-                  "flex flex-col justify-between gap-4 p-5",
+                  "relative flex flex-col justify-between gap-4 overflow-hidden border-foreground/[0.08] p-5 dark:border-white/[0.08]",
                 )}
+                style={{ backgroundColor: pastelTint(data.topMessage.id) }}
               >
-                <div>
+                <Quote
+                  aria-hidden="true"
+                  className="text-foreground/[0.06] pointer-events-none absolute right-4 top-4 size-10 dark:text-white/[0.08]"
+                />
+                <div className="relative">
                   <p className="text-primary-readable text-caption2 font-bold uppercase tracking-wider">
                     Pesan Paling Disukai
                   </p>
                   <blockquote
                     id="wrapped-message"
-                    className="font-display mt-2 text-base font-semibold leading-relaxed"
+                    className="font-display mt-2 pr-8 text-headline font-semibold leading-snug"
                   >
                     “{data.topMessage.text}”
                   </blockquote>
                 </div>
-                <div className="flex items-center justify-between text-xs">
+                <div className="border-foreground/[0.07] relative flex items-center justify-between border-t pt-3 text-xs dark:border-white/[0.07]">
                   <span className="text-tone-pink-text inline-flex items-center gap-1 font-semibold">
                     <Heart className="size-3.5 fill-current" aria-hidden="true" />
                     {data.topMessage.likes} suka
@@ -469,9 +485,10 @@ export function WrappedShowcase({
             {data.topAlbum && (
               <MotionLink
                 href={`/album/${data.topAlbum.slug}`}
+                data-spotlight
                 className={cardClass(
                   "interactive",
-                  "group flex flex-col justify-between gap-4 p-5",
+                  "group flex flex-col justify-between gap-4 overflow-hidden p-5",
                 )}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -479,19 +496,18 @@ export function WrappedShowcase({
                     <p className="text-primary-readable text-caption2 font-bold uppercase tracking-wider">
                       Album Terpadat
                     </p>
-                    <h2 className="font-display mt-1 text-lg font-bold">
+                    <h2 className="font-display group-hover:text-primary-readable mt-1 text-lg font-bold transition-colors">
                       {data.topAlbum.title}
                     </h2>
-                    <p className="text-muted mt-0.5 text-xs">
+                    <p className="text-muted mt-0.5 text-xs tabular-nums">
                       {data.topAlbum.mediaCount} foto &amp; video terkurasi
                     </p>
                   </div>
-                  <span
-                    className="bg-tone-indigo/15 text-tone-indigo-text grid size-11 shrink-0 place-items-center rounded-2xl"
-                    aria-hidden="true"
-                  >
-                    <BookImage className="size-5" />
-                  </span>
+                  <IconPlate
+                    icon={BookImage}
+                    size="md"
+                    className="bg-tone-indigo text-white"
+                  />
                 </div>
                 <span className="text-primary-readable inline-flex items-center gap-1 text-xs font-semibold">
                   Jelajahi album
@@ -511,15 +527,8 @@ export function WrappedShowcase({
                 id="wrapped-members"
                 eyebrow="Sorotan"
                 title={`${memberPlural} yang paling sering terekam`}
-                action={
-                  <MotionLink
-                    href="/anggota"
-                    className="text-primary-readable inline-flex items-center gap-1 text-xs font-semibold hover:underline"
-                  >
-                    <UsersRound className="size-3.5" aria-hidden="true" />
-                    Semua
-                  </MotionLink>
-                }
+                actionHref="/anggota"
+                actionLabel="Semua"
               />
               <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                 {data.spotlightMembers.map((member, index) => (
@@ -528,10 +537,19 @@ export function WrappedShowcase({
                     href={`/profil/${member.slug}`}
                     className={cardClass(
                       "interactive",
-                      "flex items-center gap-3 p-3",
+                      "flex items-center gap-3 p-3 [--avatar-gap:rgb(var(--surface))]",
                     )}
                   >
-                    <span className="text-muted w-5 shrink-0 text-center font-mono text-xs font-bold">
+                    <span
+                      className={cn(
+                        "grid size-7 shrink-0 place-items-center rounded-full font-mono text-caption2 font-bold tabular-nums",
+                        index === 0
+                          ? "gloss bg-primary text-primary-foreground"
+                          : index < 3
+                            ? "border-primary/20 bg-primary/12 text-primary-readable border"
+                            : "bg-surface-2 text-muted",
+                      )}
+                    >
                       #{index + 1}
                     </span>
                     <Avatar
@@ -561,39 +579,41 @@ export function WrappedShowcase({
                 id="wrapped-visuals"
                 eyebrow="Dokumentasi"
                 title="Cuplikan momen"
-                action={
-                  <MotionLink
-                    href="/galeri"
-                    className="text-primary-readable text-xs font-semibold hover:underline"
-                  >
-                    Lihat galeri →
-                  </MotionLink>
-                }
+                actionHref="/galeri"
+                actionLabel="Galeri"
               />
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {data.featuredMedia.map((item) => (
-                  <MotionLink
-                    key={item.id}
-                    href={`/pin/${item.id}`}
-                    className={cardClass(
-                      "interactive",
-                      "group relative aspect-[4/5] overflow-hidden",
-                    )}
-                  >
-                    <MediaPreview
-                      media={{ type: item.type, url: item.url }}
-                      alt={item.title ?? "Momen galeri"}
-                      sizes="(max-width: 640px) 50vw, 240px"
-                      seed={item.id}
-                      className="motion-media-image"
-                    />
-                    <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/75 via-black/30 to-transparent p-2.5 text-white">
-                      <p className="truncate text-xs font-semibold">
-                        {item.title || item.category || "Momen bersama"}
-                      </p>
-                    </div>
-                  </MotionLink>
-                ))}
+                {data.featuredMedia.map((item, index) => {
+                  const reveal = listReveal(index);
+                  return (
+                    <MotionLink
+                      key={item.id}
+                      href={`/pin/${item.id}`}
+                      style={reveal.style}
+                      className={cn(
+                        cardClass(
+                          "interactive",
+                          "group relative aspect-[4/5] overflow-hidden rounded-pin",
+                        ),
+                        reveal.className,
+                      )}
+                    >
+                      <MediaPreview
+                        media={{ type: item.type, url: item.url }}
+                        alt={item.title ?? "Momen galeri"}
+                        sizes="(max-width: 640px) 50vw, 240px"
+                        seed={item.id}
+                        className="motion-media-image"
+                      />
+                      <span className="media-tint" aria-hidden="true" />
+                      <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/78 via-black/30 to-transparent p-2.5 text-white">
+                        <p className="truncate text-xs font-semibold">
+                          {item.title || item.category || "Momen bersama"}
+                        </p>
+                      </div>
+                    </MotionLink>
+                  );
+                })}
               </div>
             </section>
           )}

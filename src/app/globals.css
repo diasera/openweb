@@ -43,8 +43,8 @@
   --color-tone-gray: rgb(var(--tone-gray));
   --color-tone-gray-text: rgb(var(--tone-gray-text));
 
-  --font-sans: var(--font-sans), system-ui, sans-serif;
-  --font-display: var(--font-display), var(--font-sans), sans-serif;
+  --font-sans: var(--font-ui-sans);
+  --font-display: var(--font-display-face, var(--font-ui-sans)), var(--font-ui-sans);
 
   --radius-ios: var(--surface-radius-ios);
   --radius-ios-lg: var(--surface-radius-lg);
@@ -157,7 +157,11 @@
   ) {
     background-color: rgb(var(--glass-fill, var(--glass-bg)));
     border-color: rgb(var(--glass-border));
-    backdrop-filter: blur(var(--glass-blur, 24px)) saturate(180%);
+    backdrop-filter: blur(var(--glass-blur-mobile, 16px)) saturate(175%);
+
+    @media (min-width: 640px) {
+      backdrop-filter: blur(var(--glass-blur, 24px)) saturate(190%);
+    }
   }
 
   @media (prefers-reduced-transparency: reduce) {
@@ -208,19 +212,35 @@
 }
 
 @utility floating-tabbar {
+  /* Tab bar mengambang di bawah: kaca buram optikal padat agar teks yang
+     digulir tidak tembus menabrak ikon, plus kilau spekular diagonal. */
+  --glass-fill: var(--glass-bg-strong);
+  --glass-blur: 26px;
+  --glass-blur-mobile: 18px;
   @apply glass-material;
 
-  /* Tab bar mengambang di bawah: kaca lebih "bermassa" + safe-area iPhone. */
-  /* Tepi spekular datang dari --glass-rim di dalam --shadow-glass-strong. */
   isolation: isolate;
   border-radius: 1.75rem;
+  background-image: var(--glass-sheen);
   box-shadow: var(--shadow-glass-strong);
+}
+
+@utility tabbar-mist {
+  /* Kabut gradasi bawah ala iOS 26: konten yang digulir melebur lembut
+     sebelum lewat di belakang floating Tab Bar. */
+  background: linear-gradient(
+    to top,
+    rgb(var(--bg) / 0.96) 0%,
+    rgb(var(--bg) / 0.76) 48%,
+    rgb(var(--bg) / 0.22) 78%,
+    transparent 100%
+  );
 }
 
 @utility floating-action-button {
   /*
    * Tombol aksi utama: aksesori bulat yang menyatu dengan material tab bar,
-   * memakai aksen utama tanpa glow besar ala FAB Android.
+   * memakai aksen utama dengan halo hangat tipis.
    * JANGAN tambahkan util Tailwind "ring" atau "shadow" di element yang
    * sama, karena utilities Tailwind akan menimpa box-shadow custom ini
    * (layer utilities lebih tinggi dari components). Ukuran/posisi cukup
@@ -238,8 +258,9 @@
     linear-gradient(160deg, rgb(var(--primary)), rgb(var(--primary-strong)));
   box-shadow:
     0 0 0 1px rgb(255 255 255 / 0.3),
-    inset 0 1px 0 rgb(255 255 255 / 0.42),
-    0 5px 14px -5px rgb(0 0 0 / 0.32);
+    inset 0 1px 0 rgb(255 255 255 / 0.44),
+    0 5px 14px -5px rgb(0 0 0 / 0.32),
+    var(--shadow-primary-glow);
   transition:
     transform var(--motion-control) var(--motion-spring-bouncy),
     box-shadow var(--motion-control) ease;
@@ -253,11 +274,12 @@
 
   @media (hover: hover) and (pointer: fine) {
     &:hover {
-      transform: scale(1.035);
+      transform: scale(1.04);
       box-shadow:
-        0 0 0 1px rgb(255 255 255 / 0.38),
-        inset 0 1px 0 rgb(255 255 255 / 0.5),
-        0 6px 16px -5px rgb(0 0 0 / 0.34);
+        0 0 0 1px rgb(255 255 255 / 0.4),
+        inset 0 1px 0 rgb(255 255 255 / 0.52),
+        0 6px 16px -5px rgb(0 0 0 / 0.34),
+        var(--shadow-primary-glow);
     }
   }
 }
@@ -268,6 +290,7 @@
   --glass-solid: var(--surface-elevated);
   --glass-fill: var(--surface-elevated) / 0.92;
   --glass-blur: 28px;
+  --glass-blur-mobile: 20px;
   @apply glass-material;
   box-shadow: var(--shadow-glass-strong);
 }
@@ -325,6 +348,17 @@
     radial-gradient(60% 80% at 90% 8%, color-mix(in oklab, var(--accent-oklch, rgb(var(--accent))) 55%, rgb(var(--tone-orange))) 0%, transparent 62%),
     radial-gradient(85% 90% at 72% 105%, color-mix(in oklab, var(--accent-oklch, rgb(var(--accent))) 45%, rgb(var(--tone-indigo))) 0%, transparent 66%),
     linear-gradient(150deg, var(--primary-oklch, rgb(var(--primary))), color-mix(in oklab, var(--primary-oklch, rgb(var(--primary))) 50%, black));
+
+  /* Mode gelap: kurangi campuran putih agar warna merek tampil dalam & luminous,
+     bukan tampak lebih pucat dibandingkan mode terang. */
+  .dark & {
+    background-color: color-mix(in oklab, var(--primary-oklch, rgb(var(--primary))) 56%, black);
+    background-image:
+      radial-gradient(72% 88% at 14% 18%, color-mix(in oklab, var(--primary-oklch, rgb(var(--primary))) 88%, black) 0%, transparent 62%),
+      radial-gradient(62% 80% at 90% 10%, color-mix(in oklab, var(--accent-oklch, rgb(var(--accent))) 52%, rgb(var(--tone-orange))) 0%, transparent 62%),
+      radial-gradient(85% 90% at 74% 104%, color-mix(in oklab, var(--accent-oklch, rgb(var(--accent))) 42%, rgb(var(--tone-indigo))) 0%, transparent 66%),
+      linear-gradient(155deg, color-mix(in oklab, var(--primary-oklch, rgb(var(--primary))) 82%, black), color-mix(in oklab, var(--primary-oklch, rgb(var(--primary))) 32%, black));
+  }
 }
 
 @utility aurora {
@@ -433,10 +467,12 @@
 }
 
 @utility media-badge {
-  /* Badge di atas foto (video, jumlah item). HIG: kaca bening di atas media
-     perlu lapisan gelap agar tetap terbaca di foto terang. */
+  /* Badge di atas foto (video, jumlah item, label arsip). HIG: kaca gelap
+     bertepi spekular tipis agar selalu terbaca di foto terang maupun gelap. */
   color: white;
-  background-color: rgb(0 0 0 / 0.42);
+  border: 1px solid rgb(255 255 255 / 0.2);
+  background-color: rgb(0 0 0 / 0.46);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
   backdrop-filter: blur(12px) saturate(160%);
 }
 
@@ -518,6 +554,59 @@
   }
 }
 
+/* Pemetaan tipografi `.prose` ke token semantik tema (terang, gelap, & semua
+ * preset Admin) agar artikel blog & editor rich-text selalu kontras tinggi. */
+:is(.article-content, .ProseMirror).prose {
+  --tw-prose-body: rgb(var(--foreground) / 0.9);
+  --tw-prose-headings: rgb(var(--foreground));
+  --tw-prose-lead: rgb(var(--muted));
+  --tw-prose-links: rgb(var(--primary-readable));
+  --tw-prose-bold: rgb(var(--foreground));
+  --tw-prose-counters: rgb(var(--muted));
+  --tw-prose-bullets: rgb(var(--muted) / 0.72);
+  --tw-prose-hr: rgb(var(--border));
+  --tw-prose-quotes: rgb(var(--foreground));
+  --tw-prose-quote-borders: rgb(var(--primary));
+  --tw-prose-captions: rgb(var(--muted));
+  --tw-prose-kbd: rgb(var(--foreground));
+  --tw-prose-kbd-shadows: 0 0 0;
+  --tw-prose-code: rgb(var(--foreground));
+  --tw-prose-pre-code: rgb(245 245 247);
+  --tw-prose-pre-bg: rgb(20 20 24);
+  --tw-prose-th-borders: rgb(var(--border));
+  --tw-prose-td-borders: rgb(var(--border) / 0.7);
+}
+
+:is(.article-content, .ProseMirror).prose :where(h2, h3, h4) {
+  scroll-margin-top: 6rem;
+}
+
+:is(.article-content, .ProseMirror).prose blockquote {
+  border-inline-start-width: 3px;
+  border-radius: 0 var(--surface-radius-pin) var(--surface-radius-pin) 0;
+  background-color: rgb(var(--primary) / 0.05);
+  padding: 0.75rem 1rem;
+  font-style: normal;
+}
+
+:is(.article-content, .ProseMirror).prose :not(pre) > code {
+  border: 1px solid rgb(var(--border));
+  border-radius: 0.4rem;
+  background-color: rgb(var(--surface-2) / 0.75);
+  padding: 0.125rem 0.375rem;
+  font-weight: 500;
+}
+
+:is(.article-content, .ProseMirror).prose :not(pre) > code::before,
+:is(.article-content, .ProseMirror).prose :not(pre) > code::after {
+  content: none;
+}
+
+:is(.article-content, .ProseMirror).prose hr {
+  margin-block: 2rem;
+  border-color: rgb(var(--border) / 0.8);
+}
+
 /* Blok sorotan editorial (<aside data-callout="...">) — satu pusat gaya untuk
  * halaman baca publik (.article-content) sekaligus kanvas editor (.ProseMirror). */
 :is(.article-content, .ProseMirror) aside[data-callout] {
@@ -582,12 +671,13 @@
   color-scheme: light;
   /* Font sistem tanpa unduhan: SF Pro di Apple, Segoe UI Variable di
      Windows 11 (system-ui hanya memberi Segoe UI lama), Roboto di Android. */
-  --font-sans:
+  --font-ui-sans:
     -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI',
     system-ui, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-sans: var(--font-ui-sans);
   /* Display = Plus Jakarta Sans variabel (src/app/fonts) untuk judul editorial;
      body tetap font sistem. Tanpa kelas next/font di <html>, jatuh ke sans. */
-  --font-display: var(--font-display-face, var(--font-sans)), var(--font-sans);
+  --font-display: var(--font-display-face, var(--font-ui-sans)), var(--font-ui-sans);
 
   /* Geometri permukaan runtime (dapat di-override oleh preset tema di lib/theme.ts). */
   --surface-radius-ios: 1.25rem;
@@ -657,10 +747,17 @@
   --warning: var(--tone-orange-text);
 
   /* Material glass (lapisan navigasi/kontrol mengambang) — TIDAK di-override Setting. */
-  --glass-bg: 255 255 255 / 0.72;
-  --glass-bg-strong: 255 255 255 / 0.86; /* kaca besar (panel island) lebih pekat, sesuai HIG */
-  --glass-border: 255 255 255 / 0.7;
-  --glass-highlight: 255 255 255 / 0.65; /* garis highlight tipis di tepi atas */
+  --glass-bg: 255 255 255 / 0.74;
+  --glass-bg-strong: 255 255 255 / 0.88; /* kaca chrome & panel island padat, bebas teks tembus */
+  --glass-border: 255 255 255 / 0.74;
+  --glass-highlight: 255 255 255 / 0.72; /* garis highlight tipis di tepi atas */
+  --glass-sheen: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 0.36) 0%,
+    transparent 48%,
+    rgb(255 255 255 / 0.12) 100%
+  );
+  --shadow-primary-glow: 0 8px 22px -7px rgb(var(--primary) / 0.42);
   /* Tepi spekular Liquid Glass: cahaya menangkap tepi atas, memantul tipis di
      tepi bawah, dan berpendar di sepanjang rim sehingga kaca terasa tebal. */
   --glass-rim:
@@ -724,10 +821,17 @@
   --tone-gray: 142 142 147;
   --tone-gray-text: 174 174 178;
 
-  --glass-bg: 24 24 27 / 0.66;
-  --glass-bg-strong: 24 24 27 / 0.86;
-  --glass-border: 255 255 255 / 0.12;
-  --glass-highlight: 255 255 255 / 0.09;
+  --glass-bg: 24 24 27 / 0.68;
+  --glass-bg-strong: 20 20 24 / 0.92;
+  --glass-border: 255 255 255 / 0.14;
+  --glass-highlight: 255 255 255 / 0.16;
+  --glass-sheen: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 0.1) 0%,
+    transparent 46%,
+    rgb(255 255 255 / 0.03) 100%
+  );
+  --shadow-primary-glow: 0 10px 26px -7px rgb(var(--primary) / 0.5);
   --glass-rim:
     inset 0 1px 0 rgb(var(--glass-highlight)),
     inset 0 -1px 1px rgb(255 255 255 / 0.05),
@@ -742,11 +846,11 @@
   /* Kartu gelap: sorotan 1px di tepi atas memisahkan permukaan dari latar
      hitam, karena bayangan nyaris tak terlihat di tema gelap. */
   --elevation-soft:
-    inset 0 1px 0 rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.3),
-    0 8px 24px -10px rgb(0 0 0 / 0.5);
+    inset 0 1px 0 rgb(255 255 255 / 0.08), 0 1px 2px rgb(0 0 0 / 0.34),
+    0 10px 26px -10px rgb(0 0 0 / 0.56);
   --elevation-raised:
-    inset 0 1px 0 rgb(255 255 255 / 0.07), 0 2px 5px rgb(0 0 0 / 0.35),
-    0 16px 36px -10px rgb(0 0 0 / 0.6);
+    inset 0 1px 0 rgb(255 255 255 / 0.1), 0 2px 6px rgb(0 0 0 / 0.4),
+    0 18px 40px -10px rgb(0 0 0 / 0.65);
 }
 
 
@@ -769,9 +873,9 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* Cahaya ambient statis dari warna tema: memberi kedalaman dan semburat
-     pada kaca island/tab bar. Sengaja tanpa animasi — lapisan di bawah
-     backdrop-filter yang bergerak memaksa blur dihitung ulang tiap frame. */
+  /* Cahaya ambient statis dari warna tema: tersebar lembut & kontinu dari atas
+     hingga bawah kanvas (tanpa pita terpotong di puncak HP) agar kaca island &
+     tab bar memiliki kedalaman alami tanpa memicu repaint per frame. */
   body::before {
     content: '';
     position: fixed;
@@ -779,16 +883,16 @@
     z-index: -1;
     pointer-events: none;
     background:
-      radial-gradient(60rem 34rem at 0% -8%, rgb(var(--primary) / 0.09), transparent 70%),
-      radial-gradient(48rem 30rem at 100% 0%, rgb(var(--accent) / 0.06), transparent 70%),
-      radial-gradient(40rem 26rem at 70% 4%, rgb(var(--tone-indigo) / 0.05), transparent 70%);
+      radial-gradient(64rem 38rem at 6% -6%, rgb(var(--primary) / 0.068), transparent 72%),
+      radial-gradient(52rem 36rem at 96% 18%, rgb(var(--accent) / 0.05), transparent 74%),
+      radial-gradient(54rem 36rem at 20% 96%, rgb(var(--tone-indigo) / 0.045), transparent 76%);
   }
 
   .dark body::before {
     background:
-      radial-gradient(60rem 34rem at 0% -8%, rgb(var(--primary) / 0.16), transparent 70%),
-      radial-gradient(48rem 30rem at 100% 0%, rgb(var(--accent) / 0.11), transparent 70%),
-      radial-gradient(40rem 26rem at 70% 4%, rgb(var(--tone-indigo) / 0.09), transparent 70%);
+      radial-gradient(64rem 38rem at 6% -6%, rgb(var(--primary) / 0.15), transparent 72%),
+      radial-gradient(52rem 36rem at 96% 18%, rgb(var(--accent) / 0.1), transparent 74%),
+      radial-gradient(54rem 36rem at 20% 96%, rgb(var(--tone-indigo) / 0.09), transparent 76%);
   }
 
   @media (prefers-contrast: more) {
@@ -859,6 +963,7 @@
 /* Windows High Contrast: pertahankan struktur kontrol tanpa bergantung pada efek kaca. */
 @media (forced-colors: active) {
   body::before,
+  .tabbar-mist,
   .grain::after,
   .aurora::before {
     display: none;
